@@ -1,0 +1,2179 @@
+{
+  "ok": true,
+  "generated_at": "2026-10-26T20:11:00.617Z",
+  "runs": [
+    {
+      "generated_at": "2026-10-26T20:09:17.159Z",
+      "environment": "test",
+      "project_ref": "paymentsbenchtestref (ficticio)",
+      "provider": "emulador (mp-emulator.mjs)",
+      "real_money": false,
+      "network": "red interna de Docker sin salida; fetch del host limitado a PostgREST, Auth local y el emulador",
+      "scenarios": [
+        {
+          "id": "oauth",
+          "title": "Vinculación OAuth de cada vendedor (PKCE S256, state de un solo uso, tokens sellados), cuenta ya usada y cuenta de la plataforma rechazadas",
+          "ok": true,
+          "evidence": {
+            "connected": {
+              "A": "connected",
+              "B": "connected"
+            },
+            "seller_reused_by_other_business": "seller_in_use",
+            "platform_account_as_seller": "n/a (sólo producción)",
+            "verification": {
+              "credentials_usable": true,
+              "seller_identity_verified": true,
+              "permissions_verified": true,
+              "backend_operational": true,
+              "binding_matches": true,
+              "integrator_environment_matches": true,
+              "seller_is_integrator": false,
+              "online_payments_enabled": true,
+              "blocking_reason": null
+            },
+            "operator_enable": "n/a (prueba: vincular habilita)",
+            "settings": [
+              {
+                "business_id": "ea5c0e84-d819-494f-a310-21072fe48179",
+                "enabled": true,
+                "environment": "test",
+                "production_review_status": "not_requested",
+                "collector_id": "4100000101"
+              },
+              {
+                "business_id": "b1470f62-1c90-4014-b247-c2078e71dc9f",
+                "enabled": true,
+                "environment": "test",
+                "production_review_status": "not_requested",
+                "collector_id": "4100000102"
+              }
+            ]
+          },
+          "ms": 185
+        },
+        {
+          "id": "apro",
+          "title": "Compra aprobada (APRO): carrito → sesión → preferencia con importes del servidor → pago → webhook firmado → worker → pedido y stock",
+          "ok": true,
+          "evidence": {
+            "checkout_session_id": "091a443a-971f-4561-b143-0a5c909076c0",
+            "preference_id": "4100000101-ad55e19a-c9ce-4f73-8dd1-c103c3846671",
+            "provider_payment_id": "190000289000",
+            "total_server": 12461.7,
+            "preference_items": [
+              {
+                "id": "39c63391-28f9-4cfd-9141-cbb5e0f5d3d5",
+                "title": "Gaseosa cola",
+                "quantity": 1,
+                "unit_price": 2890.5
+              },
+              {
+                "id": "807b005f-d71a-410a-b57a-7cc6d870ea21",
+                "title": "Papas fritas clásicas",
+                "quantity": 3,
+                "unit_price": 1990.4
+              },
+              {
+                "id": "824c6727-428f-4cb5-8bf0-9082f390a68f",
+                "title": "Agua mineral sin gas",
+                "quantity": 2,
+                "unit_price": 1250
+              },
+              {
+                "id": "taba-delivery-fee",
+                "title": "Envío a domicilio",
+                "quantity": 1,
+                "unit_price": 1100
+              }
+            ],
+            "marketplace": "MP-MKT-4861627125869370",
+            "collector_id": 4100000101,
+            "webhook_http": 201,
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": {
+                  "ok": true,
+                  "seen": 1,
+                  "orphans": 0
+                }
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": {
+                  "ok": true,
+                  "seen": 0,
+                  "orphans": 0
+                }
+              }
+            ],
+            "order": {
+              "id": "0dd58a55-4630-432d-9254-091e9834999d",
+              "public_code": "LT-0001",
+              "status": "received",
+              "total": "12461.70",
+              "payment_method": "mercadopago"
+            },
+            "stock_before": {
+              "agua": 40,
+              "gaseosa": 25,
+              "papas": 30
+            },
+            "stock_after": {
+              "agua": 38,
+              "gaseosa": 24,
+              "papas": 27
+            },
+            "return_page_status": "completed"
+          },
+          "ms": 326
+        },
+        {
+          "id": "duplicates",
+          "title": "Webhooks duplicados, concurrentes, IPN viejo, firma falsa y firma vencida: ninguna operación se repite",
+          "ok": true,
+          "evidence": {
+            "same_notification_x3": [
+              {
+                "http": 201,
+                "duplicate": false
+              },
+              {
+                "http": 201,
+                "duplicate": true
+              },
+              {
+                "http": 201,
+                "duplicate": true
+              }
+            ],
+            "concurrent_x5": [
+              201,
+              201,
+              201,
+              201,
+              201
+            ],
+            "forged_signature": 401,
+            "stale_signature": 401,
+            "legacy_ipn": [
+              200
+            ],
+            "receipts": [
+              {
+                "signature_valid": false,
+                "processing_status": "rejected_signature",
+                "n": 2
+              },
+              {
+                "signature_valid": true,
+                "processing_status": "completed",
+                "n": 7
+              }
+            ],
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "orders_for_session": 1
+          },
+          "ms": 368
+        },
+        {
+          "id": "rejected_then_approved",
+          "title": "Pago rechazado (OTHE): el pedido no se crea, la reserva se conserva y el reintento aprobado crea un solo pedido",
+          "ok": true,
+          "evidence": {
+            "rejected_payment": {
+              "id": "190000289001",
+              "status": "rejected",
+              "status_detail": "cc_rejected_other_reason"
+            },
+            "after_reject": {
+              "session": "payment_pending",
+              "intent": "rejected",
+              "reservations": [
+                "active"
+              ]
+            },
+            "approved_payment": "190000289002",
+            "final": {
+              "session": "completed",
+              "orders": 1
+            }
+          },
+          "ms": 253
+        },
+        {
+          "id": "pending_then_approved",
+          "title": "Pago pendiente (CONT): queda en proceso sin pedido y se completa una sola vez cuando Mercado Pago lo acredita",
+          "ok": true,
+          "evidence": {
+            "pending": {
+              "status": "in_process",
+              "status_detail": "pending_contingency",
+              "session": "payment_pending",
+              "intent": "in_process"
+            },
+            "settled": {
+              "session": "completed",
+              "intent": "completed",
+              "orders": 1
+            }
+          },
+          "ms": 203
+        },
+        {
+          "id": "pending_cancelled",
+          "title": "Pago offline pendiente cancelado por el comercio: el stock vuelve y no hay pedido",
+          "ok": true,
+          "evidence": {
+            "payment": "190000289004",
+            "cancellation_http": 200,
+            "intent": "cancelled",
+            "session": "cancelled",
+            "reservations": [
+              "released:owner_cancelled_payment"
+            ],
+            "stock": {
+              "before": 27,
+              "after": 27
+            }
+          },
+          "ms": 416
+        },
+        {
+          "id": "abandoned_expired",
+          "title": "Checkout abandonado: al vencer, el barrido libera la reserva una sola vez",
+          "ok": true,
+          "evidence": {
+            "swept": 1,
+            "second_sweep": 0,
+            "session": "expired",
+            "reservations": [
+              "released:checkout_expired"
+            ],
+            "stock": {
+              "before": 22,
+              "after": 22
+            }
+          },
+          "ms": 78
+        },
+        {
+          "id": "late_approval_after_expiry",
+          "title": "Pago aprobado DESPUÉS de vencida la reserva: se vuelve a tomar el stock y se crea un solo pedido; sin stock, revisión manual visible",
+          "ok": true,
+          "evidence": {
+            "with_stock": {
+              "payment": "190000289005",
+              "session": "completed",
+              "orders": 1
+            },
+            "without_stock": {
+              "payment": "190000289006",
+              "session": "manual_review_required",
+              "intent": "security_review_required",
+              "reason": "approved_after_reservation_expired",
+              "discrepancies_before": [
+                {
+                  "kind": "paid_without_order",
+                  "severity": "high",
+                  "status": "open"
+                }
+              ],
+              "operator_refund_http": 200,
+              "resolutions": [
+                {
+                  "kind": "paid_without_order",
+                  "http": 200
+                }
+              ],
+              "intent_after": "security_review_required",
+              "refunded_amount": "2500.00"
+            }
+          },
+          "ms": 538
+        },
+        {
+          "id": "refunds",
+          "title": "Devoluciones por API: parcial con centavos, reintento idempotente y total del resto, conciliadas una sola vez",
+          "ok": true,
+          "evidence": {
+            "partial": {
+              "http": 200,
+              "amount": 8.2
+            },
+            "repeated_same_key": {
+              "http": 202,
+              "code": "REFUND_RECONCILING"
+            },
+            "rest": {
+              "http": 200,
+              "amount": 12453.5
+            },
+            "provider_refund_posts": 2,
+            "refunds": [
+              {
+                "amount": "8.20",
+                "status": "approved",
+                "origin": "local",
+                "has_provider_id": true
+              },
+              {
+                "amount": "12453.50",
+                "status": "approved",
+                "origin": "local",
+                "has_provider_id": true
+              }
+            ],
+            "intent": {
+              "status": "refunded",
+              "refunded_amount": "12461.70"
+            },
+            "order": {
+              "id": "0dd58a55-4630-432d-9254-091e9834999d",
+              "public_code": "LT-0001",
+              "status": "received",
+              "total": "12461.70",
+              "payment_method": "mercadopago"
+            }
+          },
+          "ms": 339
+        },
+        {
+          "id": "marketplace_owner_user_id",
+          "title": "R-MKT-1: el aviso de un pago marketplace trae el user_id del DUEÑO de la integradora y el pago se acredita igual en el comercio correcto",
+          "ok": true,
+          "evidence": {
+            "notification_user_id": 3594962708,
+            "integrator_owner": 3594962708,
+            "webhook_http": 201,
+            "routed_business": "B",
+            "worker_runs": [
+              {
+                "status": 429
+              },
+              {
+                "status": 429
+              },
+              {
+                "status": 429
+              },
+              {
+                "status": 429
+              },
+              {
+                "status": 429
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "session": "completed",
+            "orders": 1
+          },
+          "ms": 25177
+        },
+        {
+          "id": "isolation",
+          "title": "R-MKT-3: un comercio no puede leer ni acreditarse el cobro de otro, aunque el aviso apunte a su vendedor; el cobro queda en quien lo cobró",
+          "ok": true,
+          "evidence": {
+            "misleading_hint_seller": "A",
+            "webhook_http": 201,
+            "routed_business": "B",
+            "provider_reads_with_token_A": [
+              404
+            ],
+            "provider_reads_with_token_B": [
+              200
+            ],
+            "orders_business_A_unchanged": 4,
+            "session_B": "completed",
+            "anonymous_read": 401
+          },
+          "ms": 127
+        },
+        {
+          "id": "webhook_lost_truth_sweep",
+          "title": "El aviso nunca llega: el barrido de verdad del proveedor encuentra el pago y crea el pedido una sola vez",
+          "ok": true,
+          "evidence": {
+            "probes_enqueued": 2,
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "session": "completed",
+            "orders": 1
+          },
+          "ms": 150
+        },
+        {
+          "id": "last_unit_race",
+          "title": "Última unidad: dos compradores a la vez, una sola reserva, sin sobreventa",
+          "ok": true,
+          "evidence": {
+            "responses": [
+              200,
+              409
+            ],
+            "stock_after": 0,
+            "active_reservations": 1
+          },
+          "ms": 19
+        },
+        {
+          "id": "tampering",
+          "title": "El navegador no decide importes: total, precio o preferencia inyectados se rechazan",
+          "ok": true,
+          "evidence": {
+            "client_total": 409,
+            "client_unit_price": 409,
+            "without_session": 401,
+            "foreign_status": 404,
+            "foreign_preference": 409
+          },
+          "ms": 37
+        },
+        {
+          "id": "token_refresh",
+          "title": "Token del vendedor vencido: se renueva con el refresh (que rota) y el cobro sigue sin reconectar",
+          "ok": true,
+          "evidence": {
+            "connection": {
+              "status": "connected",
+              "renewed": true,
+              "refreshed": true
+            },
+            "oauth_token_calls": [
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200
+            ],
+            "payment": "190000289010",
+            "session": "completed"
+          },
+          "ms": 134
+        },
+        {
+          "id": "activation_assistant",
+          "title": "El asistente de activación contra las funciones reales: dominio, callback, webhook, CORS, worker, integradora y clave del webhook",
+          "ok": true,
+          "evidence": {
+            "network": [
+              {
+                "id": "sitio_https",
+                "observed": "200",
+                "ok": true
+              },
+              {
+                "id": "sitio_apunta_al_proyecto",
+                "observed": "sí",
+                "ok": true
+              },
+              {
+                "id": "sitio_identidad",
+                "observed": "200 la-taba-runtime-v168-pago-retorno",
+                "ok": true
+              },
+              {
+                "id": "callback_oauth",
+                "observed": "303 https://payments-bench.taba2-staging.pages.dev/",
+                "ok": true
+              },
+              {
+                "id": "webhook_metodo",
+                "observed": "405",
+                "ok": true
+              },
+              {
+                "id": "webhook_configurado",
+                "observed": "200 legacy_ipn",
+                "ok": true
+              },
+              {
+                "id": "cors_tienda",
+                "observed": "204 https://payments-bench.taba2-staging.pages.dev",
+                "ok": true
+              },
+              {
+                "id": "cors_ajeno",
+                "observed": "403 (sin ACAO)",
+                "ok": true
+              },
+              {
+                "id": "worker_firma",
+                "observed": "401",
+                "ok": true
+              }
+            ],
+            "integrator": {
+              "owner_id": 3594962708,
+              "owner_is_test_user": true,
+              "wrong_secret": "client_credentials"
+            },
+            "webhook_secret": {
+              "right": "clave_coincide",
+              "wrong": "clave_distinta"
+            },
+            "receipts_written": {
+              "probes_and_right_key": 0,
+              "wrong_key": 1
+            }
+          },
+          "ms": 38
+        },
+        {
+          "id": "reconciliation_clean",
+          "title": "Conciliación final: cada cobro aprobado tiene un pedido, cada pedido un cobro, y no quedan discrepancias abiertas",
+          "ok": true,
+          "evidence": {
+            "open_discrepancies": [],
+            "orders_without_payment": 0,
+            "payments_without_order": 0,
+            "duplicate_orders": 0,
+            "outbox_not_completed": [],
+            "final_worker_runs": [
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ]
+          },
+          "ms": 11
+        }
+      ],
+      "stack": {
+        "postgres": "public.ecr.aws/supabase/postgres:17.6.1.166 (digest de CI)",
+        "postgrest": "v12.2.12",
+        "seconds": 17
+      },
+      "provider_calls": {
+        "POST /oauth/token": 10,
+        "GET /users/me": 20,
+        "GET /checkout/preferences/search": 11,
+        "POST /checkout/preferences": 11,
+        "GET /v1/payments/search": 6,
+        "GET /v1/payments/:id": 49,
+        "GET /merchant_orders/:id": 23,
+        "PUT /v1/payments/:id": 1,
+        "POST /v1/payments/:id/refunds": 3
+      },
+      "notifications": [
+        {
+          "at": "2026-10-26T20:09:36.238Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.275Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:36.282Z",
+          "type": "merchant_order",
+          "data_id": "46000051000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:36.414Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.428Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.441Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.454Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.453Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.454Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.454Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.455Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.532Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 401,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.541Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 401,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.862Z",
+          "type": "payment",
+          "data_id": "190000289001",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.875Z",
+          "type": "payment",
+          "data_id": "190000289001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:36.879Z",
+          "type": "merchant_order",
+          "data_id": "46000051001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:36.949Z",
+          "type": "payment",
+          "data_id": "190000289002",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:36.963Z",
+          "type": "payment",
+          "data_id": "190000289002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:36.966Z",
+          "type": "merchant_order",
+          "data_id": "46000051001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.100Z",
+          "type": "payment",
+          "data_id": "190000289003",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.113Z",
+          "type": "payment",
+          "data_id": "190000289003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.116Z",
+          "type": "merchant_order",
+          "data_id": "46000051002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.158Z",
+          "type": "payment",
+          "data_id": "190000289003",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.169Z",
+          "type": "payment",
+          "data_id": "190000289003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.172Z",
+          "type": "merchant_order",
+          "data_id": "46000051002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.305Z",
+          "type": "payment",
+          "data_id": "190000289004",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.320Z",
+          "type": "payment",
+          "data_id": "190000289004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.323Z",
+          "type": "merchant_order",
+          "data_id": "46000051003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.395Z",
+          "type": "payment",
+          "data_id": "190000289004",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.410Z",
+          "type": "payment",
+          "data_id": "190000289004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.414Z",
+          "type": "merchant_order",
+          "data_id": "46000051003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.790Z",
+          "type": "payment",
+          "data_id": "190000289005",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.802Z",
+          "type": "payment",
+          "data_id": "190000289005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.805Z",
+          "type": "merchant_order",
+          "data_id": "46000051004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.925Z",
+          "type": "payment",
+          "data_id": "190000289006",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:37.937Z",
+          "type": "payment",
+          "data_id": "190000289006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:37.940Z",
+          "type": "merchant_order",
+          "data_id": "46000051005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.015Z",
+          "type": "payment",
+          "data_id": "190000289006",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:38.028Z",
+          "type": "payment",
+          "data_id": "190000289006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.031Z",
+          "type": "merchant_order",
+          "data_id": "46000051005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.287Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:38.309Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.314Z",
+          "type": "merchant_order",
+          "data_id": "46000051000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.324Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:09:38.337Z",
+          "type": "payment",
+          "data_id": "190000289000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.341Z",
+          "type": "merchant_order",
+          "data_id": "46000051000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.659Z",
+          "type": "payment",
+          "data_id": "190000289007",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 3594962708
+        },
+        {
+          "at": "2026-10-26T20:09:38.676Z",
+          "type": "payment",
+          "data_id": "190000289007",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:09:38.679Z",
+          "type": "merchant_order",
+          "data_id": "46000051006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:03.839Z",
+          "type": "payment",
+          "data_id": "190000289008",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:04.176Z",
+          "type": "payment",
+          "data_id": "190000289010",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:04.188Z",
+          "type": "payment",
+          "data_id": "190000289010",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:04.191Z",
+          "type": "merchant_order",
+          "data_id": "46000051009",
+          "shape": "legacy_ipn",
+          "status": 200
+        }
+      ],
+      "host_log_tail": [
+        "\u001b[0m\u001b[32mDownload\u001b[0m https://registry.npmjs.org/mercadopago",
+        "BENCH_HOST_READY 37461",
+        "{\"timestamp\":\"2026-10-26T20:09:35.956Z\",\"event\":\"oauth_started\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"0e494f56-ff47-4bdb-b4ee-a115b23f0603\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:35.998Z\",\"event\":\"oauth_callback_success\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"e27ce337-75a9-4b38-aeac-b13ba5a38bc1\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:35.998Z\",\"event\":\"seller_connected\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"e27ce337-75a9-4b38-aeac-b13ba5a38bc1\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.013Z\",\"event\":\"oauth_started\",\"business_id\":\"b1470f62-1c90-4014-b247-c2078e71dc9f\",\"correlation_id\":\"2f46ef89-742b-4eba-b69c-423345113ee9\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.029Z\",\"event\":\"oauth_callback_success\",\"business_id\":\"b1470f62-1c90-4014-b247-c2078e71dc9f\",\"correlation_id\":\"51643789-5197-4f31-8168-e2209f7abbd5\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.029Z\",\"event\":\"seller_connected\",\"business_id\":\"b1470f62-1c90-4014-b247-c2078e71dc9f\",\"correlation_id\":\"51643789-5197-4f31-8168-e2209f7abbd5\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.044Z\",\"event\":\"oauth_started\",\"business_id\":\"7360597a-c968-43d5-b9dc-583153d431a0\",\"correlation_id\":\"e1eaa4a5-90c2-47ee-9c6f-92dcf16325e4\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/mp_finish_oauth\",\"status\":409,\"code\":\"23505\",\"message\":\"duplicate key value violates unique constraint \\\"mp_seller_connections_environment_seller_id_key\\\"\",\"hint\":\"\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.059Z\",\"event\":\"oauth_callback_failed\",\"business_id\":\"7360597a-c968-43d5-b9dc-583153d431a0\",\"correlation_id\":\"90c127a3-3b98-4f0d-9016-2462fe6c3ee7\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.183Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"dd8dc65f-b76c-41f3-9abf-c935148e69df\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.281Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.286Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.842Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"d07b0993-53de-4cd2-8729-04248808ee04\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.878Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.881Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.966Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:36.969Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.082Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"1e6ac419-4dfe-47f0-91c5-9ce74589a560\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.115Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.118Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.172Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.175Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.287Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"358179c9-1a62-456a-9b48-3de01a15d2b7\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.323Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.326Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.413Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.417Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.703Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"e8bed6bc-3b68-4d7b-8430-e273ed374c77\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.769Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"73603dfe-71a2-48fd-9b89-fc5b4a085fb9\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.804Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.808Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.906Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"6266b6e8-4c74-4de2-9f4d-84c5cc8902b7\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.939Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:37.942Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.031Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.034Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.313Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.316Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.340Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.343Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.644Z\",\"event\":\"preference_created\",\"business_id\":\"b1470f62-1c90-4014-b247-c2078e71dc9f\",\"correlation_id\":\"118558d9-f7bb-45b6-b93d-a14f60e71277\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.679Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:09:38.682Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:03.824Z\",\"event\":\"preference_created\",\"business_id\":\"b1470f62-1c90-4014-b247-c2078e71dc9f\",\"correlation_id\":\"6ccea75c-b158-458d-85e1-e148768f9bdd\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:03.954Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"fbffd084-2a23-4061-a897-84896a29190c\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":500,\"code\":\"55000\",\"message\":\"producto no disponible para pago: 4c03c369-6853-4d72-b882-82a312f48d41\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":400,\"code\":\"22023\",\"message\":\"campo no permitido en checkout: total\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":400,\"code\":\"22023\",\"message\":\"cada item acepta product_id UUID o combo_id, con quantity entero\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/get_checkout_session_for_customer\",\"status\":403,\"code\":\"42501\",\"message\":\"checkout no encontrado o acceso denegado\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/prepare_mercadopago_preference_v2\",\"status\":403,\"code\":\"42501\",\"message\":\"checkout no autorizado\",\"hint\":\"\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.147Z\",\"event\":\"token_refresh_success\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"12e08596-56f5-4391-afe8-3fc05c56b696\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.161Z\",\"event\":\"preference_created\",\"business_id\":\"ea5c0e84-d819-494f-a310-21072fe48179\",\"correlation_id\":\"097d12e6-295f-4e94-b7ab-64d30e69781f\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.191Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.194Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.256Z\",\"event\":\"oauth_callback_failed\",\"business_id\":\"unknown\",\"correlation_id\":\"91a1299a-78e2-41a5-b73c-56721b4c8345\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.262Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.274Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:04.284Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}"
+      ],
+      "ok": true
+    },
+    {
+      "generated_at": "2026-10-26T20:10:04.647Z",
+      "environment": "production",
+      "project_ref": "paymentsbenchprodref (ficticio)",
+      "provider": "emulador (mp-emulator.mjs)",
+      "real_money": false,
+      "network": "red interna de Docker sin salida; fetch del host limitado a PostgREST, Auth local y el emulador",
+      "scenarios": [
+        {
+          "id": "oauth",
+          "title": "Vinculación OAuth de cada vendedor (PKCE S256, state de un solo uso, tokens sellados), cuenta ya usada y cuenta de la plataforma rechazadas",
+          "ok": true,
+          "evidence": {
+            "connected": {
+              "A": "connected",
+              "B": "connected"
+            },
+            "seller_reused_by_other_business": "seller_in_use",
+            "platform_account_as_seller": "integrator_account",
+            "verification": {
+              "credentials_usable": true,
+              "seller_identity_verified": true,
+              "permissions_verified": true,
+              "backend_operational": true,
+              "binding_matches": true,
+              "integrator_environment_matches": true,
+              "seller_is_integrator": false,
+              "online_payments_enabled": false,
+              "blocking_reason": "payments_not_enabled"
+            },
+            "operator_enable": {
+              "A": true,
+              "B": true
+            },
+            "settings": [
+              {
+                "business_id": "1637813a-c4a8-4607-a862-b7bc4b2095f6",
+                "enabled": true,
+                "environment": "production",
+                "production_review_status": "approved",
+                "collector_id": "4100000101"
+              },
+              {
+                "business_id": "8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a",
+                "enabled": true,
+                "environment": "production",
+                "production_review_status": "approved",
+                "collector_id": "4100000102"
+              }
+            ]
+          },
+          "ms": 174
+        },
+        {
+          "id": "apro",
+          "title": "Compra aprobada (APRO): carrito → sesión → preferencia con importes del servidor → pago → webhook firmado → worker → pedido y stock",
+          "ok": true,
+          "evidence": {
+            "checkout_session_id": "490963e1-af76-498b-b4e7-3a5ce9abf76d",
+            "preference_id": "4100000101-f2f4d8f3-7899-462c-9304-427fd943733e",
+            "provider_payment_id": "190000558000",
+            "total_server": 12461.7,
+            "preference_items": [
+              {
+                "id": "45190c04-bf65-4dc7-90b4-cbe90dab851f",
+                "title": "Papas fritas clásicas",
+                "quantity": 3,
+                "unit_price": 1990.4
+              },
+              {
+                "id": "7108e6fd-d567-487d-a68c-06ac0aec3091",
+                "title": "Agua mineral sin gas",
+                "quantity": 2,
+                "unit_price": 1250
+              },
+              {
+                "id": "e26432bd-af8e-4f1b-80d1-b3b81ae0387a",
+                "title": "Gaseosa cola",
+                "quantity": 1,
+                "unit_price": 2890.5
+              },
+              {
+                "id": "taba-delivery-fee",
+                "title": "Envío a domicilio",
+                "quantity": 1,
+                "unit_price": 1100
+              }
+            ],
+            "marketplace": "MP-MKT-7677852968049976",
+            "collector_id": 4100000101,
+            "webhook_http": 201,
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": {
+                  "ok": true,
+                  "seen": 1,
+                  "orphans": 0
+                }
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": {
+                  "ok": true,
+                  "seen": 0,
+                  "orphans": 0
+                }
+              }
+            ],
+            "order": {
+              "id": "766570a0-9024-4bcc-92f9-d173c374c8ad",
+              "public_code": "LT-0001",
+              "status": "received",
+              "total": "12461.70",
+              "payment_method": "mercadopago"
+            },
+            "stock_before": {
+              "agua": 40,
+              "gaseosa": 25,
+              "papas": 30
+            },
+            "stock_after": {
+              "agua": 38,
+              "gaseosa": 24,
+              "papas": 27
+            },
+            "return_page_status": "completed"
+          },
+          "ms": 321
+        },
+        {
+          "id": "duplicates",
+          "title": "Webhooks duplicados, concurrentes, IPN viejo, firma falsa y firma vencida: ninguna operación se repite",
+          "ok": true,
+          "evidence": {
+            "same_notification_x3": [
+              {
+                "http": 201,
+                "duplicate": false
+              },
+              {
+                "http": 201,
+                "duplicate": true
+              },
+              {
+                "http": 201,
+                "duplicate": true
+              }
+            ],
+            "concurrent_x5": [
+              201,
+              201,
+              201,
+              201,
+              201
+            ],
+            "forged_signature": 401,
+            "stale_signature": 401,
+            "legacy_ipn": [
+              200
+            ],
+            "receipts": [
+              {
+                "signature_valid": false,
+                "processing_status": "rejected_signature",
+                "n": 2
+              },
+              {
+                "signature_valid": true,
+                "processing_status": "completed",
+                "n": 7
+              }
+            ],
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 6,
+                "completed": 6,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "orders_for_session": 1
+          },
+          "ms": 285
+        },
+        {
+          "id": "rejected_then_approved",
+          "title": "Pago rechazado (OTHE): el pedido no se crea, la reserva se conserva y el reintento aprobado crea un solo pedido",
+          "ok": true,
+          "evidence": {
+            "rejected_payment": {
+              "id": "190000558001",
+              "status": "rejected",
+              "status_detail": "cc_rejected_other_reason"
+            },
+            "after_reject": {
+              "session": "payment_pending",
+              "intent": "rejected",
+              "reservations": [
+                "active"
+              ]
+            },
+            "approved_payment": "190000558002",
+            "final": {
+              "session": "completed",
+              "orders": 1
+            }
+          },
+          "ms": 270
+        },
+        {
+          "id": "pending_then_approved",
+          "title": "Pago pendiente (CONT): queda en proceso sin pedido y se completa una sola vez cuando Mercado Pago lo acredita",
+          "ok": true,
+          "evidence": {
+            "pending": {
+              "status": "in_process",
+              "status_detail": "pending_contingency",
+              "session": "payment_pending",
+              "intent": "in_process"
+            },
+            "settled": {
+              "session": "completed",
+              "intent": "completed",
+              "orders": 1
+            }
+          },
+          "ms": 206
+        },
+        {
+          "id": "pending_cancelled",
+          "title": "Pago offline pendiente cancelado por el comercio: el stock vuelve y no hay pedido",
+          "ok": true,
+          "evidence": {
+            "payment": "190000558004",
+            "cancellation_http": 200,
+            "intent": "cancelled",
+            "session": "cancelled",
+            "reservations": [
+              "released:owner_cancelled_payment"
+            ],
+            "stock": {
+              "before": 27,
+              "after": 27
+            }
+          },
+          "ms": 411
+        },
+        {
+          "id": "abandoned_expired",
+          "title": "Checkout abandonado: al vencer, el barrido libera la reserva una sola vez",
+          "ok": true,
+          "evidence": {
+            "swept": 1,
+            "second_sweep": 0,
+            "session": "expired",
+            "reservations": [
+              "released:checkout_expired"
+            ],
+            "stock": {
+              "before": 22,
+              "after": 22
+            }
+          },
+          "ms": 79
+        },
+        {
+          "id": "late_approval_after_expiry",
+          "title": "Pago aprobado DESPUÉS de vencida la reserva: se vuelve a tomar el stock y se crea un solo pedido; sin stock, revisión manual visible",
+          "ok": true,
+          "evidence": {
+            "with_stock": {
+              "payment": "190000558005",
+              "session": "completed",
+              "orders": 1
+            },
+            "without_stock": {
+              "payment": "190000558006",
+              "session": "manual_review_required",
+              "intent": "security_review_required",
+              "reason": "approved_after_reservation_expired",
+              "discrepancies_before": [
+                {
+                  "kind": "paid_without_order",
+                  "severity": "high",
+                  "status": "open"
+                }
+              ],
+              "operator_refund_http": 200,
+              "resolutions": [
+                {
+                  "kind": "paid_without_order",
+                  "http": 200
+                }
+              ],
+              "intent_after": "security_review_required",
+              "refunded_amount": "2500.00"
+            }
+          },
+          "ms": 554
+        },
+        {
+          "id": "refunds",
+          "title": "Devoluciones por API: parcial con centavos, reintento idempotente y total del resto, conciliadas una sola vez",
+          "ok": true,
+          "evidence": {
+            "partial": {
+              "http": 200,
+              "amount": 8.2
+            },
+            "repeated_same_key": {
+              "http": 202,
+              "code": "REFUND_RECONCILING"
+            },
+            "rest": {
+              "http": 200,
+              "amount": 12453.5
+            },
+            "provider_refund_posts": 2,
+            "refunds": [
+              {
+                "amount": "8.20",
+                "status": "approved",
+                "origin": "local",
+                "has_provider_id": true
+              },
+              {
+                "amount": "12453.50",
+                "status": "approved",
+                "origin": "local",
+                "has_provider_id": true
+              }
+            ],
+            "intent": {
+              "status": "refunded",
+              "refunded_amount": "12461.70"
+            },
+            "order": {
+              "id": "766570a0-9024-4bcc-92f9-d173c374c8ad",
+              "public_code": "LT-0001",
+              "status": "received",
+              "total": "12461.70",
+              "payment_method": "mercadopago"
+            }
+          },
+          "ms": 322
+        },
+        {
+          "id": "marketplace_owner_user_id",
+          "title": "R-MKT-1: el aviso de un pago marketplace trae el user_id del DUEÑO de la integradora y el pago se acredita igual en el comercio correcto",
+          "ok": true,
+          "evidence": {
+            "notification_user_id": 721168650,
+            "integrator_owner": 721168650,
+            "webhook_http": 201,
+            "routed_business": "B",
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 1,
+                "completed": 1,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "session": "completed",
+            "orders": 1
+          },
+          "ms": 136
+        },
+        {
+          "id": "isolation",
+          "title": "R-MKT-3: un comercio no puede leer ni acreditarse el cobro de otro, aunque el aviso apunte a su vendedor; el cobro queda en quien lo cobró",
+          "ok": true,
+          "evidence": {
+            "misleading_hint_seller": "A",
+            "webhook_http": 201,
+            "routed_business": "B",
+            "provider_reads_with_token_A": [
+              404
+            ],
+            "provider_reads_with_token_B": [
+              200
+            ],
+            "orders_business_A_unchanged": 4,
+            "session_B": "completed",
+            "anonymous_read": 401
+          },
+          "ms": 126
+        },
+        {
+          "id": "webhook_lost_truth_sweep",
+          "title": "El aviso nunca llega: el barrido de verdad del proveedor encuentra el pago y crea el pedido una sola vez",
+          "ok": true,
+          "evidence": {
+            "probes_enqueued": 2,
+            "worker_runs": [
+              {
+                "status": 200,
+                "claimed": 2,
+                "completed": 2,
+                "retried": 0,
+                "ledger": null
+              },
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ],
+            "session": "completed",
+            "orders": 1
+          },
+          "ms": 130
+        },
+        {
+          "id": "last_unit_race",
+          "title": "Última unidad: dos compradores a la vez, una sola reserva, sin sobreventa",
+          "ok": true,
+          "evidence": {
+            "responses": [
+              200,
+              409
+            ],
+            "stock_after": 0,
+            "active_reservations": 1
+          },
+          "ms": 18
+        },
+        {
+          "id": "tampering",
+          "title": "El navegador no decide importes: total, precio o preferencia inyectados se rechazan",
+          "ok": true,
+          "evidence": {
+            "client_total": 409,
+            "client_unit_price": 409,
+            "without_session": 401,
+            "foreign_status": 404,
+            "foreign_preference": 409
+          },
+          "ms": 34
+        },
+        {
+          "id": "token_refresh",
+          "title": "Token del vendedor vencido: se renueva con el refresh (que rota) y el cobro sigue sin reconectar",
+          "ok": true,
+          "evidence": {
+            "connection": {
+              "status": "connected",
+              "renewed": true,
+              "refreshed": true
+            },
+            "oauth_token_calls": [
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200
+            ],
+            "payment": "190000558010",
+            "session": "completed"
+          },
+          "ms": 35194
+        },
+        {
+          "id": "activation_assistant",
+          "title": "El asistente de activación contra las funciones reales: dominio, callback, webhook, CORS, worker, integradora y clave del webhook",
+          "ok": true,
+          "evidence": {
+            "network": [
+              {
+                "id": "sitio_https",
+                "observed": "200",
+                "ok": true
+              },
+              {
+                "id": "sitio_apunta_al_proyecto",
+                "observed": "sí",
+                "ok": true
+              },
+              {
+                "id": "sitio_identidad",
+                "observed": "200 la-taba-runtime-v168-pago-retorno",
+                "ok": true
+              },
+              {
+                "id": "callback_oauth",
+                "observed": "303 https://la-taba.pages.dev/",
+                "ok": true
+              },
+              {
+                "id": "webhook_metodo",
+                "observed": "405",
+                "ok": true
+              },
+              {
+                "id": "webhook_configurado",
+                "observed": "200 legacy_ipn",
+                "ok": true
+              },
+              {
+                "id": "cors_tienda",
+                "observed": "204 https://la-taba.pages.dev",
+                "ok": true
+              },
+              {
+                "id": "cors_ajeno",
+                "observed": "403 (sin ACAO)",
+                "ok": true
+              },
+              {
+                "id": "worker_firma",
+                "observed": "401",
+                "ok": true
+              }
+            ],
+            "integrator": {
+              "owner_id": 721168650,
+              "owner_is_test_user": false,
+              "wrong_secret": "client_credentials"
+            },
+            "webhook_secret": {
+              "right": "clave_coincide",
+              "wrong": "clave_distinta"
+            },
+            "receipts_written": {
+              "probes_and_right_key": 0,
+              "wrong_key": 1
+            }
+          },
+          "ms": 44
+        },
+        {
+          "id": "reconciliation_clean",
+          "title": "Conciliación final: cada cobro aprobado tiene un pedido, cada pedido un cobro, y no quedan discrepancias abiertas",
+          "ok": true,
+          "evidence": {
+            "open_discrepancies": [],
+            "orders_without_payment": 0,
+            "payments_without_order": 0,
+            "duplicate_orders": 0,
+            "outbox_not_completed": [],
+            "final_worker_runs": [
+              {
+                "status": 200,
+                "claimed": 0,
+                "completed": 0,
+                "retried": 0,
+                "ledger": null
+              }
+            ]
+          },
+          "ms": 13
+        }
+      ],
+      "stack": {
+        "postgres": "public.ecr.aws/supabase/postgres:17.6.1.166 (digest de CI)",
+        "postgrest": "v12.2.12",
+        "seconds": 16
+      },
+      "provider_calls": {
+        "POST /oauth/token": 11,
+        "GET /users/me": 21,
+        "GET /checkout/preferences/search": 11,
+        "POST /checkout/preferences": 11,
+        "GET /v1/payments/search": 6,
+        "GET /v1/payments/:id": 49,
+        "GET /merchant_orders/:id": 23,
+        "PUT /v1/payments/:id": 1,
+        "POST /v1/payments/:id/refunds": 3
+      },
+      "notifications": [
+        {
+          "at": "2026-10-26T20:10:22.356Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.391Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:22.398Z",
+          "type": "merchant_order",
+          "data_id": "46000953000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:22.531Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.545Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.558Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.570Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.571Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.571Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.571Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.571Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.645Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 401,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.651Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 401,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.901Z",
+          "type": "payment",
+          "data_id": "190000558001",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:22.914Z",
+          "type": "payment",
+          "data_id": "190000558001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:22.917Z",
+          "type": "merchant_order",
+          "data_id": "46000953001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:22.999Z",
+          "type": "payment",
+          "data_id": "190000558002",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.011Z",
+          "type": "payment",
+          "data_id": "190000558002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.014Z",
+          "type": "merchant_order",
+          "data_id": "46000953001",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.140Z",
+          "type": "payment",
+          "data_id": "190000558003",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.151Z",
+          "type": "payment",
+          "data_id": "190000558003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.155Z",
+          "type": "merchant_order",
+          "data_id": "46000953002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.204Z",
+          "type": "payment",
+          "data_id": "190000558003",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.219Z",
+          "type": "payment",
+          "data_id": "190000558003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.224Z",
+          "type": "merchant_order",
+          "data_id": "46000953002",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.357Z",
+          "type": "payment",
+          "data_id": "190000558004",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.375Z",
+          "type": "payment",
+          "data_id": "190000558004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.379Z",
+          "type": "merchant_order",
+          "data_id": "46000953003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.448Z",
+          "type": "payment",
+          "data_id": "190000558004",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.462Z",
+          "type": "payment",
+          "data_id": "190000558004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.465Z",
+          "type": "merchant_order",
+          "data_id": "46000953003",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.838Z",
+          "type": "payment",
+          "data_id": "190000558005",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.850Z",
+          "type": "payment",
+          "data_id": "190000558005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.853Z",
+          "type": "merchant_order",
+          "data_id": "46000953004",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:23.984Z",
+          "type": "payment",
+          "data_id": "190000558006",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:23.996Z",
+          "type": "payment",
+          "data_id": "190000558006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.000Z",
+          "type": "merchant_order",
+          "data_id": "46000953005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.083Z",
+          "type": "payment",
+          "data_id": "190000558006",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:24.096Z",
+          "type": "payment",
+          "data_id": "190000558006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.100Z",
+          "type": "merchant_order",
+          "data_id": "46000953005",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.354Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:24.370Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.373Z",
+          "type": "merchant_order",
+          "data_id": "46000953000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.388Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:24.400Z",
+          "type": "payment",
+          "data_id": "190000558000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.403Z",
+          "type": "merchant_order",
+          "data_id": "46000953000",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.714Z",
+          "type": "payment",
+          "data_id": "190000558007",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 721168650
+        },
+        {
+          "at": "2026-10-26T20:10:24.730Z",
+          "type": "payment",
+          "data_id": "190000558007",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.733Z",
+          "type": "merchant_order",
+          "data_id": "46000953006",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:24.852Z",
+          "type": "payment",
+          "data_id": "190000558008",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:25.157Z",
+          "type": "payment",
+          "data_id": "190000558010",
+          "shape": "webhook",
+          "status": 201,
+          "user_id": 4100000101
+        },
+        {
+          "at": "2026-10-26T20:10:25.169Z",
+          "type": "payment",
+          "data_id": "190000558010",
+          "shape": "legacy_ipn",
+          "status": 200
+        },
+        {
+          "at": "2026-10-26T20:10:25.172Z",
+          "type": "merchant_order",
+          "data_id": "46000953009",
+          "shape": "legacy_ipn",
+          "status": 200
+        }
+      ],
+      "host_log_tail": [
+        "{\"timestamp\":\"2026-10-26T20:10:22.072Z\",\"event\":\"oauth_started\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"403e8506-acc0-4735-b3a5-609dd6c2077d\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.107Z\",\"event\":\"oauth_callback_success\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"fc9eef3b-bdfe-43fd-a7c4-6b103df6ec16\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.108Z\",\"event\":\"seller_connected\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"fc9eef3b-bdfe-43fd-a7c4-6b103df6ec16\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.121Z\",\"event\":\"oauth_started\",\"business_id\":\"8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a\",\"correlation_id\":\"20dc33fa-75e7-4136-aa8a-2611c675545c\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.135Z\",\"event\":\"oauth_callback_success\",\"business_id\":\"8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a\",\"correlation_id\":\"4c55e49b-ad7b-4338-9fa3-dd65131a37c1\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.135Z\",\"event\":\"seller_connected\",\"business_id\":\"8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a\",\"correlation_id\":\"4c55e49b-ad7b-4338-9fa3-dd65131a37c1\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.147Z\",\"event\":\"oauth_started\",\"business_id\":\"01164986-441e-41de-84b5-d0023a065ccd\",\"correlation_id\":\"dccb3b1d-6249-42dc-a1e3-7d477051c6bc\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/mp_finish_oauth\",\"status\":409,\"code\":\"23505\",\"message\":\"duplicate key value violates unique constraint \\\"mp_seller_connections_environment_seller_id_key\\\"\",\"hint\":\"\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.161Z\",\"event\":\"oauth_callback_failed\",\"business_id\":\"01164986-441e-41de-84b5-d0023a065ccd\",\"correlation_id\":\"7acfe07b-b9e4-4fac-a104-4bdc81f5add0\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.170Z\",\"event\":\"oauth_started\",\"business_id\":\"01164986-441e-41de-84b5-d0023a065ccd\",\"correlation_id\":\"72fa529d-12e6-4214-8d3e-eb4557f8a00a\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.179Z\",\"event\":\"oauth_callback_failed\",\"business_id\":\"01164986-441e-41de-84b5-d0023a065ccd\",\"correlation_id\":\"e1db2e64-7016-4a3a-8793-d219d9ffe1ef\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.304Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"76aeb822-69d4-4d83-ae71-ec79ca6a9605\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.396Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.401Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.880Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"a778ff36-c93f-4994-97b4-3407c1994a3d\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.916Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:22.920Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.013Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.016Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.124Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"d7ca440d-6f80-42f5-b579-0f4fa3dfdcfa\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.154Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.157Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.224Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.228Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.341Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"0d1efe3a-15ec-4888-a2e3-45bcf2d04e22\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.378Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.382Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.465Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.468Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.748Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"75d970b3-244a-41ad-8bee-1971dc82bbb3\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.818Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"5552cb9a-e962-4fb0-b2f5-c50afaf79210\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.853Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.855Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.961Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"66526a70-18aa-47ed-8381-58a61d081d39\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:23.999Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.003Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.099Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.102Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.373Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.377Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.403Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.406Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.696Z\",\"event\":\"preference_created\",\"business_id\":\"8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a\",\"correlation_id\":\"9358f394-e934-4522-9619-babc2715669d\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.732Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.735Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.838Z\",\"event\":\"preference_created\",\"business_id\":\"8d94a385-5f2a-4bd7-87ce-9a7b99c3f64a\",\"correlation_id\":\"3f863adf-da83-4ff8-8d63-3a735f0337e9\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:24.954Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"c36a705e-18f0-4bac-bb79-21fb3d867c06\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":500,\"code\":\"55000\",\"message\":\"producto no disponible para pago: 6ca73c8b-99d1-4984-9ad0-94654fd4ce38\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":400,\"code\":\"22023\",\"message\":\"campo no permitido en checkout: total\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/create_checkout_session\",\"status\":400,\"code\":\"22023\",\"message\":\"cada item acepta product_id UUID o combo_id, con quantity entero\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/get_checkout_session_for_customer\",\"status\":403,\"code\":\"42501\",\"message\":\"checkout no encontrado o acceso denegado\",\"hint\":\"\"}",
+        "{\"bench\":\"rest_error\",\"path\":\"/rpc/prepare_mercadopago_preference_v2\",\"status\":403,\"code\":\"42501\",\"message\":\"checkout no autorizado\",\"hint\":\"\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:25.129Z\",\"event\":\"token_refresh_success\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"0da110d6-f8ff-4857-b4a9-f61041907aee\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:25.143Z\",\"event\":\"preference_created\",\"business_id\":\"1637813a-c4a8-4607-a862-b7bc4b2095f6\",\"correlation_id\":\"6c12ef7e-2dfd-4657-b17c-71010cb2954b\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:25.171Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:10:25.174Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"merchant_order\"}",
+        "{\"timestamp\":\"2026-10-26T20:11:00.298Z\",\"event\":\"oauth_callback_failed\",\"business_id\":\"unknown\",\"correlation_id\":\"b2665f1e-6967-46fc-8eb0-6fb4bcb55464\"}",
+        "{\"timestamp\":\"2026-10-26T20:11:00.312Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:11:00.324Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}",
+        "{\"timestamp\":\"2026-10-26T20:11:00.333Z\",\"event\":\"legacy_ipn_ignored\",\"topic\":\"payment\"}"
+      ],
+      "ok": true
+    }
+  ]
+}

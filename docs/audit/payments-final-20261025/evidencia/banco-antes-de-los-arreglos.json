@@ -1,0 +1,83 @@
+{
+ "generated_at": "2026-10-25T08:56:47.909Z",
+ "code": "39e8822b (sin los arreglos de esta rama)",
+ "environment": "test",
+ "note": "Primera corrida completa del banco. refunds y marketplace_owner_user_id son los defectos reales que esta rama corrige; abandoned_expired y webhook_lost_truth_sweep fallaban por el reloj simulado del propio banco (corregido en el banco, no en el producto).",
+ "scenarios": [
+  {
+   "id": "oauth",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "apro",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "duplicates",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "rejected_then_approved",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "pending_then_approved",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "pending_cancelled",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "abandoned_expired",
+   "ok": false,
+   "error": "error: new row for relation \"checkout_sessions\" violates check constraint \"checkout_sessions_expiry_check\""
+  },
+  {
+   "id": "refunds",
+   "ok": false,
+   "error": "AssertionError [ERR_ASSERTION]: reembolso parcial de 8,20: 503 {\"ok\":false,\"code\":\"PAYMENT_UNAVAILABLE\",\"message\":\"No pudimos procesar el pago en este momento. Intentá nuevamente.\"}"
+  },
+  {
+   "id": "marketplace_owner_user_id",
+   "ok": false,
+   "error": "AssertionError [ERR_ASSERTION]: el webhook firmado tiene que rutearse: {\"ok\":false,\"code\":\"PAYMENT_UNAVAILABLE\",\"message\":\"No pudimos procesar el pago en este momento. Intentá nuevamente.\"}"
+  },
+  {
+   "id": "isolation",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "webhook_lost_truth_sweep",
+   "ok": false,
+   "error": "AssertionError [ERR_ASSERTION]: {\"status\":\"redirected\",\"total\":\"1250.00\",\"delivery_fee\":\"0.00\",\"completed_order_id\":null,\"intent_id\":\"cd4be99d-2ab0-4136-b95d-0a21b45fe610\",\"internal_status\":\"preference_created\",\"provider_status\":null,\"provider_payment_id\":null,\"expected_amount\":\"1250.00\",\"paid_amount\":null,\"refunded_amount\":\"0.00\",\"security_review_reason\":null,\"order_id\":null,\"business_id\":\"634bca"
+  },
+  {
+   "id": "last_unit_race",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "tampering",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "token_refresh",
+   "ok": true,
+   "error": null
+  },
+  {
+   "id": "reconciliation_clean",
+   "ok": true,
+   "error": null
+  }
+ ]
+}

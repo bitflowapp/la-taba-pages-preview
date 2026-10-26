@@ -28,10 +28,22 @@ const STAGING_OAUTH = {
   MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
 };
 
-type Options = { mode?: 'oauth' | 'direct' | 'padded'; integratorTestUser?: boolean; integratorStatus?: number };
+// The production binding of the code (La Taba Delivery), with the platform review approved.
+const PRODUCTION_OAUTH = {
+  ...STAGING_OAUTH, SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
+  TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
+  TABA_DEPLOYMENT_ENV: 'production', MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd', MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
+  MERCADOPAGO_CLIENT_ID: '7677852968049976', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
+};
 
-async function run(available: boolean | 'error', { mode = 'oauth', integratorTestUser = true, integratorStatus = 200 }: Options = {}) {
-  for (const [name, value] of Object.entries(STAGING_OAUTH)) Deno.env.set(name, value);
+type Options = { mode?: 'oauth' | 'direct' | 'padded'; integratorTestUser?: boolean; integratorStatus?: number;
+  production?: boolean; finalKey?: boolean };
+
+async function run(available: boolean | 'error', { mode = 'oauth', integratorTestUser = true, integratorStatus = 200,
+  production = false, finalKey = false }: Options = {}) {
+  for (const name of ['MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION']) Deno.env.delete(name);
+  for (const [name, value] of Object.entries(production ? PRODUCTION_OAUTH : STAGING_OAUTH)) Deno.env.set(name, value);
+  if (finalKey) Deno.env.set('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE');
   if (mode === 'direct') Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');
   if (mode === 'padded') Deno.env.set('MERCADOPAGO_CREDENTIAL_MODE', ' oauth ');
   resetIntegratorIdentityCache();
@@ -49,7 +61,7 @@ async function run(available: boolean | 'error', { mode = 'oauth', integratorTes
     if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
     if (url.pathname.endsWith('/get_mercadopago_checkout_availability')) {
       if (available === 'error') return Response.json({ message: 'boom' }, { status: 500 });
-      return Response.json({ available, environment: 'test', checkout_mode: 'checkout_pro' });
+      return Response.json({ available, environment: production ? 'production' : 'test', checkout_mode: 'checkout_pro' });
     }
     if (url.pathname.endsWith('/create_checkout_session')) {
       return Response.json({ checkout_session_id: '97000000-0000-4000-8000-000000000003' });
@@ -118,4 +130,19 @@ Deno.test('the integrator guard also runs when the credential mode carries stray
   assertEquals(result.status, 409);
   assertEquals(result.body.code, 'PAYMENTS_NOT_ENABLED');
   assertEquals(result.calls.includes('create_checkout_session'), false);
+});
+
+// A business switched on in production before the final key is loaded would reserve stock for a checkout whose
+// preference can never be created (requireRealPaymentSmokeAuthorization).
+Deno.test('production without the final key refuses the checkout before reserving stock', async () => {
+  const result = await run(true, { production: true, integratorTestUser: false });
+  assertEquals(result.status, 409);
+  assertEquals(result.body.code, 'PAYMENTS_NOT_ENABLED');
+  assertEquals(result.calls.includes('create_checkout_session'), false);
+});
+
+Deno.test('production with the final key keeps the normal checkout path', async () => {
+  const result = await run(true, { production: true, integratorTestUser: false, finalKey: true });
+  assertEquals(result.status, 200);
+  assertEquals(result.calls.filter((call) => call === 'create_checkout_session').length, 1);
 });

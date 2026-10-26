@@ -1,0 +1,226 @@
+{
+  "at": "2026-10-25T19:16:24.892Z",
+  "target": {
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "environment": "test",
+    "integratorApplication": "4861627125869370",
+    "seller": "3594962708 (usuario de prueba)"
+  },
+  "commit": "808e7446",
+  "deploy": [
+    {
+      "name": "mercadopago-create-checkout-session",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-refund",
+      "status": "ACTIVE",
+      "version": 15,
+      "verifyJwt": true
+    },
+    {
+      "name": "mercadopago-webhook",
+      "status": "ACTIVE",
+      "version": 18,
+      "verifyJwt": false
+    }
+  ],
+  "apro": {
+    "provider_screen": [
+      {
+        "path": "/checkout/v1/payment/redirect/3e395b86-c371-4440-8f88-008f30178956/congrats/approved/"
+      }
+    ],
+    "paySubmitted": true,
+    "result": "PROVIDER_RESULT_SCREEN",
+    "session": {
+      "id": "74c8570e-23b6-4574-822e-0a57194149cd",
+      "status": "completed",
+      "currency": "ARS",
+      "subtotal": 100,
+      "discount_total": 0,
+      "delivery_fee": 0,
+      "total": 100,
+      "expires_at": "2026-10-25T19:27:51.910996+00:00",
+      "completed_order_id": "f8edd175-781d-4f15-81b5-833a534f9219",
+      "manual_review_reason": null,
+      "created_at": "2026-10-25T19:12:51.914414+00:00",
+      "updated_at": "2026-10-25T19:13:53.755041+00:00"
+    },
+    "intent": {
+      "id": "23ebf8cc-441b-4b9c-8e9b-164ed100c6ab",
+      "internal_status": "completed",
+      "environment": "test",
+      "expected_amount": 100,
+      "paid_amount": 100,
+      "currency": "ARS",
+      "external_reference": "taba2:checkout:74c8570e-23b6-4574-822e-0a57194149cd",
+      "provider_payment_id": "185029125913",
+      "provider_status": "approved",
+      "provider_status_detail": "accredited",
+      "live_mode": true,
+      "approved_at": "2026-10-25T19:13:47+00:00",
+      "rejected_at": null,
+      "refunded_amount": 0,
+      "order_id": "f8edd175-781d-4f15-81b5-833a534f9219",
+      "security_review_reason": null
+    },
+    "payment": {
+      "provider_payment_id": "185029125913",
+      "environment": "test",
+      "seller_id": "3594962708",
+      "status": "approved",
+      "status_detail": "accredited",
+      "amount": 100,
+      "currency": "ARS",
+      "refunded_amount": 0,
+      "is_financing": true,
+      "validation_error": null,
+      "watch_state": "verify",
+      "next_check_at": "2026-10-25T19:28:52.992769+00:00",
+      "first_seen_at": "2026-10-25T19:13:52.992769+00:00",
+      "last_seen_at": "2026-10-25T19:13:52.992769+00:00"
+    },
+    "receipts": [
+      {
+        "event_type": "payment",
+        "resource_id": "185029125913",
+        "signature_valid": true,
+        "processing_status": "completed",
+        "attempt_count": 1,
+        "received_at": "2026-10-25T19:13:50.718044+00:00",
+        "processed_at": "2026-10-25T19:13:53.813376+00:00",
+        "last_error": null
+      }
+    ],
+    "order": {
+      "id": "f8edd175-781d-4f15-81b5-833a534f9219",
+      "public_code": "LT-0184",
+      "status": "received",
+      "payment_method": "mercadopago",
+      "manual_payment_status": null,
+      "total": 100,
+      "currency_code": "ARS",
+      "created_at": "2026-10-25T19:13:53.375494+00:00",
+      "cancelled_at": null
+    },
+    "reservations": [
+      {
+        "product_id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+        "quantity": 1,
+        "status": "converted",
+        "expires_at": "2026-10-25T19:27:51.910996+00:00",
+        "released_at": null,
+        "release_reason": null,
+        "converted_at": "2026-10-25T19:13:53.694916+00:00"
+      }
+    ],
+    "stock_after": [
+      {
+        "sku": "QA-REC-001",
+        "stock": 19
+      }
+    ],
+    "stock_before": {
+      "sku": "QA-REC-001",
+      "stock": 20
+    }
+  },
+  "refund_8_20_via_la_taba": {
+    "first": {
+      "status": 409,
+      "body": {
+        "ok": false,
+        "code": "REFUND_REJECTED",
+        "message": "Mercado Pago no pudo aceptar el reembolso solicitado."
+      }
+    },
+    "repeat": {
+      "status": 409,
+      "body": {
+        "ok": false,
+        "status": "rejected",
+        "message": "Mercado Pago rechazó el reembolso solicitado."
+      }
+    },
+    "refund_rows_in_db": 1
+  },
+  "refund_8_20_provider_direct": {
+    "at": "2026-10-25T19:15:30.677Z",
+    "payment": {
+      "id": "185029125913",
+      "status": "approved",
+      "status_detail": "accredited",
+      "amount": 100,
+      "refunded": 0,
+      "live_mode": true,
+      "marketplace": null,
+      "application_id": null
+    },
+    "refund_8_20": {
+      "http": 401,
+      "requestId": "c98fd38d-0f72-48e5-806b-4e051c64b97c",
+      "answer": {
+        "id": null,
+        "status": 401,
+        "message": "Unauthorized use of live credentials",
+        "error": "unauthorized",
+        "cause": [
+          {
+            "code": 7,
+            "description": "Unauthorized use of live credentials",
+            "data": "25-10-2026T19:15:31UTC;c98fd38d-0f72-48e5-806b-4e051c64b97c"
+          }
+        ],
+        "amount": null,
+        "payment_id": null
+      }
+    },
+    "read_refunds": {
+      "http": 200,
+      "requestId": "ebbd8df8-9990-4cbc-bb24-5885424fb6fe",
+      "count": 0,
+      "answer": null
+    }
+  },
+  "forged_webhooks": [
+    {
+      "case": "unsigned",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    },
+    {
+      "case": "garbage signature",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    },
+    {
+      "case": "well-formed signature with a wrong key",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    },
+    {
+      "case": "stale timestamp",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    },
+    {
+      "case": "query/body id mismatch",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    },
+    {
+      "case": "missing request id",
+      "httpStatus": 401,
+      "code": "INVALID_WEBHOOK",
+      "refused": true
+    }
+  ]
+}

@@ -14,6 +14,7 @@
     "test:payments": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs",
     "test:webhook": "node scripts/run-mercadopago-webhook-tests.mjs",
     "test:payments:local-db": "node scripts/run-mercadopago-local-db.mjs",
+    "test:payments:e2e": "node scripts/payments-e2e/run.mjs --report artifacts/ci/payments-e2e.json",
     "test:db:isolated": "node scripts/run-mercadopago-local-db.mjs",
     "mp:config": "node scripts/mercadopago/verificar-configuracion.mjs",
     "mp:config:qa": "node scripts/mercadopago/verificar-configuracion.mjs --ref=qa",

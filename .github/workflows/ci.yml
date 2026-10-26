@@ -72,7 +72,9 @@ jobs:
     # The complete browser gate includes five-minute discovery stress sessions
     # in both engines. The 60-minute job ceiling cut the run at 684/754;
     # allow the same full suite to finish on slower hosted runners.
-    timeout-minutes: 90
+    # 90 minutes became the next ceiling: PR #154 (run 40164828928) finished
+    # this job in 89 min 8 s with every test green.
+    timeout-minutes: 120
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -274,6 +276,20 @@ jobs:
         with:
           name: restore-drill-${{ github.sha }}
           path: artifacts/ci/restore-drill.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Purchases end to end on the real Edge functions, PostgREST and every migration (test binding and a production
+      # rehearsal on a fictitious ref). Mercado Pago is the contract emulator: no network, no credentials, no money.
+      - name: Payments bench end to end (checkout, webhooks, refunds, marketplace routing)
+        run: npm run test:payments:e2e
+
+      - name: Upload payments bench evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: payments-e2e-${{ github.sha }}
+          path: artifacts/ci/payments-e2e.json
           if-no-files-found: warn
           retention-days: 30
 

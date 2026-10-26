@@ -95,18 +95,23 @@ export function readMercadoPagoCheckoutRecord(storage, businessId) {
     return {
       checkoutSessionId,
       updatedAt: String(parsed.updatedAt || ''),
+      combos: sanitizeRecordCombos(parsed.combos),
     };
   } catch (_) {
     return null;
   }
 }
 
-export function writeMercadoPagoCheckoutRecord(storage, businessId, checkoutSessionId) {
+// `combos` son los combos que viajaron en ESTE checkout. El estado que devuelve
+// el servidor trae las líneas ya expandidas a productos, así que sin esta lista
+// el cliente no puede saber qué combo pagó y lo dejaba en el carrito.
+export function writeMercadoPagoCheckoutRecord(storage, businessId, checkoutSessionId, { combos = [] } = {}) {
   if (!isUuid(checkoutSessionId)) return false;
   try {
     storage?.setItem?.(checkoutStorageKey(businessId), JSON.stringify({
       checkoutSessionId,
       updatedAt: new Date().toISOString(),
+      combos: sanitizeRecordCombos(combos),
     }));
     return true;
   } catch (_) {
@@ -134,13 +139,31 @@ export function paymentStatusPresentation(checkout = {}) {
   if (sessionStatus === 'payment_approved' || sessionStatus === 'finalizing_order' || paymentStatus === 'approved_order_pending') {
     return { state: 'finalizing', label: 'Confirmando tu pedido', terminal: false, clearCart: false };
   }
+  // Un rechazo NO cierra la sesión: la reserva sigue activa para reintentar con
+  // otro medio, así que el servidor informa `payment_pending` junto a un pago
+  // `rejected`. Si la sesión abierta ganara, la persona con la tarjeta rechazada
+  // leería «Pago pendiente» y «seguiremos escuchando la confirmación».
+  if (['rejected', 'cancelled', 'expired', 'failed'].includes(paymentStatus)) {
+    return { state: 'rejected', label: 'Pago rechazado', terminal: true, clearCart: false };
+  }
   if (['pending', 'in_process'].includes(paymentStatus) || sessionStatus === 'payment_pending') {
     return { state: 'pending', label: 'Pago pendiente', terminal: false, clearCart: false };
   }
-  if (['rejected', 'cancelled', 'expired', 'failed'].includes(paymentStatus) || ['cancelled', 'expired'].includes(sessionStatus)) {
+  if (['cancelled', 'expired'].includes(sessionStatus)) {
     return { state: 'rejected', label: 'Pago rechazado', terminal: true, clearCart: false };
   }
   return { state: 'verifying', label: 'Verificando el pago', terminal: false, clearCart: false };
+}
+
+function sanitizeRecordCombos(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => ({
+      comboId: String(entry?.comboId || entry?.combo_id || '').trim(),
+      quantity: Math.max(0, Math.floor(Number(entry?.quantity) || 0)),
+    }))
+    .filter((entry) => /^[a-z0-9][a-z0-9-]{2,63}$/.test(entry.comboId) && entry.quantity > 0)
+    .slice(0, 50);
 }
 
 function compactObject(value) {

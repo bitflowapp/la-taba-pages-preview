@@ -4,10 +4,12 @@ import {
   enforceRateLimit,
   handleOptions,
   jsonResponse,
+  providerEnvironment,
   publicErrorResponse,
   readJsonObject,
   requireAuthenticatedUser,
   requirePost,
+  requireRealPaymentSmokeAuthorization,
 } from '../_shared/payment-runtime.ts';
 import { assertPayableIntegrator } from '../_shared/seller-oauth.ts';
 
@@ -41,6 +43,17 @@ Deno.serve(async (request) => {
       // Hosted deployments charge through the integrator application: one of the other environment makes every
       // payment fail at the provider (2034 Invalid users involved), so the stock is not taken either.
       if (Deno.env.get('MERCADOPAGO_CREDENTIAL_MODE')?.trim() === 'oauth') await assertPayableIntegrator();
+      // Production without the final key never gets a preference (requireRealPaymentSmokeAuthorization): a business
+      // switched on before the key is loaded would reserve stock for a checkout that cannot be paid.
+      try {
+        requireRealPaymentSmokeAuthorization(providerEnvironment());
+      } catch (_) {
+        return jsonResponse(request, {
+          ok: false,
+          code: 'PAYMENTS_NOT_ENABLED',
+          message: 'Mercado Pago no está disponible para este comercio en este momento.',
+        }, 409);
+      }
     }
 
     // The database function whitelists this payload again and calculates all

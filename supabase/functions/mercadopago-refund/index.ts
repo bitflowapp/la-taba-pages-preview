@@ -14,6 +14,7 @@ import {
 } from '../_shared/payment-runtime.ts';
 import { isFinalProviderRejection, logProviderRejection, mercadoPagoRequest } from '../_shared/mercadopago.ts';
 import { correlateProviderRefund, providerResourceId } from '../_shared/refund-correlation.ts';
+import { normalizedRefundAmount } from '../_shared/refund-amount.ts';
 
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
 
@@ -35,7 +36,7 @@ Deno.serve(async (request) => {
     const idempotencyKey = requireUuid(body.idempotency_key, 'idempotency_key');
     const amount = body.amount === undefined || body.amount === null || body.amount === ''
       ? null
-      : normalizedAmount(body.amount);
+      : normalizedRefundAmount(body.amount);
     const reason = String(body.reason || '').trim().slice(0, 300);
     const { user, client } = await requireAuthenticatedUser(request);
     const service = createServiceClient();
@@ -162,14 +163,6 @@ function refundResponse(request: Request, status: string): Response {
       ? 'El reembolso fue registrado. Verificá su acreditación en Mercado Pago.'
       : 'Mercado Pago rechazó el reembolso solicitado.',
   }, status === 'approved' ? 200 : 409);
-}
-
-function normalizedAmount(value: unknown): number {
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000 || Math.round(amount * 100) !== amount * 100) {
-    throw new Error('Invalid refund amount');
-  }
-  return amount;
 }
 
 async function markAmbiguous(service: ReturnType<typeof createServiceClient>, refundId: string, hash: string, code: string): Promise<void> {

@@ -1,0 +1,73 @@
+{
+ "measured_at": "2026-10-25",
+ "target": "qa (ixewllzzuzpqrkxzmfzx, hosted)",
+ "command": "node scripts/mercadopago/asistente-activacion.mjs red --target qa --json",
+ "ok": true,
+ "rows": [
+  {
+   "id": "sitio_https",
+   "what": "https://recovery-20261020.taba2-staging.pages.dev/ por HTTPS con certificado válido",
+   "expected": "200 (o 401 si está protegido)",
+   "observed": "401 por HTTPS, TLS válido",
+   "ok": true
+  },
+  {
+   "id": "sitio_apunta_al_proyecto",
+   "what": "runtime-config.js del sitio apunta a este proyecto",
+   "expected": "ixewllzzuzpqrkxzmfzx.supabase.co",
+   "observed": "401: sitio protegido con contraseña (registro: basic-auth)",
+   "ok": true,
+   "skipped": true
+  },
+  {
+   "id": "sitio_identidad",
+   "what": "release-identity.json publicado",
+   "expected": "200 con identidad",
+   "observed": "401: sitio protegido con contraseña (registro: basic-auth)",
+   "ok": true,
+   "skipped": true
+  },
+  {
+   "id": "callback_oauth",
+   "what": "Redirect URL de OAuth (la que se registra en la aplicación)",
+   "expected": "303 al Panel https://recovery-20261020.taba2-staging.pages.dev/",
+   "observed": "303 https://recovery-20261020.taba2-staging.pages.dev/",
+   "ok": true
+  },
+  {
+   "id": "webhook_metodo",
+   "what": "Webhook rechaza GET",
+   "expected": "405",
+   "observed": "405",
+   "ok": true
+  },
+  {
+   "id": "webhook_configurado",
+   "what": "Webhook publicado y con su clave cargada (IPN viejo reconocido sin guardar nada)",
+   "expected": "200 ignored: legacy_ipn",
+   "observed": "200 legacy_ipn",
+   "ok": true
+  },
+  {
+   "id": "cors_tienda",
+   "what": "Preflight desde la tienda",
+   "expected": "204 con access-control-allow-origin https://recovery-20261020.taba2-staging.pages.dev",
+   "observed": "204 https://recovery-20261020.taba2-staging.pages.dev",
+   "ok": true
+  },
+  {
+   "id": "cors_ajeno",
+   "what": "Preflight desde un origen ajeno",
+   "expected": "sin access-control-allow-origin",
+   "observed": "403 (sin ACAO)",
+   "ok": true
+  },
+  {
+   "id": "worker_firma",
+   "what": "Worker de pagos sin firma",
+   "expected": "401",
+   "observed": "401",
+   "ok": true
+  }
+ ]
+}

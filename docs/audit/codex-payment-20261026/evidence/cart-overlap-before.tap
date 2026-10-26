@@ -1,0 +1,39 @@
+✔ return preserves a new unpaid combo when purchased loose products exactly match (3.8031ms)
+✖ overlapping status responses remove paid quantities once (2.488ms)
+✔ return of a paid combo preserves loose components added after checkout (1.4168ms)
+✔ mixed purchase subtracts only original loose quantity, not expanded combo units (1.0135ms)
+✔ return keeps rejected checkout cart despite manipulated approved URL (0.8771ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 70.2854
+
+✖ failing tests:
+
+test at tests\payment-return-cart-audit.test.mjs:54:1
+✖ overlapping status responses remove paid quantities once (2.488ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+      {
+        productId: '22222222-2222-4222-8222-222222222222',
+  +     quantity: 1
+  -     quantity: 2
+      }
+    ]
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/payment-return-cart-audit.test.mjs:57:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { productId: '22222222-2222-4222-8222-222222222222', quantity: 1 } ],
+    expected: [ { productId: '22222222-2222-4222-8222-222222222222', quantity: 2 } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

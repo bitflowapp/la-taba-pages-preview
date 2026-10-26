@@ -19,6 +19,7 @@ assert.ok(['mercadopago', 'cash'].includes(method));
 const width = Number(arg('--width', '390'));
 const productName = arg('--product', 'QA Producto de prueba 1');
 const quantity = Math.max(1, Number(arg('--qty', '1')));
+const extraProduct = arg('--extra-product', '');
 const gate = leerSecreto('RECOVERY PREVIEW ACCESS');
 
 const browser = await chromium.launch({ channel: 'chromium', headless: true });
@@ -26,6 +27,9 @@ const context = await browser.newContext({
   viewport: { width, height: 844 }, locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires', isMobile: width < 700,
   ...(gate?.usuario && gate?.secreto ? { httpCredentials: { username: gate.usuario, password: gate.secreto, origin } } : {}),
 });
+await context.route(/^https:\/\/[^/]+\.supabase\.co\//, route =>
+  new URL(route.request().url()).origin === 'https://ixewllzzuzpqrkxzmfzx.supabase.co'
+    ? route.continue() : route.abort('blockedbyclient'));
 // The gate answers a navigation without access with its own login form: open the session first, in another tab.
 await passPreviewGate(context, origin, gate);
 const page = await context.newPage();
@@ -48,13 +52,21 @@ const step = (name, ok, detail = '') => { steps.push({ name, ok: Boolean(ok), de
 const started = Date.now();
 try {
   await page.goto(`${origin}/#catalog`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  const card = page.locator('[data-view="catalog"] article, [data-view="catalog"] [data-product-card]').filter({ hasText: productName }).first();
+  const boundToQa = await page.evaluate(() => globalThis.__LA_TABA_RUNTIME_CONFIG__?.repository?.supabaseUrl
+    === 'https://ixewllzzuzpqrkxzmfzx.supabase.co');
+  assert.ok(boundToQa, 'storefront must target the exact authorized QA project');
+  const card = page.locator('[data-card-product]:visible').filter({ hasText: productName }).first();
   await card.waitFor({ state: 'visible', timeout: 45000 });
   step('catalog shows the QA product', true, `${Date.now() - started} ms`);
   for (let i = 0; i < quantity; i += 1) {
     const add = card.locator('[data-add-product]:not([disabled]), [data-cart-increase]:not([disabled])').first();
     await add.click({ timeout: 15000 });
     await page.waitForTimeout(300);
+  }
+  if (extraProduct) {
+    const extra = page.locator('[data-card-product]:visible')
+      .filter({ hasText: extraProduct }).first();
+    await extra.locator('[data-add-product]:not([disabled]), [data-cart-increase]:not([disabled])').first().click();
   }
   await page.locator('[data-open-cart]:visible').first().click();
   await page.locator('[data-checkout-form]').waitFor({ state: 'visible', timeout: 20000 });

@@ -21,7 +21,8 @@ export function psqlRaw(db, sql, { tuples = false, check = true, timeout = 18000
   if (!/^taba_local_[a-z0-9_]+$/.test(db) && db !== 'postgres') throw new Error('Only disposable taba_local_* databases may be used: ' + db);
   const args = ['-h', HOST, '-p', String(PORT), '-U', 'postgres', '-d', db, '-X', '-q', '-v', 'ON_ERROR_STOP=1'];
   if (tuples) args.push('-At');
-  const r = spawnSync(path.join(BIN, 'psql' + ext), args, { input: sql, encoding: 'utf8', windowsHide: true, timeout, maxBuffer: 64 * 1024 * 1024 });
+  const useDriver = process.env.TABA_LOCAL_PG_DRIVER === 'pg';
+  const r = spawnSync(useDriver ? process.execPath : path.join(BIN, 'psql' + ext), useDriver ? [path.join(ROOT, 'scripts/local-db/pg-client.mjs'), ...args] : args, { input: sql, encoding: 'utf8', windowsHide: true, timeout, maxBuffer: 64 * 1024 * 1024 });
   if (check && r.status !== 0) {
     const err = new Error(String(r.stderr || r.error).slice(0, 4000));
     err.stderr = r.stderr; err.stdout = r.stdout;
@@ -69,7 +70,9 @@ export function psqlAsync(db, sql, { timeout = 240000 } = {}) {
   requireBin();
   if (!/^taba_local_[a-z0-9_]+$/.test(db)) return Promise.reject(new Error('Only disposable taba_local_* databases may be used: ' + db));
   return new Promise((resolve) => {
-    const child = spawn(path.join(BIN, 'psql' + ext), ['-h', HOST, '-p', String(PORT), '-U', 'postgres', '-d', db, '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1'], { windowsHide: true });
+    const args = ['-h', HOST, '-p', String(PORT), '-U', 'postgres', '-d', db, '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1'];
+    const useDriver = process.env.TABA_LOCAL_PG_DRIVER === 'pg';
+    const child = spawn(useDriver ? process.execPath : path.join(BIN, 'psql' + ext), useDriver ? [path.join(ROOT, 'scripts/local-db/pg-client.mjs'), ...args] : args, { windowsHide: true });
     let stdout = ''; let stderr = '';
     const timer = setTimeout(() => child.kill(), timeout);
     child.stdout.on('data', d => { stdout += d; });

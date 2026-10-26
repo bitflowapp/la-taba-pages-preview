@@ -35,7 +35,7 @@ const COMERCIO = {
   is_active: true, status: 'open',
 };
 
-async function instalarBackend(page) {
+async function instalarBackend(page, { withCombo = false } = {}) {
   const backend = { preguntas: [] };
   await page.route(`${SUPABASE_URL}/**`, async (route) => {
     const request = route.request();
@@ -65,7 +65,10 @@ async function instalarBackend(page) {
           : { eligible: false, reason: 'out_of_coverage', message: 'Por el momento no realizamos entregas en esta zona.' } });
     }
     if (rpc === 'get_public_business_contact') return json([{ whatsapp_number: '', whatsapp_verified: false }]);
-    if (url.pathname.includes('/rest/v1/products')) return json([PRODUCTO]);
+    if (url.pathname.includes('/rest/v1/products')) return json(withCombo ? [PRODUCTO, {
+      ...PRODUCTO, id:'30000000-0000-4000-8000-000000000124',
+      sku:'heineken-original-lata-473ml',external_id:'heineken-original-lata-473ml',name:'QA Componente combo',
+    }] : [PRODUCTO]);
     if (url.pathname.includes('/rest/v1/businesses')) return json(COMERCIO);
     if (url.pathname.includes('/auth/v1/')) {
       // La sesión anónima del cliente nace cuando guarda algo (signInAnonymously).
@@ -111,4 +114,22 @@ test('cliente nuevo: Mercado Pago aparece al guardar «Tus datos», sin salir de
   await expect(medio).toHaveAttribute('data-mercadopago-available', 'true');
   await expect(medio.locator('option[value="mercadopago"]')).toHaveCount(1);
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
+});
+
+test('un combo habilitado sigue visible al volver del carrito a Inicio y al repintar', async ({page}) => {
+  test.setTimeout(120000);
+  await instalarBackend(page,{withCombo:true});
+  await page.goto('/#catalog');
+  await page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first().click();
+  await page.locator('[data-open-cart]:visible').first().click();
+  await page.getByLabel('Retiro en local').check();
+  const form=page.locator('[data-profile-identity-form]');
+  await form.locator('[name="checkoutIdentityName"]').fill('QA Auditor');
+  await form.locator('[name="checkoutIdentityPhone"]').fill('299 555 0123');
+  await form.locator('[data-profile-checkout-action="save-identity"]').click();
+  await expect(page.locator('[name="paymentMethod"]')).toHaveAttribute('data-mercadopago-available','true');
+  await page.getByRole('button',{name:'Inicio',exact:true}).click();
+  await expect(page.locator('[data-combo-card="combo-heineken-x6"]')).toBeVisible();
+  await page.locator('[data-favorite-toggle]:visible').first().click();
+  await expect(page.locator('[data-combo-card="combo-heineken-x6"]')).toBeVisible();
 });

@@ -37,4 +37,12 @@ for(const found of search.results || []) {
   assert.equal(String(p.payer.id),'3594962710');
   payments.push({id:String(p.id),status:p.status,status_detail:p.status_detail,amount:p.transaction_amount,currency:p.currency_id,collector_id:String(p.collector_id),payer_id:String(p.payer.id),live_mode:p.live_mode,external_reference:p.external_reference,preference_id:p.metadata?.preference_id || p.preference_id || null,refunded_amount:p.transaction_amount_refunded,refunds:(p.refunds||[]).map(r=>({id:r.id,amount:r.amount,status:r.status})),date_created:p.date_created,date_approved:p.date_approved,payment_method_id:p.payment_method_id});
 }
-console.log(JSON.stringify({at:new Date().toISOString(),project:ref,session,seller_test_user:true,buyer_match_in_payments:payments.length?payments.every(p=>p.payer_id==='3594962710'):null,preference,provider_count:search.paging?.total,payments},null,2));
+let exactTimestamp = null;
+if (process.argv.includes('--verify-ledger-date-boundary') && search.results?.length) {
+  const chosen = search.results[0];
+  const instant = new Date(Date.parse(chosen.date_last_updated)).toISOString();
+  const group = await get(`/v1/payments/search?${new URLSearchParams({range:'date_last_updated',sort:'date_last_updated',criteria:'asc',begin_date:instant,end_date:instant,limit:'50'})}`);
+  exactTimestamp = { at:instant,total:group.paging?.total,known_payment_in_exact_window:(group.results || []).some(p=>String(p.id)===String(chosen.id)) };
+  assert.equal(exactTimestamp.known_payment_in_exact_window,true,'provider must support the exact timestamp window');
+}
+console.log(JSON.stringify({at:new Date().toISOString(),project:ref,session,seller_test_user:true,buyer_match_in_payments:payments.length?payments.every(p=>p.payer_id==='3594962710'):null,preference,provider_count:search.paging?.total,payments,exactTimestamp},null,2));

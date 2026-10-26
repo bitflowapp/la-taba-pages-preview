@@ -1,0 +1,80 @@
+{
+ "initial": {
+  "stockA": 10,
+  "stockB": 10
+ },
+ "seen_by_A": {
+  "orders": 0,
+  "payment_intents": -1,
+  "payment_refunds": -1,
+  "checkout_sessions": -1,
+  "inventory_reservations": -1
+ },
+ "seen_by_B": {
+  "orders": 1,
+  "payment_intents": -1,
+  "payment_refunds": -1,
+  "checkout_sessions": -1,
+  "inventory_reservations": -1
+ },
+ "refund_by_A": {
+  "allowed": false,
+  "sqlstate": "42501"
+ },
+ "refund_by_B": {
+  "allowed": true
+ },
+ "after_legit_b": {
+  "intent": "completed",
+  "stockA": 10,
+  "stockB": 7,
+  "ordersA": 0,
+  "ordersB": 1,
+  "order_business_ok": true
+ },
+ "after_mismatch": {
+  "intent": "security_review_required",
+  "stockA": 10,
+  "stockB": 8,
+  "ordersA": 0,
+  "ordersB": 0,
+  "session": "manual_review_required"
+ },
+ "after_reserve_b": {
+  "stockA": 10,
+  "stockB": 8
+ },
+ "mismatch_result": {
+  "ok": false,
+  "reason": "collector_mismatch",
+  "finalize_required": false,
+  "manual_review_required": true
+ },
+ "panel_payments_A": {
+  "rows": 0,
+  "sqlstate": "42501"
+ },
+ "panel_payments_B": {
+  "rows": 2
+ },
+ "mismatch_finalize": {
+  "raised": true,
+  "sqlstate": "55000"
+ },
+ "refund_rows_after_A": {
+  "n": 0
+ }
+}
+✔ R-MKT: un pago cobrado por el vendedor de A no acredita el checkout de B (1703.9559ms)
+✔ R-MKT: el pago legítimo de B crea un pedido en B y mueve sólo el stock de B (0.1712ms)
+✔ R-MKT: devoluciones — el dueño de A no puede devolver el pago de B; el de B sí (0.2145ms)
+✔ R-MKT: con RLS, el dueño de A no ve nada de B y el dueño de B sí ve lo suyo (0.2118ms)
+✔ R-MKT: el listado de pagos del Panel de B no le sirve nada al dueño de A (0.1241ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2577.2386

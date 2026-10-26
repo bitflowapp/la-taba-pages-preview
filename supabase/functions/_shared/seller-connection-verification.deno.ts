@@ -12,6 +12,7 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
     MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
     TABA_DEPLOYMENT_ENV: 'production', MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd',
     MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/', MERCADOPAGO_CLIENT_ID: '7677852968049976',
+    MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
     TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
     MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(), MERCADOPAGO_OAUTH_WEBHOOK_SECRET: randomSecret(),
     PAYMENT_WORKER_SECRET: 'fixture-worker-secret', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
@@ -44,6 +45,12 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
   };
   return { mutations, cleanup: () => { globalThis.fetch = original; } };
 }
+
+for (const operation of ['refunds', 'cancel']) Deno.test(`generic write cannot certify explicit read-only ${operation}`, async () => {
+  const f = await fixture({scopes:`read write offline_access urn:mp:online:payments:${operation}/read-only`});
+  try { await assertRejects(() => verifySellerConnection(business)); assertEquals(f.mutations.length, 0); }
+  finally { f.cleanup(); }
+});
 
 Deno.test('real verification checks OAuth identity, scopes, current binding, execution and backend without a purchase', async () => {
   const f = await fixture();

@@ -96,6 +96,7 @@ export function readMercadoPagoCheckoutRecord(storage, businessId) {
       checkoutSessionId,
       updatedAt: String(parsed.updatedAt || ''),
       combos: sanitizeRecordCombos(parsed.combos),
+      items: Array.isArray(parsed.items) ? sanitizeRecordItems(parsed.items) : null,
     };
   } catch (_) {
     return null;
@@ -105,13 +106,14 @@ export function readMercadoPagoCheckoutRecord(storage, businessId) {
 // `combos` son los combos que viajaron en ESTE checkout. El estado que devuelve
 // el servidor trae las líneas ya expandidas a productos, así que sin esta lista
 // el cliente no puede saber qué combo pagó y lo dejaba en el carrito.
-export function writeMercadoPagoCheckoutRecord(storage, businessId, checkoutSessionId, { combos = [] } = {}) {
+export function writeMercadoPagoCheckoutRecord(storage, businessId, checkoutSessionId, { combos = [], items = null } = {}) {
   if (!isUuid(checkoutSessionId)) return false;
   try {
     storage?.setItem?.(checkoutStorageKey(businessId), JSON.stringify({
       checkoutSessionId,
       updatedAt: new Date().toISOString(),
       combos: sanitizeRecordCombos(combos),
+      ...(Array.isArray(items) ? { items: sanitizeRecordItems(items) } : {}),
     }));
     return true;
   } catch (_) {
@@ -164,6 +166,14 @@ function sanitizeRecordCombos(value) {
     }))
     .filter((entry) => /^[a-z0-9][a-z0-9-]{2,63}$/.test(entry.comboId) && entry.quantity > 0)
     .slice(0, 50);
+}
+
+function sanitizeRecordItems(value) {
+  return value.map(entry => ({
+    productId: String(entry?.productId || entry?.product_id || '').trim(),
+    quantity: Number(entry?.quantity),
+  })).filter(entry => isUuid(entry.productId) && Number.isSafeInteger(entry.quantity)
+    && entry.quantity > 0 && entry.quantity <= 1000).slice(0, 100);
 }
 
 function compactObject(value) {

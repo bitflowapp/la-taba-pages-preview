@@ -90,6 +90,13 @@ async function run(route: string, mutation: string, initiallyInvalid = '', provi
       assertEquals(body, { p_business_id: bid, p_environment: 'production', p_checkout_session_id: sid, p_customer_id: uid, p_payment_attempt_id: iid });
       return Response.json(await snapshot());
     }
+    if (url.pathname.endsWith('/claim_mercadopago_preference_dispatch')) {
+      assertEquals(body.p_payment_attempt_id, iid);
+      assertEquals(body.p_customer_id, uid);
+      assertEquals(body.p_expected_authority, (await snapshot()).authority_version);
+      attempt.status = 'request_sent'; attempt.authority_revision++;
+      return Response.json(await snapshot());
+    }
     // Former transport shape is intentional: the audit races run against the
     // old handler first. Every response captures its own immutable read view.
     if (url.pathname.endsWith('/businesses')) return Response.json(business);

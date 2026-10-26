@@ -1,0 +1,86 @@
+✖ return preserves a new unpaid combo when purchased loose products exactly match (5.6773ms)
+✖ return of a paid combo preserves loose components added after checkout (2.9585ms)
+✖ mixed purchase subtracts only original loose quantity, not expanded combo units (1.25ms)
+✔ return keeps rejected checkout cart despite manipulated approved URL (1.2139ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 1
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 878.8136
+
+✖ failing tests:
+
+test at tests\payment-return-cart-audit.test.mjs:44:1
+✖ return preserves a new unpaid combo when purchased loose products exactly match (5.6773ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + []
+  - [
+  -   {
+  -     comboId: 'new-unpaid',
+  -     quantity: 1
+  -   }
+  - ]
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/payment-return-cart-audit.test.mjs:48:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { comboId: 'new-unpaid', quantity: 1 } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\payment-return-cart-audit.test.mjs:50:1
+✖ return of a paid combo preserves loose components added after checkout (2.9585ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + []
+  - [
+  -   {
+  -     productId: '22222222-2222-4222-8222-222222222222',
+  -     quantity: 2
+  -   }
+  - ]
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/payment-return-cart-audit.test.mjs:53:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { productId: '22222222-2222-4222-8222-222222222222', quantity: 2 } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\payment-return-cart-audit.test.mjs:56:1
+✖ mixed purchase subtracts only original loose quantity, not expanded combo units (1.25ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + []
+  - [
+  -   {
+  -     productId: '22222222-2222-4222-8222-222222222222',
+  -     quantity: 2
+  -   }
+  - ]
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/payment-return-cart-audit.test.mjs:59:10)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { productId: '22222222-2222-4222-8222-222222222222', quantity: 2 } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -1,8 +1,6 @@
 import {
-  clearCart,
   decrementCartItem,
   decrementComboItem,
-  getCartItems,
 } from '../cart.js';
 import { paymentStatusPresentation } from './mercadopago-checkout.js';
 import { getOrderRepository } from '../repositories/repository_factory.js';
@@ -14,8 +12,10 @@ const REJECTED_DETAIL = 'No se confirmó el pago. Tu carrito sigue como lo dejas
 
 let attempts = 0;
 let timer = null;
+let completedCheckoutId = null;
 
 async function start() {
+  if (completedCheckoutId) return;
   const repository = getOrderRepository();
   if (typeof repository?.getMercadoPagoCheckoutRecovery !== 'function') {
     show('No podemos verificar este pago desde acá. Volvé a La Taba para revisar tu carrito.', 'manual_review');
@@ -26,10 +26,11 @@ async function start() {
     show('No encontramos una sesión de pago en este navegador. Volvé a La Taba para revisar tu carrito.', 'manual_review');
     return;
   }
-  await verify(repository, recovery.checkoutSessionId, recovery.combos);
+  await verify(repository, recovery.checkoutSessionId, recovery.combos, recovery.items);
 }
 
-async function verify(repository, checkoutSessionId, combos = []) {
+async function verify(repository, checkoutSessionId, combos = [], originalItems = null) {
+  if (completedCheckoutId === checkoutSessionId) return;
   clearTimer();
   show('Verificando el pago', 'verifying');
   if (navigator.onLine === false) {
@@ -37,8 +38,9 @@ async function verify(repository, checkoutSessionId, combos = []) {
     return;
   }
   const result = await repository.getMercadoPagoCheckoutStatus(checkoutSessionId);
+  if (completedCheckoutId === checkoutSessionId) return;
   if (!result?.ok || !result.checkout) {
-    schedule(repository, checkoutSessionId, combos);
+    schedule(repository, checkoutSessionId, combos, originalItems);
     return;
   }
   const presentation = paymentStatusPresentation(result.checkout);
@@ -48,40 +50,38 @@ async function verify(repository, checkoutSessionId, combos = []) {
     result.checkout,
   );
   if (presentation.clearCart) {
-    removeCompletedCheckoutItems(result.checkout.items, combos);
+    completedCheckoutId = checkoutSessionId;
+    removeCompletedCheckoutItems(result.checkout.items, combos, originalItems);
     repository.clearMercadoPagoCheckoutRecovery?.();
     return;
   }
-  if (!presentation.terminal) schedule(repository, checkoutSessionId, combos);
+  if (!presentation.terminal) schedule(repository, checkoutSessionId, combos, originalItems);
 }
 
-function schedule(repository, checkoutSessionId, combos) {
+function schedule(repository, checkoutSessionId, combos, originalItems) {
   if (attempts >= POLL_MAX_ATTEMPTS) {
     show('Seguimos verificando tu pago. Podés volver más tarde: no vamos a crear otro pedido.', 'pending');
     return;
   }
   attempts += 1;
-  timer = window.setTimeout(() => verify(repository, checkoutSessionId, combos), POLL_INTERVAL_MS);
+  timer = window.setTimeout(() => verify(repository, checkoutSessionId, combos, originalItems), POLL_INTERVAL_MS);
 }
 
-function removeCompletedCheckoutItems(items, combos = []) {
+function removeCompletedCheckoutItems(items, combos = [], originalItems = null) {
   // El servidor devuelve los combos ya expandidos a productos; los combos que
   // pagó esta sesión salen por identificador, con lo que el checkout guardó.
   for (const { comboId, quantity } of Array.isArray(combos) ? combos : []) {
     for (let index = 0; index < quantity; index += 1) decrementComboItem(comboId);
   }
-  const purchased = new Map((Array.isArray(items) ? items : []).map((item) => [
-    String(item?.product_id || ''),
+  // Expanded server lines combine loose units and combo components. Only the
+  // original loose selection can identify what to remove from the loose cart.
+  // Old combo recoveries lack that selection: preserve loose units rather than
+  // erase an unpaid addition. Old product-only recoveries retain their behavior.
+  const loose = Array.isArray(originalItems) ? originalItems : combos.length ? [] : items;
+  const purchased = new Map((Array.isArray(loose) ? loose : []).map((item) => [
+    String(item?.productId || item?.product_id || ''),
     Math.max(0, Math.floor(Number(item?.quantity) || 0)),
   ]));
-  const cart = getCartItems();
-  const exactMatch = cart.length === purchased.size && cart.every((item) => (
-    purchased.get(String(item.product.id)) === item.quantity
-  ));
-  if (exactMatch) {
-    clearCart();
-    return;
-  }
   // A second tab might have added something after checkout began. Remove only
   // the verified purchased quantities and preserve anything newer.
   for (const [productId, quantity] of purchased) {

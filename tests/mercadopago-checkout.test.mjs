@@ -124,3 +124,19 @@ test('storefront redirects only after server-side checkout session and preferenc
   assert.match(ui, /Mercado Pago.*Tarjeta, débito o dinero en cuenta/);
   assert.doesNotMatch(repository, /MERCADOPAGO_ACCESS_TOKEN/);
 });
+
+test('recovery preserves the original loose selection separately from combo components', () => {
+  const entries = new Map();
+  const storage = {getItem:k=>entries.get(k),setItem:(k,v)=>entries.set(k,v)};
+  writeMercadoPagoCheckoutRecord(storage,businessId,checkoutId,{
+    items:[{productId,quantity:2,price:999},{productId:'invalid',quantity:1},{productId,quantity:Infinity}],
+    combos:[{comboId:'paid-combo',quantity:1}],
+  });
+  const record=readMercadoPagoCheckoutRecord(storage,businessId);
+  assert.deepEqual(record.items,[{productId,quantity:2}]);
+  assert.doesNotMatch(entries.get(checkoutStorageKey(businessId)),/price|999/);
+  writeMercadoPagoCheckoutRecord(storage,businessId,checkoutId,{items:[],combos:[{comboId:'paid-combo',quantity:1}]});
+  assert.deepEqual(readMercadoPagoCheckoutRecord(storage,businessId).items,[]);
+  entries.set(checkoutStorageKey(businessId),JSON.stringify({checkoutSessionId:checkoutId}));
+  assert.equal(readMercadoPagoCheckoutRecord(storage,businessId).items,null);
+});

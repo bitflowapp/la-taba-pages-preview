@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-26T03:53:02.558Z",
+  "ref": "ixewllzzuzpqrkxzmfzx",
+  "backend": "real hosted QA",
+  "frontend": "local reviewed sources via browser interception",
+  "injected_fault": "first status request aborted as internetdisconnected",
+  "statusRequests": 2,
+  "checkoutCreates": 0,
+  "confirmed": true,
+  "unpaidComboPreserved": true,
+  "manipulatedUrlIgnored": true
+}

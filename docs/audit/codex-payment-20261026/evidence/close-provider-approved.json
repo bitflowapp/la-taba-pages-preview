@@ -1,0 +1,71 @@
+{
+  "at": "2026-10-26T03:48:17.159Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "session": "47d67f35-65e5-40ec-8044-7c5aa792fe21",
+  "seller_test_user": true,
+  "buyer_match_in_payments": true,
+  "preference": {
+    "id": "3594962708-31f564ec-dbbb-4b08-8916-99573757d397",
+    "collector_id": 3594962708,
+    "client_id": "4861627125869370",
+    "site_id": "MLA",
+    "init_host": "www.mercadopago.com.ar",
+    "external_reference": "taba2:checkout:47d67f35-65e5-40ec-8044-7c5aa792fe21",
+    "expires": true,
+    "expiration_date_to": "2026-10-26T03:55:04.486+00:00",
+    "binary_mode": false,
+    "auto_return": "approved",
+    "notification_url": "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-webhook",
+    "back_urls": {
+      "failure": "https://recovery-20261020.taba2-staging.pages.dev/pago/error",
+      "pending": "https://recovery-20261020.taba2-staging.pages.dev/pago/pendiente",
+      "success": "https://recovery-20261020.taba2-staging.pages.dev/pago/resultado"
+    },
+    "payment_methods": {
+      "default_card_id": null,
+      "default_payment_method_id": null,
+      "excluded_payment_methods": [
+        {
+          "id": ""
+        }
+      ],
+      "excluded_payment_types": [
+        {
+          "id": "ticket"
+        }
+      ],
+      "installments": null,
+      "default_installments": null
+    },
+    "items": [
+      {
+        "id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+        "quantity": 1,
+        "unit_price": 100,
+        "currency_id": "ARS"
+      }
+    ],
+    "payer_email_present": false
+  },
+  "provider_count": 1,
+  "payments": [
+    {
+      "id": "186126875298",
+      "status": "approved",
+      "status_detail": "accredited",
+      "amount": 100,
+      "currency": "ARS",
+      "collector_id": "3594962708",
+      "payer_id": "3594962710",
+      "live_mode": true,
+      "external_reference": "taba2:checkout:47d67f35-65e5-40ec-8044-7c5aa792fe21",
+      "preference_id": null,
+      "refunded_amount": 0,
+      "refunds": [],
+      "date_created": "2026-10-25T23:46:03.000-04:00",
+      "date_approved": "2026-10-25T23:46:04.000-04:00",
+      "payment_method_id": "master"
+    }
+  ],
+  "exactTimestamp": null
+}

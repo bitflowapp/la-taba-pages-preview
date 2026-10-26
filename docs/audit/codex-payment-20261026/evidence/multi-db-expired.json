@@ -1,0 +1,218 @@
+{
+ "session": {
+  "id": "627c27ae-64eb-4763-a6a9-fee9ed399b5c",
+  "status": "expired",
+  "currency": "ARS",
+  "subtotal": 350,
+  "discount_total": 0,
+  "delivery_fee": 0,
+  "total": 350,
+  "expires_at": "2026-10-26T03:33:19.016381+00:00",
+  "completed_order_id": null,
+  "manual_review_reason": null,
+  "created_at": "2026-10-26T03:18:19.017563+00:00",
+  "updated_at": "2026-10-26T03:37:03.279297+00:00"
+ },
+ "intents": [
+  {
+   "id": "062ae5da-b472-40bc-8edc-509bc1dd9867",
+   "internal_status": "expired",
+   "environment": "test",
+   "expected_amount": 350,
+   "paid_amount": null,
+   "currency": "ARS",
+   "external_reference": "taba2:checkout:627c27ae-64eb-4763-a6a9-fee9ed399b5c",
+   "provider_payment_id": "185083342105",
+   "provider_status": "in_process",
+   "provider_status_detail": "deferred_retry",
+   "live_mode": true,
+   "approved_at": null,
+   "rejected_at": null,
+   "refunded_amount": 0,
+   "order_id": null,
+   "security_review_reason": null
+  }
+ ],
+ "payments": [
+  {
+   "provider_payment_id": "185083342105",
+   "environment": "test",
+   "seller_id": "3594962708",
+   "status": "in_process",
+   "status_detail": "deferred_retry",
+   "amount": 350,
+   "currency": "ARS",
+   "refunded_amount": 0,
+   "is_financing": false,
+   "validation_error": null,
+   "watch_state": "pending",
+   "next_check_at": "2026-10-26T03:38:03.258507+00:00",
+   "first_seen_at": "2026-10-26T03:27:28.662871+00:00",
+   "last_seen_at": "2026-10-26T03:37:03.258507+00:00"
+  }
+ ],
+ "attempts": [
+  {
+   "id": "ff9e1bfd-95dc-467a-bcfa-851254d56847",
+   "attempt_number": 1,
+   "attempt_type": "preference",
+   "status": "created",
+   "preference_id": "3594962708-0fc791e5-6d3b-475e-b459-99933d7be87e",
+   "last_error_code": null,
+   "created_at": "2026-10-26T03:18:19.708296+00:00"
+  }
+ ],
+ "outbox": [
+  {
+   "id": "8e9af94a-41e9-4ba5-96ec-790995290546",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:23:00.222012+00:00",
+   "completed_at": "2026-10-26T03:23:02.830318+00:00"
+  },
+  {
+   "id": "a86f4e32-cba7-4667-ae71-db41c4c5cbc2",
+   "topic": "payment_reconcile",
+   "resource_id": "185083342105",
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:31:00.134591+00:00",
+   "completed_at": "2026-10-26T03:31:02.671914+00:00"
+  },
+  {
+   "id": "caf1eaaa-4d5f-41b3-9f8e-2401ab364701",
+   "topic": "payment_reconcile",
+   "resource_id": "185083342105",
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:35:00.108611+00:00",
+   "completed_at": "2026-10-26T03:35:03.393114+00:00"
+  },
+  {
+   "id": "00885690-ac11-409d-af6a-46954259032d",
+   "topic": "payment_reconcile",
+   "resource_id": "185083342105",
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:37:00.156314+00:00",
+   "completed_at": "2026-10-26T03:37:03.309457+00:00"
+  },
+  {
+   "id": "7dd979fe-c288-4db6-a26b-b5d9b52115ce",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:20:00.082993+00:00",
+   "completed_at": "2026-10-26T03:20:04.241239+00:00"
+  },
+  {
+   "id": "d478f868-e248-4670-8f98-5f3cb7d49e3f",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:26:00.072917+00:00",
+   "completed_at": "2026-10-26T03:26:03.35107+00:00"
+  },
+  {
+   "id": "2f215070-323b-4814-9989-898127facd81",
+   "topic": "payment_reconcile",
+   "resource_id": "185083342105",
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:29:00.13631+00:00",
+   "completed_at": "2026-10-26T03:29:03.028107+00:00"
+  },
+  {
+   "id": "92ccefc9-53bf-4cd8-a38c-f07266972f03",
+   "topic": "payment_reconcile",
+   "resource_id": "185083342105",
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:33:00.639798+00:00",
+   "completed_at": "2026-10-26T03:33:10.542528+00:00"
+  }
+ ],
+ "refunds": [],
+ "cancellations": [],
+ "discrepancies": [],
+ "receipts": [
+  {
+   "event_type": "payment",
+   "resource_id": "185083342105",
+   "signature_valid": true,
+   "processing_status": "completed",
+   "attempt_count": 1,
+   "received_at": "2026-10-26T03:27:27.067757+00:00",
+   "processed_at": "2026-10-26T03:27:28.738072+00:00",
+   "last_error": null
+  }
+ ],
+ "orders": [],
+ "reservations": [
+  {
+   "product_id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+   "quantity": 1,
+   "status": "released",
+   "expires_at": "2026-10-26T03:33:19.016381+00:00",
+   "released_at": "2026-10-26T03:34:00.119082+00:00",
+   "release_reason": "checkout_expired",
+   "converted_at": null
+  },
+  {
+   "product_id": "b9aeaf25-19c2-44d9-9a7d-2977fecdfe82",
+   "quantity": 1,
+   "status": "released",
+   "expires_at": "2026-10-26T03:33:19.016381+00:00",
+   "released_at": "2026-10-26T03:34:00.124271+00:00",
+   "release_reason": "checkout_expired",
+   "converted_at": null
+  }
+ ],
+ "ledger": [
+  {
+   "environment": "test",
+   "watermark_at": "2026-10-26T03:33:08.748+00:00",
+   "window_begin": null,
+   "window_end": null,
+   "next_offset": 0
+  }
+ ],
+ "stock": [
+  {
+   "sku": "heineken-original-lata-473ml",
+   "stock": 6
+  },
+  {
+   "sku": "QA-REC-001",
+   "stock": 18
+  },
+  {
+   "sku": "QA-REC-002",
+   "stock": 9
+  },
+  {
+   "sku": "QA-REC-003",
+   "stock": 1
+  }
+ ]
+}

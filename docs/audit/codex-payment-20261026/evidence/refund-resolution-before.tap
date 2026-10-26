@@ -1,0 +1,117 @@
+{"case":"wrong amount","accepted":true,"recordedRefunded":2500,"refunds":[{"amount":2500,"status":"approved","provider_refund_id":"881000009"}]}
+{"case":"rejected refund","accepted":true,"recordedRefunded":2500,"refunds":[{"amount":2500,"status":"approved","provider_refund_id":"881000009"}]}
+{"case":"pending refund","accepted":true,"recordedRefunded":2500,"refunds":[{"amount":2500,"status":"approved","provider_refund_id":"881000009"}]}
+{"case":"no provider evidence","accepted":true,"recordedRefunded":2500,"refunds":[{"amount":2500,"status":"approved","provider_refund_id":"881000009"}]}
+✖ manual resolution cannot assert full refund with wrong amount (524.1571ms)
+✖ manual resolution cannot assert full refund with rejected refund (259.0776ms)
+✖ manual resolution cannot assert full refund with pending refund (266.1397ms)
+✖ manual resolution cannot assert full refund with no provider evidence (271.7985ms)
+✔ control: a matching approved provider refund can be resolved once (262.7209ms)
+✔ regression: stale approval cannot undo a provider refund (247.8138ms)
+✔ control: provider transaction_amount mismatch cannot create a paid order (203.5911ms)
+✔ control: provider currency mismatch cannot create a paid order (221.9838ms)
+✔ control: provider collector_id mismatch cannot create a paid order (204.2177ms)
+✔ control: provider external_reference mismatch cannot create a paid order (208.6386ms)
+✔ control: provider application_id mismatch cannot create a paid order (205.2217ms)
+✔ control: unauthenticated client cannot call payment snapshot recorder or read seller tokens (210.0613ms)
+✔ control: reject browser total without consuming extra stock (197.1843ms)
+✔ control: reject browser currency without consuming extra stock (192.8221ms)
+✔ control: reject browser unit price without consuming extra stock (231.9468ms)
+✔ control: reject quantity -1 without consuming extra stock (197.3221ms)
+✔ control: reject quantity 0 without consuming extra stock (195.9214ms)
+✔ control: reject quantity 1.5 without consuming extra stock (197.8639ms)
+✔ control: reject quantity 1001 without consuming extra stock (202.9354ms)
+✔ control: checkout retries reuse the session; changed quantity with the same key is rejected (209.4057ms)
+✔ control: a new refund UUID cannot bypass an existing ambiguous refund (267.9847ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 17
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5058.065
+
+✖ failing tests:
+
+test at tests\db\payment-financial-audit.test.mjs:21:4
+✖ manual resolution cannot assert full refund with wrong amount (524.1571ms)
+  AssertionError [ERR_ASSERTION]: unverified operator selection fabricated a financial result
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/db/payment-financial-audit.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\payment-financial-audit.test.mjs:21:4
+✖ manual resolution cannot assert full refund with rejected refund (259.0776ms)
+  AssertionError [ERR_ASSERTION]: unverified operator selection fabricated a financial result
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/db/payment-financial-audit.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\payment-financial-audit.test.mjs:21:4
+✖ manual resolution cannot assert full refund with pending refund (266.1397ms)
+  AssertionError [ERR_ASSERTION]: unverified operator selection fabricated a financial result
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/db/payment-financial-audit.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\payment-financial-audit.test.mjs:21:4
+✖ manual resolution cannot assert full refund with no provider evidence (271.7985ms)
+  AssertionError [ERR_ASSERTION]: unverified operator selection fabricated a financial result
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///<AUDIT_WORKTREE>/tests/db/payment-financial-audit.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

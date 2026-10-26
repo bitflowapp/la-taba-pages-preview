@@ -186,6 +186,7 @@ const VIEW_ALIASES = {
 // está resuelta.
 const initialRoute = resolveRoute(window.location.hash.slice(1));
 let activeView = initialRoute.view;
+let comboAvailabilityMode = null;
 let lastLivenessSignature = '';
 let freshnessTimer = null;
 // El controlador de la invitación a instalar. Vive fuera de `bootstrap()`
@@ -626,15 +627,17 @@ async function bootstrap() {
     // el checkout inicializado abriría vacía.
     initializeCustomerAddressSheet();
     initializeShowcase();
-    // Si la pestaña se abrió DIRECTO en el carrito, `setActiveView` no llegó a
-    // correr y la pregunta no se hizo. Es el único caso donde el arranque sí
-    // tiene que hacerla: ahí ya hay alguien mirando su pedido.
+    // El carrito espera la disponibilidad. Inicio y catálogo la consultan en
+    // segundo plano para mostrar combos sin demorar la apertura de la tienda.
+    // La consulta no crea identidades de visitantes.
     if (activeView === 'cart') await refreshMercadoPagoCheckoutAvailability();
+    else if (['home', 'catalog'].includes(activeView)) refreshMercadoPagoCheckoutAvailability();
     // Y cuando la sesión del cliente empieza (guardó sus datos en el carrito) o
     // termina, se vuelve a preguntar: sin sesión la respuesta era «no disponible».
     if (getAppMode() === APP_MODE_PRODUCTION) {
       getOrderRepository()?.onCustomerSessionChange?.(() => {
         if (activeView === 'cart') refreshMercadoPagoCheckoutAvailability();
+        else if (['home', 'catalog'].includes(activeView)) refreshMercadoPagoCheckoutAvailability();
       });
     }
     renderAll();
@@ -819,7 +822,10 @@ function applyAppMode() {
   // Falla cerrada: en producción los combos arrancan apagados y sólo los
   // enciende la respuesta del proveedor. Al revés, entre el primer render y esa
   // respuesta la góndola ofrecería un combo que todavía no sabe si puede cobrar.
-  setComboCheckoutAvailability({ available: !production });
+  if (comboAvailabilityMode !== mode) {
+    comboAvailabilityMode = mode;
+    setComboCheckoutAvailability({ available: !production });
+  }
   applyWhatsappAvailability();
 }
 
@@ -2701,11 +2707,9 @@ function setActiveView(view, options = {}) {
   }
 
   syncGpsSharingWithView(nextView);
-  // Entrar al carrito es el primer momento en que importa si Mercado Pago está
-  // disponible, y también el primero en que hay una persona decidiendo algo. En
-  // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
-  // cada visita, robots incluidos.
-  if (nextView === 'cart') refreshMercadoPagoCheckoutAvailability();
+  // El catálogo también necesita esta lectura para ofrecer combos cobrables.
+  // ensureCustomerSession(createIfMissing:false) evita crear identidades al consultar.
+  if (['home', 'catalog', 'cart'].includes(nextView)) refreshMercadoPagoCheckoutAvailability();
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   if (changed) playViewEnter(nextView);
@@ -2726,11 +2730,8 @@ function syncViewFromLocation() {
   if (nextView === activeView) return;
   activeView = nextView;
   syncGpsSharingWithView(nextView);
-  // Entrar al carrito es el primer momento en que importa si Mercado Pago está
-  // disponible, y también el primero en que hay una persona decidiendo algo. En
-  // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
-  // cada visita, robots incluidos.
-  if (nextView === 'cart') refreshMercadoPagoCheckoutAvailability();
+  // Al navegar por las superficies de compra se vuelve a consultar sin crear identidad.
+  if (['home', 'catalog', 'cart'].includes(nextView)) refreshMercadoPagoCheckoutAvailability();
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   playViewEnter(nextView);

@@ -1226,6 +1226,7 @@ export function createSupabaseOrderRepository({
     }
     writeMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, {
       combos: comboItems.map((item) => ({ comboId: item.combo_id, quantity: item.quantity })),
+      items: items.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
     });
     const preferenceResult = await invokePaymentFunction('mercadopago-create-preference', {
       checkout_session_id: checkoutSessionId,

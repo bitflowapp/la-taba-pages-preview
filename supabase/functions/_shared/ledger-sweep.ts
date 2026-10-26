@@ -9,11 +9,9 @@
 // Every handled item is idempotent in the database, so re-reading a few items after a kill is safe; what is never
 // allowed is moving the cursor past an item that was not handled.
 //
-// Ties: the provider documents no secondary sort key, so the ORDER of rows that share one timestamp may differ from
-// one query to the next. A position inside a tie group is therefore only trusted while the page being read is made
-// of that one group (it is the only way to get past a group longer than a page). In every other case the cursor is
-// the last timestamp at position 0: the rows of that timestamp are read again next time (cheap, idempotent) and the
-// order of the ties never matters.
+// Ties have no guaranteed secondary ordering. A dense group is enumerated in an
+// exact timestamp window, and advances only after its unique IDs cover the
+// provider's stable total. Durable checkpoints always replay the last timestamp.
 import { Deadline, WorkerDeadlineExceeded } from './worker-deadline.ts';
 
 export const LEDGER_PAGE_SIZE = 50; // provider maximum
@@ -95,7 +93,7 @@ export async function sweepLedgerWindow(
 
   let cursor: LedgerCursor = {
     at: providerDate(window.cursor_at || window.begin),
-    skip: Math.max(0, Number(window.offset) || 0),
+    skip: 0, // An offset from a previous process cannot prove coverage of reordered ties.
   };
   const windowEnd = Date.parse(window.end);
   let pages = 0;
@@ -106,7 +104,7 @@ export async function sweepLedgerWindow(
   let sinceCheckpoint = 0;
 
   const flush = async (done: boolean, release: boolean): Promise<boolean> => {
-    const ok = await deps.checkpoint({ cursor, seen: pendingSeen, orphans: pendingOrphans, done, release });
+    const ok = await deps.checkpoint({ cursor: { at: cursor.at, skip: 0 }, seen: pendingSeen, orphans: pendingOrphans, done, release });
     pendingSeen = 0;
     pendingOrphans = 0;
     sinceCheckpoint = 0;
@@ -147,6 +145,71 @@ export async function sweepLedgerWindow(
     }
 
     const queriedMs = Date.parse(queried.at);
+    // A full page at the cursor timestamp may hide more members of that group.
+    // Offset alone can return the same IDs twice and skip others. Query exactly
+    // this timestamp, keep unique IDs in memory, and require complete coverage.
+    // A crash replays this entire group; database effects are idempotent.
+    if (page.results.length >= pageSize && page.total > page.results.length
+        && page.results.every(row => ledgerItemTime(row) === queriedMs)) {
+      const covered = new Set<string>();
+      const groupWindow = { ...window, begin: queried.at, end: queried.at, cursor_at: queried.at, offset: 0 };
+      let expected: number | null = null;
+      let offset = 0;
+      let rounds = 0;
+      while (expected === null || covered.size < expected) {
+        if (deadline.expired(pageReserve)) return await stop('deadline', false, true);
+        let group: LedgerPage;
+        try { group = await deps.search(groupWindow, { at: queried.at, skip: offset }, pageSize); }
+        catch (error) {
+          if (error instanceof WorkerDeadlineExceeded) return await stop('deadline', false, true);
+          await flushBeforeFailing(); throw error;
+        }
+        pages += 1;
+        if (!Number.isSafeInteger(group.total) || group.total <= 0 || group.total > 10_000
+            || (expected !== null && group.total !== expected)) {
+          await flushBeforeFailing();
+          throw new ProviderLedgerInconsistent('provider timestamp group total changed or exceeds safe pagination');
+        }
+        expected = group.total;
+        for (const summary of group.results) {
+          if (deadline.expired(itemReserve)) return await stop('deadline', false, true);
+          const id = String(summary.id ?? '');
+          if (!id || ledgerItemTime(summary) !== queriedMs) {
+            await flushBeforeFailing();
+            throw new ProviderLedgerInconsistent('provider ignored exact timestamp window');
+          }
+          if (covered.has(id)) continue;
+          try {
+            const outcome = await deps.handle(summary);
+            if (outcome.finalizeSessionId) await deps.finalize(outcome.finalizeSessionId);
+            covered.add(id);
+            seen += 1; pendingSeen += 1; sinceCheckpoint += 1;
+            if (outcome.orphan) { orphans += 1; pendingOrphans += 1; }
+          } catch (error) {
+            if (error instanceof WorkerDeadlineExceeded) return await stop('deadline', false, true);
+            await flushBeforeFailing(); throw error;
+          }
+          if (sinceCheckpoint >= every && !(await flush(false, false))) {
+            return { stopped: 'lease_lost', pages, seen, orphans, cursor };
+          }
+        }
+        if (covered.size > expected) throw new ProviderLedgerInconsistent('provider timestamp group exceeds reported total');
+        offset += pageSize;
+        if (offset >= expected && covered.size < expected) {
+          offset = 0; rounds += 1;
+          if (rounds >= 3) {
+            await flushBeforeFailing();
+            throw new ProviderLedgerInconsistent('provider timestamp group coverage incomplete');
+          }
+        }
+      }
+      // Date filters use inclusive milliseconds. Every member of this instant
+      // was handled, so the next instant is the first safe forward position.
+      if (queriedMs >= windowEnd) return await stop('complete', true, false);
+      cursor = { at: new Date(queriedMs + 1).toISOString(), skip: 0 };
+      if (!(await flush(false, false))) return { stopped: 'lease_lost', pages, seen, orphans, cursor };
+      continue;
+    }
     let previousMs = queriedMs;
     let handledInPage = 0;
     let onlyQueriedTimestamp = true;

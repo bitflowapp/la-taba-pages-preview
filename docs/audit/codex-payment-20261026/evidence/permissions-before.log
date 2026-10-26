@@ -1,0 +1,37 @@
+running 13 tests from ./supabase/functions/_shared/seller-connection-verification.deno.ts
+generic write cannot certify explicit read-only refunds ... FAILED (11ms)
+generic write cannot certify explicit read-only cancel ... FAILED (2ms)
+real verification checks OAuth identity, scopes, current binding, execution and backend without a purchase ... ok (2ms)
+verification reports payments_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports production_execution_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports seller_binding_mismatch without enabling or reconnecting ... ok (1ms)
+verification reports integrator_environment_mismatch before anything else and never enables ... ok (2ms)
+verification fails safely: {"providerStatus":503} ... ok (1ms)
+verification fails safely: {"scopes":"read write"} ... ok (1ms)
+verification fails safely: {"backendError":true} ... ok (1ms)
+verification fails safely: {"integratorStatus":401} ... ok (1ms)
+verification fails safely: {"integratorStatus":503} ... ok (1ms)
+verification reports seller_is_integrator for a production link to the own account of La Taba ... ok (1ms)
+
+ ERRORS
+
+generic write cannot certify explicit read-only refunds => ./supabase/functions/_shared/seller-connection-verification.deno.ts:49:53
+error: AssertionError: Expected function to reject.
+    throw new AssertionError(
+          ^
+    at assertRejects (https://jsr.io/@std/assert/1.0.19/rejects.ts:118:11)
+    at async file:///<AUDIT_WORKTREE>/supabase/functions/_shared/seller-connection-verification.deno.ts:51:9
+
+generic write cannot certify explicit read-only cancel => ./supabase/functions/_shared/seller-connection-verification.deno.ts:49:53
+error: AssertionError: Expected function to reject.
+    throw new AssertionError(
+          ^
+    at assertRejects (https://jsr.io/@std/assert/1.0.19/rejects.ts:118:11)
+    at async file:///<AUDIT_WORKTREE>/supabase/functions/_shared/seller-connection-verification.deno.ts:51:9
+
+ FAILURES
+
+generic write cannot certify explicit read-only refunds => ./supabase/functions/_shared/seller-connection-verification.deno.ts:49:53
+generic write cannot certify explicit read-only cancel => ./supabase/functions/_shared/seller-connection-verification.deno.ts:49:53
+
+FAILED | 11 passed | 2 failed (39ms)

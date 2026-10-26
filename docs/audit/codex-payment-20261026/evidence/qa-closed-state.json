@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-26T04:14:51.036Z",
+  "project": "la-taba-recovery-test",
+  "ref": "ixewllzzuzpqrkxzmfzx",
+  "business": [
+    {
+      "id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01",
+      "status": "closed",
+      "qa_window_until": null
+    },
+    {
+      "id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a02",
+      "status": "closed",
+      "qa_window_until": null
+    }
+  ],
+  "orders": [
+    {
+      "before_audit": 8,
+      "now": 10
+    }
+  ],
+  "migrations": [
+    {
+      "n": 174
+    }
+  ],
+  "schedulers": [
+    {
+      "jobname": "taba-checkout-expiry-sweep",
+      "active": true
+    },
+    {
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "active": true
+    },
+    {
+      "jobname": "taba-operational-alerts-sweep",
+      "active": true
+    },
+    {
+      "jobname": "taba-payment-outbox-worker",
+      "active": true
+    },
+    {
+      "jobname": "taba-qa-window-expiry",
+      "active": true
+    },
+    {
+      "jobname": "taba-security-retention-sweep",
+      "active": false
+    }
+  ],
+  "version": [
+    {
+      "server_version": "17.11"
+    }
+  ]
+}

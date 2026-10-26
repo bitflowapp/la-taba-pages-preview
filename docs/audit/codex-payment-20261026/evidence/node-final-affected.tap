@@ -1,0 +1,46 @@
+✔ every payment of a window is handled, in order, never reading past a small offset (5.2798ms)
+✔ more payments at ONE timestamp than a page still make progress and none is lost (1.3616ms)
+✔ ties whose ORDER changes between queries (the provider has no secondary key) lose nothing, even when one is updated (1.0848ms)
+✔ an EMPTY page before the provider total is an inconsistency, never the end of the window (0.4492ms)
+✔ a payment that changes after it was read is read again at its new position and nothing shifts away (0.9315ms)
+✔ the window is only closed after the last row, and only the empty tail ends an empty window (0.151ms)
+✔ a kill at ANY dependency call loses nothing, never rewinds the cursor and never closes the window early (23.2899ms)
+✔ out of time: it stops BEFORE starting what it cannot finish, keeps the progress and releases the lease (0.9448ms)
+✔ a provider call that runs out of time is a stop, not a failure (0.2541ms)
+✔ rows out of order (the provider ignored the query) fail loudly and never advance the cursor (0.3225ms)
+✔ a lost lease stops the sweep without another write (0.2562ms)
+✔ provider dates: ISO-8601 with milliseconds in UTC; the cursor advances by timestamp and counts ties (0.2375ms)
+✔ Mercado Pago checkout browser payload contains identifiers and contact only (1.3314ms)
+✔ Mercado Pago recovery stores only a public checkout session identifier (1.0087ms)
+✔ return state is derived from the server checkout, never from redirect query parameters (0.4174ms)
+✔ the recovery record remembers which combos travelled in the checkout, and nothing else (0.3206ms)
+✔ storefront redirects only after server-side checkout session and preference creation (2.3038ms)
+✔ recovery preserves the original loose selection separately from combo components (0.3427ms)
+{"case":"equal_timestamp_reorder","uniqueHandled":["C","D","A","B"],"completion":true,"failure":null}
+✔ reordered equal timestamps cannot silently complete with unseen payments (2.201ms)
+✔ ordinary distinct timestamps still reconcile all payments (0.8465ms)
+✔ a dense group at the end closes without searching beyond the window (0.2779ms)
+✔ dense pagination refuses empty exact window without closing (0.4351ms)
+✔ dense pagination refuses changing total without closing (0.2101ms)
+✔ return preserves a new unpaid combo when purchased loose products exactly match (3.647ms)
+✔ return of a paid combo preserves loose components added after checkout (1.5468ms)
+✔ mixed purchase subtracts only original loose quantity, not expanded combo units (0.9333ms)
+✔ return keeps rejected checkout cart despite manipulated approved URL (0.9768ms)
+✔ el preflight no puede exigir una versión y prohibirla al mismo tiempo (1.5952ms)
+✔ las versiones permitidas se derivan de ESPERADO, no se copian a mano (0.1726ms)
+✔ el CACHE_NAME que el preflight exige es el que sw.js declara de verdad (1.0182ms)
+✔ la identidad firmada y el CACHE_NAME del worker son el mismo nombre (1.0417ms)
+✔ las versiones que el preflight exige son las que index.html carga de verdad (1.3848ms)
+✔ el binding deja producción aprovisionada en el registro y en cada lugar que no puede leerlo (84.6913ms)
+✔ el binding se niega a QA, a un retirado, a un ajeno, al plan gratuito y a la organización de QA (79.3289ms)
+✔ un segundo binding no pisa al primero (120.869ms)
+✔ sin --write el comando sólo muestra el plan y no cambia un byte (194.7561ms)
+✔ el registro real sigue sin producción: este PR no activa nada (0.6067ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 950.6061

@@ -1,0 +1,33 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:119:1 › un combo habilitado sigue visible al volver del carrito a Inicio y al repintar (7.9s)
+
+
+  1) [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:119:1 › un combo habilitado sigue visible al volver del carrito a Inicio y al repintar
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('[data-combo-card="combo-heineken-x6"]')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('[data-combo-card="combo-heineken-x6"]')[22m
+
+
+      130 |   await expect(page.locator('[name="paymentMethod"]')).toHaveAttribute('data-mercadopago-available','true');
+      131 |   await page.getByRole('button',{name:'Inicio',exact:true}).click();
+    > 132 |   await expect(page.locator('[data-combo-card="combo-heineken-x6"]')).toBeVisible();
+          |                                                                       ^
+      133 |   await page.locator('[data-favorite-toggle]:visible').first().click();
+      134 |   await expect(page.locator('[data-combo-card="combo-heineken-x6"]')).toBeVisible();
+      135 | });
+        at <AUDIT_WORKTREE>\tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:132:71
+
+    Error Context: test-results\checkout-mp-cliente-nuevo--d8ffa-rito-a-Inicio-y-al-repintar-chromium\error-context.md
+
+  1 failed
+    [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:119:1 › un combo habilitado sigue visible al volver del carrito a Inicio y al repintar

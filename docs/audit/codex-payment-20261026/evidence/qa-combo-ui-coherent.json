@@ -1,0 +1,47 @@
+{
+  "at": "2026-10-26T04:07:19.131Z",
+  "ref": "ixewllzzuzpqrkxzmfzx",
+  "read_only": true,
+  "local_client": true,
+  "availability": {
+    "ok": true,
+    "available": true
+  },
+  "combos": [
+    {
+      "id": "combo-heineken-x6",
+      "price": 500
+    }
+  ],
+  "products": [
+    {
+      "id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+      "sku": "QA-REC-001",
+      "stock": 17,
+      "available": true,
+      "price": 100
+    },
+    {
+      "id": "b9aeaf25-19c2-44d9-9a7d-2977fecdfe82",
+      "sku": "QA-REC-002",
+      "stock": 9,
+      "available": true,
+      "price": 250
+    },
+    {
+      "id": "6030ba0f-099a-4079-bccd-8fb5ecfdad01",
+      "sku": "QA-REC-003",
+      "stock": 1,
+      "available": true,
+      "price": 500
+    },
+    {
+      "id": "e5cd2610-0001-4000-8000-000000000001",
+      "sku": "heineken-original-lata-473ml",
+      "stock": 6,
+      "available": true,
+      "price": 100
+    }
+  ],
+  "renderedCards": 1
+}

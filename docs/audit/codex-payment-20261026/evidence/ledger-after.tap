@@ -1,0 +1,23 @@
+✔ every payment of a window is handled, in order, never reading past a small offset (4.4359ms)
+✔ more payments at ONE timestamp than a page still make progress and none is lost (1.3237ms)
+✔ ties whose ORDER changes between queries (the provider has no secondary key) lose nothing, even when one is updated (1.0532ms)
+✔ an EMPTY page before the provider total is an inconsistency, never the end of the window (0.4921ms)
+✔ a payment that changes after it was read is read again at its new position and nothing shifts away (1.1427ms)
+✔ the window is only closed after the last row, and only the empty tail ends an empty window (0.1552ms)
+✔ a kill at ANY dependency call loses nothing, never rewinds the cursor and never closes the window early (27.677ms)
+✔ out of time: it stops BEFORE starting what it cannot finish, keeps the progress and releases the lease (0.8202ms)
+✔ a provider call that runs out of time is a stop, not a failure (0.3055ms)
+✔ rows out of order (the provider ignored the query) fail loudly and never advance the cursor (0.3451ms)
+✔ a lost lease stops the sweep without another write (0.2429ms)
+✔ provider dates: ISO-8601 with milliseconds in UTC; the cursor advances by timestamp and counts ties (0.2282ms)
+{"case":"equal_timestamp_reorder","uniqueHandled":["C","D","A","B"],"completion":true,"failure":null}
+✔ reordered equal timestamps cannot silently complete with unseen payments (2.2326ms)
+✔ ordinary distinct timestamps still reconcile all payments (0.4204ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 153.0992

@@ -1,0 +1,36 @@
+✔ la autoridad exige una sesión registrada del mismo usuario y comercio (0.7111ms)
+✔ el alta es el único bootstrap y no registra tokens sin session_id (0.1936ms)
+✔ cancel_order rechaza Mercado Pago antes de transicionar o emitir receipts (0.2894ms)
+✔ un combo cobrable se agrega, se suma y se quita (16.8043ms)
+✔ un combo inexistente o no cobrable no entra al carrito (1.8449ms)
+✔ el combo suma al subtotal a precio de lista y su ahorro va al descuento (4.8667ms)
+✔ dos combos iguales duplican el ahorro (3.1823ms)
+✔ el stock del combo es el del componente limitante (3.4018ms)
+✔ el stock se comparte entre el combo y las líneas sueltas (7.2032ms)
+✔ vaciar el carrito también saca los combos (5.7476ms)
+✔ un carrito con sólo combos se puede confirmar (3.2996ms)
+✔ un combo no se puede confirmar con un medio de pago que no lo sabe cobrar (3.0331ms)
+✔ un combo guardado que dejó de ser cobrable no se rehidrata (3.9716ms)
+✔ un combo que se agota en vivo sigue visible y bloquea el checkout (4.7792ms)
+✔ el +18 de un componente alcanza al combo entero (1.2964ms)
+✔ Mercado Pago checkout browser payload contains identifiers and contact only (1.3837ms)
+✔ Mercado Pago recovery stores only a public checkout session identifier (1.0216ms)
+✔ return state is derived from the server checkout, never from redirect query parameters (0.4256ms)
+✔ the recovery record remembers which combos travelled in the checkout, and nothing else (0.3295ms)
+✔ storefront redirects only after server-side checkout session and preference creation (2.2038ms)
+✔ recovery preserves the original loose selection separately from combo components (0.3441ms)
+✔ el CHECK de la base sigue siendo la autoridad y se puede leer (1.949ms)
+✔ toda forma de pago ofrecida al cliente es aceptada por la base (1.5371ms)
+✔ no se ofrece transferencia hasta que exista su flujo (0.735ms)
+✔ qa_no_charge nunca se le ofrece a una persona (1.2744ms)
+✔ el paquete de release incluye las tres rutas de retorno de Mercado Pago (3.8804ms)
+✔ el worker conserva una página y el módulo del retorno para cada vuelta offline (0.3637ms)
+✔ el preflight acepta la versión CSS que exige el candidato (1.7731ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 411.0473

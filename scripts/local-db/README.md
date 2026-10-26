@@ -15,3 +15,7 @@ node scripts/local-db/run-sql-tests.mjs <clone> supabase/tests/<file>.sql      #
 `stubs.sql` models `pg_cron`, `pg_net` and Vault with plain tables; `pgtap-shim.sql` implements the few pgTAP
 assertions the repository uses. Keep `taba_local_base` / `taba_local_work` clean: some repository SQL tests commit
 their fixtures, so they are refused on the templates.
+
+For an existing server distribution without `psql`, `TABA_LOCAL_PG_DRIVER=pg`
+uses the locked Node driver instead. Both synchronous and concurrent tests
+still accept only loopback and disposable `taba_local_*` databases.

@@ -1,0 +1,8 @@
+
+Running 2 tests using 1 worker
+
+  ✓  1 [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:87:1 › cliente nuevo: Mercado Pago aparece al guardar «Tus datos», sin salir del carrito (1.6s)
+  ✓  2 [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:119:1 › un combo habilitado sigue visible al volver del carrito a Inicio y al repintar (1.5s)
+
+  2 passed (4.2s)
+E2E estable: ninguna prueba necesitó reintento.

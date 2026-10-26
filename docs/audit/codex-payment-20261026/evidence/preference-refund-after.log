@@ -1,0 +1,210 @@
+running 1 test from ./supabase/functions/_shared/payment-preference-race-audit.deno.ts
+independent audit: concurrent preference requests dispatch at most one provider POST ...
+------- output -------
+{"timestamp":"2026-10-26T03:24:03.751Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"6304f57a-ec28-43ad-bd96-963d52e78707"}
+{"case":"concurrent-preference","providerPosts":1,"responseStatuses":[200,202]}
+----- output end -----
+independent audit: concurrent preference requests dispatch at most one provider POST ... ok (18ms)
+running 97 tests from ./supabase/functions/_shared/current-payment-authority.deno.ts
+A1 real handler stored: payments_disabled during /users/me ... ok (16ms)
+A1 real handler stored: business_closed during /users/me ... ok (4ms)
+A1 real handler stored: generation during /users/me ... ok (3ms)
+A1 real handler stored: credential during /users/me ... ok (3ms)
+A1 real handler stored: disconnected during /users/me ... ok (2ms)
+A1 real handler stored: settings_version during /users/me ... ok (3ms)
+A1 real handler stored: review during /users/me ... ok (2ms)
+A1 real handler stored: smoke during /users/me ... ok (15ms)
+A1 real handler stored: reservation during /users/me ... ok (2ms)
+A1 real handler stored: expired during /users/me ... ok (2ms)
+A1 real handler stored: none during /users/me ... ok (2ms)
+A1 real handler stored: cancelled during /users/me ... ok (3ms)
+A1 real handler stored: superseded during /users/me ... ok (2ms)
+A1 real handler stored: attempt_id during /users/me ... ok (2ms)
+A1 real handler stored: same_seller_other_attempt during /users/me ... ok (2ms)
+A1 real handler stored: preference during /users/me ... ok (2ms)
+A1 real handler stored: url during /users/me ... ok (2ms)
+A1 real handler stored: aba during /users/me ... ok (2ms)
+A1 real handler stored: intent_cancelled during /users/me ... ok (2ms)
+A1 real handler stored_legacy: payments_disabled during /users/me ... ok (3ms)
+A1 real handler stored_legacy: business_closed during /users/me ... ok (3ms)
+A1 real handler stored_legacy: generation during /users/me ... ok (2ms)
+A1 real handler stored_legacy: credential during /users/me ... ok (2ms)
+A1 real handler stored_legacy: disconnected during /users/me ... ok (4ms)
+A1 real handler stored_legacy: settings_version during /users/me ... ok (10ms)
+A1 real handler stored_legacy: review during /users/me ... ok (3ms)
+A1 real handler stored_legacy: smoke during /users/me ... ok (2ms)
+A1 real handler stored_legacy: reservation during /users/me ... ok (2ms)
+A1 real handler stored_legacy: expired during /users/me ... ok (2ms)
+A1 real handler stored_legacy: none during /users/me ... ok (2ms)
+A1 real handler stored_legacy: cancelled during /users/me ... ok (2ms)
+A1 real handler stored_legacy: superseded during /users/me ... ok (2ms)
+A1 real handler stored_legacy: attempt_id during /users/me ... ok (2ms)
+A1 real handler stored_legacy: same_seller_other_attempt during /users/me ... ok (33ms)
+A1 real handler stored_legacy: preference during /users/me ... ok (2ms)
+A1 real handler stored_legacy: url during /users/me ... ok (2ms)
+A1 real handler stored_legacy: aba during /users/me ... ok (2ms)
+A1 real handler stored_legacy: intent_cancelled during /users/me ... ok (2ms)
+A1 real handler recovered: payments_disabled during /users/me ... ok (3ms)
+A1 real handler recovered: business_closed during /users/me ... ok (2ms)
+A1 real handler recovered: generation during /users/me ... ok (2ms)
+A1 real handler recovered: credential during /users/me ... ok (3ms)
+A1 real handler recovered: disconnected during /users/me ... ok (2ms)
+A1 real handler recovered: settings_version during /users/me ... ok (2ms)
+A1 real handler recovered: review during /users/me ... ok (2ms)
+A1 real handler recovered: smoke during /users/me ... ok (2ms)
+A1 real handler recovered: reservation during /users/me ... ok (2ms)
+A1 real handler recovered: expired during /users/me ... ok (3ms)
+A1 real handler recovered: none during /users/me ... ok (2ms)
+A1 real handler recovered: cancelled during /users/me ... ok (3ms)
+A1 real handler recovered: superseded during /users/me ... ok (2ms)
+A1 real handler recovered: attempt_id during /users/me ... ok (2ms)
+A1 real handler recovered: same_seller_other_attempt during /users/me ... ok (2ms)
+A1 real handler recovered: preference during /users/me ... ok (2ms)
+A1 real handler recovered: url during /users/me ... ok (2ms)
+A1 real handler recovered: aba during /users/me ... ok (3ms)
+A1 real handler recovered: intent_cancelled during /users/me ... ok (4ms)
+A1 real handler new: payments_disabled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.129Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"8d8ac669-621a-4506-9474-b06d7dd0cb7f"}
+----- post-test output end -----
+A1 real handler new: payments_disabled during /users/me ... ok (5ms)
+A1 real handler new: business_closed during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.133Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"ecf9f63b-e106-42e1-aea3-01302fb4923b"}
+----- post-test output end -----
+A1 real handler new: business_closed during /users/me ... ok (3ms)
+A1 real handler new: generation during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.136Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"4b7f1fba-7d0d-4f0c-b762-5016f3b1ba26"}
+----- post-test output end -----
+A1 real handler new: generation during /users/me ... ok (3ms)
+A1 real handler new: credential during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.139Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"be2112a5-fd56-401b-b57f-85edcce248f2"}
+----- post-test output end -----
+A1 real handler new: credential during /users/me ... ok (3ms)
+A1 real handler new: disconnected during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.142Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"03826907-77ee-4485-af94-be0a2d620bf6"}
+----- post-test output end -----
+A1 real handler new: disconnected during /users/me ... ok (3ms)
+A1 real handler new: settings_version during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.146Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"e803768d-53a5-4e00-8767-43807196e661"}
+----- post-test output end -----
+A1 real handler new: settings_version during /users/me ... ok (3ms)
+A1 real handler new: review during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.149Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"3a3c0176-adf5-4e0c-ac44-06b455161ba1"}
+----- post-test output end -----
+A1 real handler new: review during /users/me ... ok (3ms)
+A1 real handler new: smoke during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.154Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"e1af1b14-3387-4e0a-be6d-537f74d5a1b9"}
+----- post-test output end -----
+A1 real handler new: smoke during /users/me ... ok (4ms)
+A1 real handler new: reservation during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.157Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"ce7766d5-8e25-457f-bbaa-6dcaed3c42a2"}
+----- post-test output end -----
+A1 real handler new: reservation during /users/me ... ok (3ms)
+A1 real handler new: expired during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.161Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"47ac9f2e-111d-46ec-ba10-859aacfb1226"}
+----- post-test output end -----
+A1 real handler new: expired during /users/me ... ok (3ms)
+A1 real handler new: none during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.164Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"8b09d12b-761a-40a0-937e-50a640e2d4d1"}
+----- post-test output end -----
+A1 real handler new: none during /users/me ... ok (3ms)
+A1 real handler new: cancelled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.168Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"ffdb7a06-6dde-4719-90f4-09f671def24c"}
+----- post-test output end -----
+A1 real handler new: cancelled during /users/me ... ok (3ms)
+A1 real handler new: superseded during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.171Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"6e8dd0ed-0f2d-4dc3-988e-1cf061573d36"}
+----- post-test output end -----
+A1 real handler new: superseded during /users/me ... ok (3ms)
+A1 real handler new: attempt_id during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.175Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"45091f3f-13d1-4e9a-abb7-b043fdbad527"}
+----- post-test output end -----
+A1 real handler new: attempt_id during /users/me ... ok (4ms)
+A1 real handler new: same_seller_other_attempt during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.179Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"c99bf1c9-7bff-43d1-943c-eb47c4f2f9bd"}
+----- post-test output end -----
+A1 real handler new: same_seller_other_attempt during /users/me ... ok (4ms)
+A1 real handler new: preference during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.184Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"5f2af572-027d-4911-bd0c-623a88bc776a"}
+----- post-test output end -----
+A1 real handler new: preference during /users/me ... ok (4ms)
+A1 real handler new: url during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.188Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"70b7dfa4-80ab-49d5-93be-f46e911998b1"}
+----- post-test output end -----
+A1 real handler new: url during /users/me ... ok (5ms)
+A1 real handler new: aba during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.193Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"0bcae366-c291-4f52-962f-1c5b02fa67da"}
+----- post-test output end -----
+A1 real handler new: aba during /users/me ... ok (3ms)
+A1 real handler new: intent_cancelled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.196Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"085f9c43-578b-43ac-8610-26854d9431b1"}
+----- post-test output end -----
+A1 real handler new: intent_cancelled during /users/me ... ok (3ms)
+A1 stored URL initially rejects no_seller ... ok (1ms)
+A1 stored URL initially rejects disconnected ... ok (1ms)
+A1 stored URL initially rejects requires_reauthorization ... ok (1ms)
+A1 stored URL initially rejects cleared_tokens ... ok (36ms)
+A1 stored URL initially rejects wrong_business ... ok (1ms)
+A1 stored URL initially rejects wrong_environment ... ok (2ms)
+A1 stored URL initially rejects payments_disabled ... ok (1ms)
+A1 stored URL initially rejects missing_smoke ... ok (1ms)
+A1 stored URL initially rejects integrator_environment ... ok (1ms)
+an integrator application of the other environment never gets a preference (2034 Invalid users involved) ... ok (0ms)
+preference POST preserves provider uncertainty: HTTP 408 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 409 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 425 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 429 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 500 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 502 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 503 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 400 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 401 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 403 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 422 ... ok (2ms)
+running 18 tests from ./supabase/functions/_shared/refund-runtime.deno.ts
+A4 actual worker: unknown-missing-time ... ok (14ms)
+A4 actual worker: unknown-prior ... ok (3ms)
+A4 actual worker: unknown-future ... ok (3ms)
+A4 actual worker: unknown-plausible ... ok (2ms)
+A4 actual worker: known-wrong-payment ... ok (29ms)
+A4 actual worker: known-wrong-amount ... ok (2ms)
+A4 actual worker: known-owned ... ok (1ms)
+A4 actual worker: valid ... ok (4ms)
+A4 actual refund POST: valid ... ok (2ms)
+A4 actual refund POST: partial-response ... ok (1ms)
+A4 actual refund POST: lost-response ... ok (2ms)
+A4 actual refund POST: known-wrong-payment ... ok (1ms)
+A4 actual refund POST: known-wrong-amount ... ok (2ms)
+A4 actual refund POST: throttled ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.562Z","event":"provider_rejection","operation":"refund","business_id":"96000000-0000-4000-8000-000000000001","payment_intent_id":"96000000-0000-4000-8000-000000000002","final":false,"http_status":429}
+----- post-test output end -----
+A4 actual refund POST: throttled ... ok (2ms)
+A4 actual refund POST: final-rejection ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:24:04.564Z","event":"provider_rejection","operation":"refund","business_id":"96000000-0000-4000-8000-000000000001","payment_intent_id":"96000000-0000-4000-8000-000000000002","final":true,"http_status":400}
+----- post-test output end -----
+A4 actual refund POST: final-rejection ... ok (1ms)
+provider 4xx: only final answers become rejections ... ok (0ms)
+a refused refund leaves its provider status, request id and cause codes in the log, never the body ... ok (2ms)
+provider rejection facts keep only shape-checked fields ... ok (0ms)
+
+ok | 116 passed | 0 failed (841ms)

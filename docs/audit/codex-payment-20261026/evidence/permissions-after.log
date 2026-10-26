@@ -1,0 +1,16 @@
+running 13 tests from ./supabase/functions/_shared/seller-connection-verification.deno.ts
+generic write cannot certify explicit read-only refunds ... ok (10ms)
+generic write cannot certify explicit read-only cancel ... ok (1ms)
+real verification checks OAuth identity, scopes, current binding, execution and backend without a purchase ... ok (2ms)
+verification reports payments_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports production_execution_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports seller_binding_mismatch without enabling or reconnecting ... ok (1ms)
+verification reports integrator_environment_mismatch before anything else and never enables ... ok (1ms)
+verification fails safely: {"providerStatus":503} ... ok (1ms)
+verification fails safely: {"scopes":"read write"} ... ok (1ms)
+verification fails safely: {"backendError":true} ... ok (1ms)
+verification fails safely: {"integratorStatus":401} ... ok (1ms)
+verification fails safely: {"integratorStatus":503} ... ok (1ms)
+verification reports seller_is_integrator for a production link to the own account of La Taba ... ok (1ms)
+
+ok | 13 passed | 0 failed (37ms)

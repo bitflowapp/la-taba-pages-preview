@@ -1,0 +1,19 @@
+✔ Mercado Pago checkout browser payload contains identifiers and contact only (1.3893ms)
+✔ Mercado Pago recovery stores only a public checkout session identifier (1.0126ms)
+✔ return state is derived from the server checkout, never from redirect query parameters (0.4094ms)
+✔ the recovery record remembers which combos travelled in the checkout, and nothing else (0.3065ms)
+✔ storefront redirects only after server-side checkout session and preference creation (2.3844ms)
+✔ recovery preserves the original loose selection separately from combo components (0.342ms)
+✔ return preserves a new unpaid combo when purchased loose products exactly match (3.7125ms)
+✔ overlapping status responses remove paid quantities once (1.9366ms)
+✔ return of a paid combo preserves loose components added after checkout (1.0053ms)
+✔ mixed purchase subtracts only original loose quantity, not expanded combo units (1.4051ms)
+✔ return keeps rejected checkout cart despite manipulated approved URL (0.952ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76.596

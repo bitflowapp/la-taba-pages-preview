@@ -20,7 +20,8 @@ export async function verifySellerConnection(businessId: string) {
     throw Error('Unable to verify seller');
   }
   const scopes = String(row.scopes || '').split(' ');
-  if (!['read', 'write', 'offline_access'].every(scope => scopes.includes(scope))) {
+  if (!['read', 'write', 'offline_access'].every(scope => scopes.includes(scope))
+      || scopes.some(scope => /^urn:mp:online:payments:(?:refunds|cancel)\/read-only$/.test(scope))) {
     throw Error('Seller permissions unavailable');
   }
   getRequiredEnv('MERCADOPAGO_OAUTH_WEBHOOK_SECRET');

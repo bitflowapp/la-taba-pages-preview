@@ -1,0 +1,163 @@
+{
+ "session": {
+  "id": "627c27ae-64eb-4763-a6a9-fee9ed399b5c",
+  "status": "payment_pending",
+  "currency": "ARS",
+  "subtotal": 350,
+  "discount_total": 0,
+  "delivery_fee": 0,
+  "total": 350,
+  "expires_at": "2026-10-26T03:33:19.016381+00:00",
+  "completed_order_id": null,
+  "manual_review_reason": null,
+  "created_at": "2026-10-26T03:18:19.017563+00:00",
+  "updated_at": "2026-10-26T03:27:28.694551+00:00"
+ },
+ "intents": [
+  {
+   "id": "062ae5da-b472-40bc-8edc-509bc1dd9867",
+   "internal_status": "in_process",
+   "environment": "test",
+   "expected_amount": 350,
+   "paid_amount": null,
+   "currency": "ARS",
+   "external_reference": "taba2:checkout:627c27ae-64eb-4763-a6a9-fee9ed399b5c",
+   "provider_payment_id": "185083342105",
+   "provider_status": "in_process",
+   "provider_status_detail": "deferred_retry",
+   "live_mode": true,
+   "approved_at": null,
+   "rejected_at": null,
+   "refunded_amount": 0,
+   "order_id": null,
+   "security_review_reason": null
+  }
+ ],
+ "payments": [
+  {
+   "provider_payment_id": "185083342105",
+   "environment": "test",
+   "seller_id": "3594962708",
+   "status": "in_process",
+   "status_detail": "deferred_retry",
+   "amount": 350,
+   "currency": "ARS",
+   "refunded_amount": 0,
+   "is_financing": false,
+   "validation_error": null,
+   "watch_state": "pending",
+   "next_check_at": "2026-10-26T03:28:28.662871+00:00",
+   "first_seen_at": "2026-10-26T03:27:28.662871+00:00",
+   "last_seen_at": "2026-10-26T03:27:28.662871+00:00"
+  }
+ ],
+ "attempts": [
+  {
+   "id": "ff9e1bfd-95dc-467a-bcfa-851254d56847",
+   "attempt_number": 1,
+   "attempt_type": "preference",
+   "status": "created",
+   "preference_id": "3594962708-0fc791e5-6d3b-475e-b459-99933d7be87e",
+   "last_error_code": null,
+   "created_at": "2026-10-26T03:18:19.708296+00:00"
+  }
+ ],
+ "outbox": [
+  {
+   "id": "8e9af94a-41e9-4ba5-96ec-790995290546",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:23:00.222012+00:00",
+   "completed_at": "2026-10-26T03:23:02.830318+00:00"
+  },
+  {
+   "id": "7dd979fe-c288-4db6-a26b-b5d9b52115ce",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:20:00.082993+00:00",
+   "completed_at": "2026-10-26T03:20:04.241239+00:00"
+  },
+  {
+   "id": "d478f868-e248-4670-8f98-5f3cb7d49e3f",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:26:00.072917+00:00",
+   "completed_at": "2026-10-26T03:26:03.35107+00:00"
+  }
+ ],
+ "refunds": [],
+ "cancellations": [],
+ "discrepancies": [],
+ "receipts": [
+  {
+   "event_type": "payment",
+   "resource_id": "185083342105",
+   "signature_valid": true,
+   "processing_status": "completed",
+   "attempt_count": 1,
+   "received_at": "2026-10-26T03:27:27.067757+00:00",
+   "processed_at": "2026-10-26T03:27:28.738072+00:00",
+   "last_error": null
+  }
+ ],
+ "orders": [],
+ "reservations": [
+  {
+   "product_id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+   "quantity": 1,
+   "status": "active",
+   "expires_at": "2026-10-26T03:33:19.016381+00:00",
+   "released_at": null,
+   "release_reason": null,
+   "converted_at": null
+  },
+  {
+   "product_id": "b9aeaf25-19c2-44d9-9a7d-2977fecdfe82",
+   "quantity": 1,
+   "status": "active",
+   "expires_at": "2026-10-26T03:33:19.016381+00:00",
+   "released_at": null,
+   "release_reason": null,
+   "converted_at": null
+  }
+ ],
+ "ledger": [
+  {
+   "environment": "test",
+   "watermark_at": "2026-10-26T03:23:02.873+00:00",
+   "window_begin": null,
+   "window_end": null,
+   "next_offset": 0
+  }
+ ],
+ "stock": [
+  {
+   "sku": "heineken-original-lata-473ml",
+   "stock": 12
+  },
+  {
+   "sku": "QA-REC-001",
+   "stock": 18
+  },
+  {
+   "sku": "QA-REC-002",
+   "stock": 9
+  },
+  {
+   "sku": "QA-REC-003",
+   "stock": 1
+  }
+ ]
+}

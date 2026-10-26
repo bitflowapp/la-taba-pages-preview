@@ -101,6 +101,21 @@ Deno.serve(async (request) => {
       }, 202);
     }
 
+    // Search and POST are separate network calls. Concurrent empty searches
+    // must elect one dispatcher before either can send a provider request.
+    // request_sent is never reclaimed: a process may have died after sending.
+    const claimed = await service.rpc('claim_mercadopago_preference_dispatch', {
+      p_payment_attempt_id: preparation.payment_attempt_id,
+      p_customer_id: user.id,
+      p_expected_authority: authority.snapshot.authority_version,
+    });
+    if (claimed.error) return checkoutUnavailable(request);
+    if (!claimed.data) return jsonResponse(request, {
+      ok: false, code: 'PREFERENCE_RECONCILING', status: 'reconciling',
+      message: 'Estamos verificando la preparación de tu pago. No vuelvas a pagar todavía.',
+    }, 202);
+    authority.snapshot = claimed.data as PaymentAuthoritySnapshot;
+
     try {
       const created = await createPreference(preparation, businessId, authority.accessToken);
       const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {

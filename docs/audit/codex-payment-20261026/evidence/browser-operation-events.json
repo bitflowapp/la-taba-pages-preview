@@ -1,0 +1,70 @@
+[
+  {
+    "at": "2026-10-26T03:11:43.792Z",
+    "kind": "ready",
+    "browser": "155.0.8059.85",
+    "buyerId": "3594962710",
+    "officialNicknameMatches": true,
+    "evidence": "<PRIVATE_EVIDENCE>\\qa-codex-20261026\\browser.jsonl"
+  },
+  {
+    "at": "2026-10-26T03:14:33.051Z",
+    "kind": "ready",
+    "browser": "155.0.8059.85",
+    "buyerId": "3594962710",
+    "officialNicknameMatches": true,
+    "evidence": "<PRIVATE_EVIDENCE>\\qa-codex-20261026\\browser.jsonl"
+  },
+  {
+    "at": "2026-10-26T03:20:23.224Z",
+    "kind": "ready",
+    "browser": "155.0.8059.85",
+    "buyerId": "3594962710",
+    "officialNicknameMatches": true,
+    "evidence": "<PRIVATE_EVIDENCE>\\qa-codex-20261026\\browser.jsonl"
+  },
+  {
+    "at": "2026-10-26T03:21:33.859Z",
+    "kind": "ready",
+    "browser": "155.0.8059.85",
+    "buyerId": "3594962710",
+    "officialNicknameMatches": true,
+    "evidence": "<PRIVATE_EVIDENCE>\\qa-codex-20261026\\browser.jsonl"
+  },
+  {
+    "at": "2026-10-26T03:27:19.895Z",
+    "kind": "pay_submitted",
+    "scenario": "OTHE"
+  },
+  {
+    "at": "2026-10-26T03:37:36.783Z",
+    "kind": "pay_submitted",
+    "scenario": "APRO"
+  },
+  {
+    "at": "2026-10-26T03:40:07.702Z",
+    "kind": "ready",
+    "browser": "155.0.8059.85",
+    "buyerId": "3594962710",
+    "officialNicknameMatches": true,
+    "evidence": "<PRIVATE_EVIDENCE>\\qa-codex-close-20261026\\browser.jsonl"
+  },
+  {
+    "at": "2026-10-26T03:40:21.482Z",
+    "kind": "close_before_return_armed",
+    "scenario": "APRO"
+  },
+  {
+    "at": "2026-10-26T03:46:00.084Z",
+    "kind": "pay_submitted",
+    "scenario": "APRO"
+  },
+  {
+    "at": "2026-10-26T03:46:08.515Z",
+    "kind": "browser_closed_before_return",
+    "path": "/pago/resultado",
+    "payment_id_hint": "186126875298",
+    "status_hint": "approved",
+    "authority": "URL hints must be verified independently against provider and database"
+  }
+]

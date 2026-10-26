@@ -99,7 +99,7 @@ const AMBIGUOUS_REFUND = (evidence) => `${ACTOR} ${EXPIRE} update public.product
     perform public.park_refund_identity_unknown(v_refund,'${evidence}'::jsonb);`;
 
 test('with the provider\'s refund list captured, an id that is not in it is refused and one that is in it resolves', () => {
-  const s = runScenario(`${AMBIGUOUS_REFUND('{"provider_refunds":[{"id":"881000009","amount":2500}]}')}
+  const s = runScenario(`${AMBIGUOUS_REFUND('{"provider_refunds":[{"id":"881000009","amount":2500,"status":"approved"}]}')}
     begin perform public.resolve_ambiguous_refund(v_refund,'executed','999999999','typed by hand from the dashboard, refund 999999999'); v_before:=jsonb_build_object('wrong','allowed');
     exception when others then v_before:=jsonb_build_object('wrong',SQLSTATE); end;
     v_before:=v_before||jsonb_build_object('still_ambiguous',(select status from public.payment_refunds where id=v_refund));
@@ -112,17 +112,23 @@ test('with the provider\'s refund list captured, an id that is not in it is refu
   assert.equal(s.intent.refunded, 2500);
 });
 
-test('with no refund captured as evidence the owner can still resolve it in writing', () => {
+test('with no provider evidence an owner note cannot assert money was refunded', () => {
   const s = runScenario(`${AMBIGUOUS_REFUND('{"provider_refunds":[]}')}
-    v_result:=public.resolve_ambiguous_refund(v_refund,'executed','881000009','confirmed in the provider panel, refund 881000009');
-    v_extra:=jsonb_build_object('refund',(select jsonb_build_object('status',status,'id',provider_refund_id) from public.payment_refunds where id=v_refund));`);
-  assert.equal(s.extra.refund.status, 'approved');
-  assert.equal(s.extra.refund.id, '881000009');
+    begin perform public.resolve_ambiguous_refund(v_refund,'executed','881000009','confirmed in the provider panel, refund 881000009');
+    v_extra:=jsonb_build_object('accepted',true);
+    exception when others then v_extra:=jsonb_build_object('accepted',false,'code',SQLSTATE); end;`);
+  assert.equal(s.extra.accepted, false);
+  assert.equal(s.extra.code, '22023');
+  assert.equal(s.intent.refunded, 0);
+  assert.equal(s.refunds[0].status, 'ambiguous');
 });
 
-test('"not executed" needs no id and is unaffected by the evidence rule', () => {
+test('"not executed" cannot clear an ambiguous request without provider confirmation', () => {
   const s = runScenario(`${AMBIGUOUS_REFUND('{"provider_refunds":[{"id":"881000009","amount":2500}]}')}
-    v_result:=public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment');
+    begin perform public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment');
+      v_before:=jsonb_build_object('released',true); exception when others then v_before:=jsonb_build_object('released',false,'code',SQLSTATE); end;
     v_extra:=jsonb_build_object('refund_status',(select status from public.payment_refunds where id=v_refund));`);
-  assert.equal(s.extra.refund_status, 'failed');
+  assert.equal(s.before.released,false);
+  assert.equal(s.before.code,'55000');
+  assert.equal(s.extra.refund_status, 'ambiguous');
 });

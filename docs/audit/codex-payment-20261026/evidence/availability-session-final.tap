@@ -1,0 +1,12 @@
+✔ avisa cuando la sesión del cliente empieza o termina, y nada más (2.9668ms)
+✔ sin sesión, la disponibilidad es «no disponible» y no crea identidad (0.346ms)
+✔ sin servicio de sesión que avise, no rompe: devuelve un «dejar de escuchar» vacío (0.1513ms)
+✔ el carrito vuelve a preguntar cuando la sesión cambia (cableado de la tienda) (1.1869ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130.5102

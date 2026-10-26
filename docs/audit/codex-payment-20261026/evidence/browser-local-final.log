@@ -1,0 +1,26 @@
+
+Running 20 tests using 1 worker
+
+  ✓   1 [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:87:1 › cliente nuevo: Mercado Pago aparece al guardar «Tus datos», sin salir del carrito (1.6s)
+  ✓   2 [chromium] › tests\e2e\checkout-mp-cliente-nuevo.spec.mjs:119:1 › un combo habilitado sigue visible al volver del carrito a Inicio y al repintar (1.6s)
+  ✓   3 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:250:3 › handoff a Mercado Pago › elegir Mercado Pago cambia lo que la pantalla promete, y volver lo devuelve (1.3s)
+  ✓   4 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:279:3 › handoff a Mercado Pago › si Mercado Pago deja de estar disponible, el botón deja de ofrecerlo (1.2s)
+  ✓   5 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:300:3 › handoff a Mercado Pago › el segundo toque durante la navegación NO crea una segunda sesión de pago (3.8s)
+  ✓   6 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:323:3 › handoff a Mercado Pago › mientras se prepara el pago el botón nunca vuelve a estar disponible (3.5s)
+  ✓   7 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:351:3 › handoff a Mercado Pago › al volver de Mercado Pago el checkout se re-arma y se puede cambiar el medio de pago (1.4s)
+  ✓   8 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por stock insuficiente se dice, no se pierde el carrito y se puede reintentar (2.7s)
+  ✓   9 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por el pedido cambió durante el envío se dice, no se pierde el carrito y se puede reintentar (2.5s)
+  ✓  10 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por sesión vencida se dice, no se pierde el carrito y se puede reintentar (2.6s)
+  ✓  11 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:464:3 › handoff a Mercado Pago › si la navegación externa nunca salió, moverse por la tienda devuelve el checkout (2.7s)
+  ✓  12 [chromium] › tests\e2e\checkout-payment-handoff.spec.mjs:495:3 › handoff a Mercado Pago › el doble toque sobre un backend lento tampoco duplica el pedido en efectivo (5.1s)
+  ✓  13 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:141:3 › retorno de Mercado Pago › la URL de retorno no confirma nada: manda el servidor (254ms)
+  ✓  14 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:155:3 › retorno de Mercado Pago › pendiente que se aprueba: se confirma solo, saca lo pagado y conserva lo nuevo (3.6s)
+  ✓  15 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:178:3 › retorno de Mercado Pago › pago rechazado: se dice, el carrito queda y se puede volver a intentar (264ms)
+  ✓  16 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:191:3 › retorno de Mercado Pago › pago que el comercio tiene que revisar: no se promete un pedido (249ms)
+  ✓  17 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:202:3 › retorno de Mercado Pago › servidor inalcanzable: sigue «Verificando», nunca confirma y se recupera solo (3.6s)
+  ✓  18 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:217:3 › retorno de Mercado Pago › sin conexión: se dice, el carrito queda y al volver la red se verifica (280ms)
+  ✓  19 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:239:3 › retorno de Mercado Pago › en otro navegador, sin la sesión guardada: no inventa un pedido (241ms)
+  ✓  20 [chromium] › tests\e2e\pago-retorno-estados.spec.mjs:256:3 › retorno de Mercado Pago › un combo pagado sale del carrito; otro combo agregado después se queda (248ms)
+
+  20 passed (40.0s)
+E2E estable: ninguna prueba necesitó reintento.

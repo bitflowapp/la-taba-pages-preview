@@ -1,0 +1,13 @@
+Migraciones revisadas en orden: 176
+INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: assigned_rider_user_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: status (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: customer_user_id (el análisis estático no pudo resolverla).
+INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).
+Revisión estática aprobada. Falta aplicar las migraciones a Supabase local o staging.

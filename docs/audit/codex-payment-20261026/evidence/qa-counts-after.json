@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-26T03:55:01.306Z",
+  "tenants": {
+    "a": {
+      "orders": 10,
+      "payment_intents": 14,
+      "stock": {
+        "heineken-original-lata-473ml": 6,
+        "QA-REC-001": 17,
+        "QA-REC-002": 9,
+        "QA-REC-003": 1
+      }
+    },
+    "b": {
+      "orders": 0,
+      "payment_intents": 0,
+      "stock": {
+        "QA-MKT-001": 5
+      }
+    }
+  }
+}

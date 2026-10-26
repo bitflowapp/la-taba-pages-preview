@@ -6,6 +6,7 @@ import { createInterface } from 'node:readline';
 import { mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { passPreviewGate } from './preview-gate-login.mjs';
 
 const buyer = JSON.parse(leerSecreto('RECOVERY MP TEST BUYER')?.secreto || '{}');
 if (buyer.id !== '3594962710' || buyer.profile !== 'buyer' || !buyer.password || !buyer.nickname) throw Error('QA_BUYER_REQUIRED');
@@ -19,7 +20,10 @@ const dir = path.join(os.tmpdir(), runName);
 mkdirSync(dir, { recursive: true });
 const evidence = path.join(dir, 'browser.jsonl');
 const redact = s => String(s).split(buyer.password).join('[REDACTADO]').split(buyer.nickname).join('[COMPRADOR_QA]').replace(/TESTUSER\w+/gi, '[USUARIO_QA]')
-  .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[EMAIL]').replace(/\b\d{13,19}\b/g, '[NUMERO]');
+  .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[EMAIL]').replace(/\b\d{13,19}\b/g, '[NUMERO]')
+  .replace(/(?:APP_USR-|TEST-|sbp_|eyJ)[A-Za-z0-9._-]+/g, '[CREDENCIAL]')
+  .replace(/(https?:\/\/[^\s"'<>?]+)\?[^\s"'<>]*/g, '$1?[PARAMETROS_OCULTOS]')
+  .replace(/\/jms\/[^\s"'<>]+/g, '/jms/[SESION_OCULTA]');
 // Only short error-shaped fields of a provider answer are kept: never the full body, never form data.
 const ERROR_FIELDS = ['step', 'liveMode', 'error', 'errors', 'cause', 'causes', 'code', 'error_code', 'message', 'status', 'status_detail', 'reason', 'type', 'description', 'redirect_url', 'next_step'];
 const errorShape = (body, depth = 0) => {
@@ -34,9 +38,24 @@ const record = obj => {
   appendFileSync(evidence, JSON.stringify(row) + '\n');
   console.log(JSON.stringify(row));
 };
-const browser = await chromium.launch({ executablePath: process.env.QA_CHROME_PATH || path.join(process.env.ProgramFiles || '', 'Google', 'Chrome', 'Application', 'chrome.exe'), headless: false });
+const browser = await chromium.launch({ executablePath: process.env.QA_CHROME_PATH || path.join(process.env.ProgramFiles || '', 'Google', 'Chrome', 'Application', 'chrome.exe'), headless: process.env.QA_MP_HEADLESS === '1' });
 const context = await browser.newContext({ locale: 'es-AR', viewport: { width: 1280, height: 900 } });
+const qaOrigin = 'https://recovery-20261020.taba2-staging.pages.dev';
+await context.route(/^https:\/\/[^/]+\.supabase\.co\//, route =>
+  new URL(route.request().url()).origin === 'https://ixewllzzuzpqrkxzmfzx.supabase.co'
+    ? route.continue() : route.abort('blockedbyclient'));
 const page = await context.newPage();
+let closeBeforeReturn = false;
+await context.route(`${qaOrigin}/pago/**`, async route => {
+  if (!closeBeforeReturn) return route.continue();
+  const returned = new URL(route.request().url());
+  record({kind:'browser_closed_before_return',path:returned.pathname,
+    payment_id_hint:returned.searchParams.get('payment_id'),status_hint:returned.searchParams.get('status'),
+    authority:'URL hints must be verified independently against provider and database'});
+  await route.abort();
+  await browser.close();
+  process.exit(0);
+});
 page.setDefaultTimeout(8000);
 const seenFlows = new Set();
 page.on('response', async response => {
@@ -82,7 +101,30 @@ async function state() {
 }
 async function command(c) {
   if (c.action === 'state') return state();
-  if (c.action === 'goto') {
+  if (c.action === 'arm-close-before-return') {
+    if (new URL(page.url()).origin !== 'https://www.mercadopago.com.ar' || paySent) throw Error('ARM_BEFORE_PAYMENT_ONLY');
+    closeBeforeReturn = true;
+    return {kind:'close_before_return_armed',scenario};
+  }
+  if (c.action === 'qa-open') {
+    await passPreviewGate(context, qaOrigin, leerSecreto('RECOVERY PREVIEW ACCESS'));
+    await page.goto(`${qaOrigin}/#catalog`, {waitUntil:'domcontentloaded',timeout:60000});
+    const matches = await page.evaluate(() => globalThis.__LA_TABA_RUNTIME_CONFIG__?.repository?.supabaseUrl
+      === 'https://ixewllzzuzpqrkxzmfzx.supabase.co');
+    if (!matches) throw Error('EXACT_QA_PROJECT_REQUIRED');
+  } else if (c.action.startsWith('qa-')) {
+    if (new URL(page.url()).origin !== qaOrigin) throw Error('QA_STOREFRONT_ONLY');
+    if (c.action === 'qa-click') await page.locator(c.selector).click();
+    else if (c.action === 'qa-fill') {
+      if (!['QA Auditor Codex','2995550811','QA: no entregar'].includes(c.value)) throw Error('SYNTHETIC_CONTACT_ONLY');
+      await page.locator(c.selector).fill(c.value);
+    } else if (c.action === 'qa-select') {
+      if (!['pickup','mercadopago'].includes(c.value)) throw Error('QA_CHECKOUT_OPTIONS_ONLY');
+      await page.locator(c.selector).selectOption(c.value);
+    } else if (c.action === 'qa-dom') {
+      return {kind:'qa_dom',html:redact(await page.locator(c.selector).evaluate(e=>e.outerHTML)).slice(0,12000)};
+    } else throw Error('UNKNOWN_QA_ACTION');
+  } else if (c.action === 'goto') {
     const u = new URL(c.url);
     if (u.protocol !== 'https:' || u.host !== 'www.mercadopago.com.ar') throw Error('OFFICIAL_MP_AR_ONLY');
     await page.goto(c.url, { waitUntil: 'domcontentloaded', timeout: 30000 });

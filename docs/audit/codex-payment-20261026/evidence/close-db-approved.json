@@ -1,0 +1,155 @@
+{
+ "session": {
+  "id": "47d67f35-65e5-40ec-8044-7c5aa792fe21",
+  "status": "completed",
+  "currency": "ARS",
+  "subtotal": 100,
+  "discount_total": 0,
+  "delivery_fee": 0,
+  "total": 100,
+  "expires_at": "2026-10-26T03:56:08.613993+00:00",
+  "completed_order_id": "49e0e760-96ef-4d3e-9345-786191a3969c",
+  "manual_review_reason": null,
+  "created_at": "2026-10-26T03:40:04.487655+00:00",
+  "updated_at": "2026-10-26T03:46:08.790993+00:00"
+ },
+ "intents": [
+  {
+   "id": "7d8c8ed2-3d4a-4598-ac2c-065e49919dc1",
+   "internal_status": "completed",
+   "environment": "test",
+   "expected_amount": 100,
+   "paid_amount": 100,
+   "currency": "ARS",
+   "external_reference": "taba2:checkout:47d67f35-65e5-40ec-8044-7c5aa792fe21",
+   "provider_payment_id": "186126875298",
+   "provider_status": "approved",
+   "provider_status_detail": "accredited",
+   "live_mode": true,
+   "approved_at": "2026-10-26T03:46:04+00:00",
+   "rejected_at": null,
+   "refunded_amount": 0,
+   "order_id": "49e0e760-96ef-4d3e-9345-786191a3969c",
+   "security_review_reason": null
+  }
+ ],
+ "payments": [
+  {
+   "provider_payment_id": "186126875298",
+   "environment": "test",
+   "seller_id": "3594962708",
+   "status": "approved",
+   "status_detail": "accredited",
+   "amount": 100,
+   "currency": "ARS",
+   "refunded_amount": 0,
+   "is_financing": true,
+   "validation_error": null,
+   "watch_state": "verify",
+   "next_check_at": "2026-10-26T04:01:08.469188+00:00",
+   "first_seen_at": "2026-10-26T03:46:08.469188+00:00",
+   "last_seen_at": "2026-10-26T03:46:08.469188+00:00"
+  }
+ ],
+ "attempts": [
+  {
+   "id": "63da2e57-50b7-4e4b-a97a-4dc7c408afbf",
+   "attempt_number": 1,
+   "attempt_type": "preference",
+   "status": "created",
+   "preference_id": "3594962708-31f564ec-dbbb-4b08-8916-99573757d397",
+   "last_error_code": null,
+   "created_at": "2026-10-26T03:40:05.015982+00:00"
+  }
+ ],
+ "outbox": [
+  {
+   "id": "857e9d1d-061d-491d-abc4-5a1c43524a80",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:45:00.158925+00:00",
+   "completed_at": "2026-10-26T03:45:03.30785+00:00"
+  },
+  {
+   "id": "de2fa82e-971f-4de6-b512-8556d39e72d9",
+   "topic": "payment_reconcile",
+   "resource_id": null,
+   "status": "completed",
+   "attempts": 1,
+   "interruptions": 0,
+   "last_error": null,
+   "next_attempt_at": "2026-10-26T03:42:00.093803+00:00",
+   "completed_at": "2026-10-26T03:42:02.658268+00:00"
+  }
+ ],
+ "refunds": [],
+ "cancellations": [],
+ "discrepancies": [],
+ "receipts": [
+  {
+   "event_type": "payment",
+   "resource_id": "186126875298",
+   "signature_valid": true,
+   "processing_status": "completed",
+   "attempt_count": 1,
+   "received_at": "2026-10-26T03:46:06.951543+00:00",
+   "processed_at": "2026-10-26T03:46:08.819567+00:00",
+   "last_error": null
+  }
+ ],
+ "orders": [
+  {
+   "id": "49e0e760-96ef-4d3e-9345-786191a3969c",
+   "public_code": "LT-0186",
+   "status": "received",
+   "payment_method": "mercadopago",
+   "manual_payment_status": null,
+   "total": 100,
+   "currency_code": "ARS",
+   "created_at": "2026-10-26T03:46:08.609245+00:00",
+   "cancelled_at": null
+  }
+ ],
+ "reservations": [
+  {
+   "product_id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+   "quantity": 1,
+   "status": "converted",
+   "expires_at": "2026-10-26T03:56:08.613091+00:00",
+   "released_at": null,
+   "release_reason": null,
+   "converted_at": "2026-10-26T03:46:08.748865+00:00"
+  }
+ ],
+ "ledger": [
+  {
+   "environment": "test",
+   "watermark_at": "2026-10-26T03:43:37.13+00:00",
+   "window_begin": null,
+   "window_end": null,
+   "next_offset": 0
+  }
+ ],
+ "stock": [
+  {
+   "sku": "heineken-original-lata-473ml",
+   "stock": 6
+  },
+  {
+   "sku": "QA-REC-001",
+   "stock": 17
+  },
+  {
+   "sku": "QA-REC-002",
+   "stock": 9
+  },
+  {
+   "sku": "QA-REC-003",
+   "stock": 1
+  }
+ ]
+}

@@ -189,6 +189,7 @@ async function main() {
     const buyer = await buyerClient();
     const sku = arg('--sku', 'QA-REC-001');
     const quantity = Number(arg('--qty', '1'));
+    const combo = arg('--combo');
     const product = (await admin().from('products').select('id,price,stock').eq('business_id', A).eq('sku', sku).single()).data;
     assert.ok(product, 'QA product not found');
     assert.ifError((await buyer.rpc('upsert_current_customer_profile', { p_name: 'QA Comprador', p_phone: '2995550811' })).error);
@@ -196,6 +197,15 @@ async function main() {
     const payload = { business_id: A, client_request_id: clientRequestId, items: [{ product_id: product.id, quantity }],
       fulfillment_type: 'pickup', contact: { name: 'QA Comprador', phone: '2995550811' }, address: {},
       age_confirmed: true, payment_method: 'mercadopago', notes: `QA ${arg('--scenario', 'manual')}: no entregar` };
+    if (combo) {
+      assert.match(combo, /^[a-z0-9][a-z0-9-]{2,63}$/);
+      payload.items = [{ combo_id: combo, quantity }];
+    }
+    for (const extraSku of String(arg('--extra-sku', '')).split(',').filter(Boolean)) {
+      const { data: extra, error } = await admin().from('products').select('id').eq('business_id', A).eq('sku', extraSku).single();
+      assert.ifError(error); assert.ok(extra);
+      payload.items.push({product_id:extra.id,quantity:1});
+    }
     const session = await invoke(buyer, 'mercadopago-create-checkout-session', payload);
     const checkout = session.body.checkout || {};
     const sessionId = checkout.checkout_session_id || checkout.id;
@@ -208,7 +218,7 @@ async function main() {
         preference.repeat = { status: again.status, same_init_point: again.body.init_point === preference.body.init_point };
       }
     }
-    const result = { scenario: arg('--scenario', 'manual'), sku, quantity, unit_price: product.price,
+    const result = { scenario: arg('--scenario', 'manual'), sku, combo: combo || null, items: payload.items, quantity, unit_price: product.price,
       session_http: session.status, session_code: session.body.code || null, checkout_session_id: sessionId || null,
       total: checkout.total ?? null, currency: checkout.currency ?? null,
       preference_http: preference?.status ?? null, preference_code: preference?.body?.code || null,

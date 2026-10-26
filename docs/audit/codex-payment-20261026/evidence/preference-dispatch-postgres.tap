@@ -1,0 +1,10 @@
+{"case":"sql-preference-race","callers":8,"dispatchOwners":1}
+✔ eight SQL sessions claim exactly one preference dispatch; retry after lost response cannot reclaim (2789.3404ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2856.4614

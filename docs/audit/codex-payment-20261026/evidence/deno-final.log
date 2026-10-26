@@ -1,0 +1,484 @@
+running 8 tests from ./supabase/functions/_shared/mercadopago-webhook-signature.deno.ts
+Mercado Pago webhook: firma válida ... ok (2ms)
+Mercado Pago webhook: firma inválida, secret erróneo y request ID erróneo ... ok (0ms)
+Mercado Pago webhook: data.id incorrecto, payload alterado y sin firma ... ok (0ms)
+Mercado Pago webhook: timestamp vencido ... ok (0ms)
+Mercado Pago webhook: acepta ts en segundos y en milisegundos ... ok (0ms)
+Mercado Pago webhook: un ts en milisegundos vencido sigue vencido ... ok (0ms)
+Mercado Pago webhook: ts no numérico o implausible se rechaza ... ok (0ms)
+Mercado Pago webhook: un data.id alfanumérico en mayúsculas se firma en minúsculas (documentación oficial) ... ok (0ms)
+running 6 tests from ./supabase/functions/_shared/payment-runtime.deno.ts
+cf-connecting-ip manda sobre cualquier x-forwarded-for ... ok (1ms)
+un primer salto inventado no cambia la identidad: decide el último ... ok (0ms)
+saltos vacíos se ignoran ... ok (0ms)
+sin cf-connecting-ip ni x-forwarded-for se usa x-real-ip ... ok (0ms)
+sin ningún encabezado la identidad es unknown, no vacía ... ok (0ms)
+el sujeto sigue separado de la IP por NUL ... ok (0ms)
+running 4 tests from ./supabase/functions/_shared/payment-worker-signature.deno.ts
+worker acepta HMAC válido dentro de la tolerancia ... ok (1ms)
+worker rechaza secret, firma, nonce y timestamp incorrectos ... ok (0ms)
+worker rechaza replay vencido y fecha futura fuera de tolerancia ... ok (0ms)
+manifest canónico coincide con el contrato SQL del scheduler ... ok (0ms)
+running 7 tests from ./supabase/functions/_shared/request-protocol.deno.ts
+proxy HTTPS: request.url llega en http y x-forwarded-proto manda ... ok (0ms)
+HTTP real detrás del proxy sigue rechazado ... ok (0ms)
+cadena de proxies: decide el primer hop, no el último ... ok (0ms)
+encabezado con mayúsculas y espacios se normaliza ... ok (0ms)
+valor desconocido no se interpreta como HTTPS ... ok (0ms)
+sin encabezado se cae a request.url ... ok (0ms)
+encabezado vacío se cae a request.url en vez de rechazar ... ok (41ms)
+running 9 tests from ./supabase/functions/_shared/webhook-notification.deno.ts
+notificacion moderna: data.id manda ... ok (0ms)
+merchant order legacy: topic + id se resuelve ... ok (0ms)
+data.id gana sobre el id legacy si vienen los dos ... ok (0ms)
+un id suelto sin topic no identifica recurso ... ok (0ms)
+sin parametros no hay recurso ... ok (0ms)
+tipo de evento: el cuerpo tiene prioridad sobre el query ... ok (0ms)
+tipo de evento: cae al topic del query cuando el cuerpo no lo trae ... ok (0ms)
+IPN legacy: topic + id con cuerpo {resource, topic} ... ok (0ms)
+IPN legacy: cualquier marca de webhook lo deja en manos de la firma ... ok (0ms)
+running 13 tests from ./supabase/functions/_shared/seller-webhook-routing.deno.ts
+ruta habitual: user_id es el vendedor, una sola lectura con su token y sin listar vendedores ... ok (0ms)
+R-MKT-1: user_id del dueño de la integradora → se busca entre los vendedores conectados y gana el que cobró ... ok (0ms)
+una pista de OTRO vendedor no acredita nada a ese vendedor: el pago queda en quien lo cobró ... ok (0ms)
+sin pista o con una pista ilegible también se busca, sin confiar en el cuerpo ... ok (6ms)
+si nadie cobró ese pago, el aviso se rechaza (y lo encuentran los barridos del proveedor) ... ok (0ms)
+un proveedor que no puede contestar es un reintento, nunca una adivinanza ... ok (0ms)
+un token que ve el pago como PAGADOR no es el vendedor: se sigue buscando al cobrador ... ok (0ms)
+el pago cobrado por B con la referencia de un checkout de A sigue siendo un rechazo ... ok (0ms)
+producción exige live_mode verdadero en el pago leído ... ok (0ms)
+conexiones de otra aplicación, otro entorno o no conectadas no son candidatas ... ok (0ms)
+la búsqueda está acotada a 25 vendedores ... ok (0ms)
+un aviso sin firma válida o que no es de un pago no busca a nadie ... ok (0ms)
+la búsqueda alternativa respeta el tiempo de respuesta de Mercado Pago: pasado el presupuesto pide reintento ... ok (0ms)
+running 2 tests from ./supabase/functions/_shared/refund-amount.deno.ts
+un reembolso parcial con centavos se acepta por su importe exacto ... ok (0ms)
+un importe inválido es un 400 con su motivo, nunca un 503 genérico ... ok (0ms)
+running 12 tests from ./supabase/functions/_shared/mercadopago-preference.deno.ts
+el envío viaja como línea propia y el total cobrado es el del servidor ... ok (30ms)
+sin diferencia no se inventa una línea de envío ... ok (0ms)
+un carrito cuyas líneas superan el total del servidor NO se cobra ... ok (0ms)
+el importe nunca sale del entorno equivocado ... ok (0ms)
+en producción hace falta la autorización explícita de pago real ... ok (0ms)
+una sesión vencida no puede generar una preferencia ... ok (0ms)
+OAuth usa un webhook compartido sin business_id fijo para todos los comercios ... ok (0ms)
+la preferencia lleva la referencia externa, el webhook y las tres vueltas ... ok (0ms)
+el medio de pago offline y las cuotas salen de la configuración del comercio ... ok (0ms)
+toda línea se cobra en pesos, sin excepción ... ok (0ms)
+recovery exige paginación completa y falla cerrado si falta o está truncada ... ok (0ms)
+recovery acepta la respuesta real del buscador: total arriba y next_offset ... ok (0ms)
+running 26 tests from ./supabase/functions/_shared/seller-oauth-runtime.deno.ts
+staging rejects every production-consent exception ... ok (1ms)
+seller identity uses provider tags to prevent test/production crossover ... ok (1ms)
+OAuth network preserves the encrypted grant and does not demand seller consent ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.221Z","event":"token_refresh_failed","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"26050173-996f-4e00-83f7-72fe9ca32c7b"}
+----- post-test output end -----
+OAuth network preserves the encrypted grant and does not demand seller consent ... ok (8ms)
+OAuth server preserves the encrypted grant and does not demand seller consent ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.222Z","event":"token_refresh_failed","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"53ce748c-0d83-44df-aa20-97b29cbdee86"}
+----- post-test output end -----
+OAuth server preserves the encrypted grant and does not demand seller consent ... ok (1ms)
+OAuth persist_failure preserves the encrypted grant and does not demand seller consent ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.224Z","event":"token_refresh_failed","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"1a31b492-9f34-4ba1-926c-170df0d7babd"}
+----- post-test output end -----
+OAuth persist_failure preserves the encrypted grant and does not demand seller consent ... ok (1ms)
+only a confirmed invalid_grant requires seller reauthorization, without deleting the sealed grant ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.226Z","event":"token_refresh_failed","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"8d5105d0-0169-48f6-9432-56e04dbcab82"}
+----- post-test output end -----
+only a confirmed invalid_grant requires seller reauthorization, without deleting the sealed grant ... ok (1ms)
+a stale refresh lease is recovered without revoking a still-valid seller ... ok (1ms)
+an access-token 401 renews through the existing offline grant instead of reconnecting the seller ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.230Z","event":"token_refresh_success","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"6df3e1fc-3e64-4953-af6f-b84a0359ca07"}
+----- post-test output end -----
+an access-token 401 renews through the existing offline grant instead of reconnecting the seller ... ok (2ms)
+a stale 401 cannot expire a newer credential ... ok (0ms)
+OAuth configuration rejects project and deployment crossover ... ok (0ms)
+OAuth contract rejects cross-origin, unknown-project and normalized bypasses ... ok (0ms)
+known deployments reject the other Mercado Pago application ... ok (0ms)
+controlled production binds only its own host, storefront and the La Taba Delivery application ... ok (0ms)
+known hosted projects cannot fall back to a global credential ... ok (0ms)
+a global token cannot reach the provider when hosted OAuth mode is invalid ... ok (1ms)
+refresh rotates once and subsequent readers use the persisted token ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.237Z","event":"token_refresh_success","business_id":"92000000-0000-4000-8000-000000000001","correlation_id":"abc55e7d-0d08-42da-996c-569be6759855"}
+----- post-test output end -----
+refresh rotates once and subsequent readers use the persisted token ... ok (3ms)
+OAuth rejects missing offline permission, sandbox credentials and invalid grants ... ok (0ms)
+test OAuth asks for APP_USR credentials of the test seller, never sandbox ones ... ok (0ms)
+a stored sandbox grant requires reconnection instead of creating a checkout that cannot be paid ... ok (0ms)
+the integrator owner must be a test user in test and a real account in production ... ok (1ms)
+only a verified integrator is remembered; a mismatch or an unreadable answer is asked again ... ok (0ms)
+production OAuth demands live_mode=true while test OAuth does not ... ok (0ms)
+the integrator check does not depend on undocumented fields of the provider's answer ... ok (0ms)
+a verified integrator is trusted for six hours and read again after that ... ok (0ms)
+simultaneous callers of one isolate share a single provider read ... ok (0ms)
+sales path: production does not stop on an unreadable owner; test does; a mismatch always blocks ... ok (0ms)
+running 13 tests from ./supabase/functions/_shared/seller-connection-verification.deno.ts
+generic write cannot certify explicit read-only refunds ... ok (10ms)
+generic write cannot certify explicit read-only cancel ... ok (1ms)
+real verification checks OAuth identity, scopes, current binding, execution and backend without a purchase ... ok (2ms)
+verification reports payments_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports production_execution_not_enabled without enabling or reconnecting ... ok (1ms)
+verification reports seller_binding_mismatch without enabling or reconnecting ... ok (1ms)
+verification reports integrator_environment_mismatch before anything else and never enables ... ok (1ms)
+verification fails safely: {"providerStatus":503} ... ok (1ms)
+verification fails safely: {"scopes":"read write"} ... ok (1ms)
+verification fails safely: {"backendError":true} ... ok (1ms)
+verification fails safely: {"integratorStatus":401} ... ok (1ms)
+verification fails safely: {"integratorStatus":503} ... ok (1ms)
+verification reports seller_is_integrator for a production link to the own account of La Taba ... ok (1ms)
+running 8 tests from ./supabase/functions/_shared/clean-business-oauth.deno.ts
+clean business callback, replay and tenant routing (staging test) ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.698Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"ba39d516-dfd3-4ebc-a23b-1568c6fc245d"}
+{"timestamp":"2026-10-26T03:47:04.702Z","event":"oauth_callback_success","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"b35d4428-2db8-4b5e-bd0c-79a02053b226"}
+{"timestamp":"2026-10-26T03:47:04.702Z","event":"seller_connected","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"b35d4428-2db8-4b5e-bd0c-79a02053b226"}
+{"timestamp":"2026-10-26T03:47:04.703Z","event":"oauth_callback_failed","business_id":"unknown","correlation_id":"e9dc9538-9680-4071-969d-eb2411e1ef9a"}
+{"timestamp":"2026-10-26T03:47:04.705Z","event":"preference_created","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"d068ec7d-312c-4a90-9ea3-72be61cd398f"}
+----- post-test output end -----
+clean business callback, replay and tenant routing (staging test) ... ok (24ms)
+connecting is refused BEFORE the seller consents when the integrator belongs to the other environment ... ok (1ms)
+an unreadable integrator owner makes connecting a retry, never a silent pass ... ok (1ms)
+the callback also refuses to link when the integrator changed after the link was started ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.714Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"f511f7d7-50db-4681-9f60-3037fd035f1c"}
+{"timestamp":"2026-10-26T03:47:04.715Z","event":"oauth_callback_failed","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"31c262ce-aacf-47be-b9dc-04b75572a054"}
+----- post-test output end -----
+the callback also refuses to link when the integrator changed after the link was started ... ok (2ms)
+production: the account that owns La Taba Delivery is never linked as a business seller ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.717Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"bbdb2221-d5fa-44c6-92fd-587cbec323e9"}
+{"timestamp":"2026-10-26T03:47:04.718Z","event":"oauth_callback_failed","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"2153ae07-95d5-47cb-8204-a1dba37f02ec"}
+----- post-test output end -----
+production: the account that owns La Taba Delivery is never linked as a business seller ... ok (3ms)
+production: a real business account different from the integrator owner links normally ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.720Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"397d6d4f-93e2-4d6d-990b-ba7d457495e4"}
+{"timestamp":"2026-10-26T03:47:04.722Z","event":"oauth_callback_success","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"fa2e476e-8677-45e4-877d-260955987ceb"}
+{"timestamp":"2026-10-26T03:47:04.722Z","event":"seller_connected","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"fa2e476e-8677-45e4-877d-260955987ceb"}
+----- post-test output end -----
+production: a real business account different from the integrator owner links normally ... ok (3ms)
+test: the QA integrator is the test seller's own application, so the same account links ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.724Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"5ecf49a2-7059-49f5-bd0e-65961d39cc39"}
+{"timestamp":"2026-10-26T03:47:04.725Z","event":"oauth_callback_success","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"b8441fe6-6bb3-4aa8-8123-f5fd8fc6cb0f"}
+{"timestamp":"2026-10-26T03:47:04.725Z","event":"seller_connected","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"b8441fe6-6bb3-4aa8-8123-f5fd8fc6cb0f"}
+----- post-test output end -----
+test: the QA integrator is the test seller's own application, so the same account links ... ok (3ms)
+an account already linked to another business is answered as such, not as a generic error ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:04.727Z","event":"oauth_started","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"0da0d83c-0174-45bf-bb23-f0815a958a7e"}
+{"timestamp":"2026-10-26T03:47:04.728Z","event":"oauth_callback_failed","business_id":"93000000-0000-4000-8000-000000000001","correlation_id":"8e3cb938-6889-49a1-ab9a-4b3411da2d5a"}
+----- post-test output end -----
+an account already linked to another business is answered as such, not as a generic error ... ok (2ms)
+running 8 tests from ./supabase/functions/_shared/seller-webhook-runtime.deno.ts
+OAuth webhook validates HMAC and routes a provider-verified payment without trusting business_id ... ok (14ms)
+OAuth webhook rejects invalid HMAC before seller lookup or provider access ... ok (2ms)
+OAuth webhook cannot queue a verified payment against another business reference ... ok (3ms)
+a legacy IPN is acknowledged without a receipt, a seller lookup or a provider read ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.024Z","event":"legacy_ipn_ignored","topic":"payment"}
+----- post-test output end -----
+a legacy IPN is acknowledged without a receipt, a seller lookup or a provider read ... ok (1ms)
+an unsigned modern webhook is still rejected and recorded ... ok (1ms)
+an IPN query with a webhook body is a webhook: its signature decides ... ok (1ms)
+a legacy-shaped request with a VALID signature is a webhook: the bypass never swallows it ... ok (2ms)
+an ignored legacy IPN leaves a counter-only log line, never its id or body ... ok (1ms)
+running 97 tests from ./supabase/functions/_shared/current-payment-authority.deno.ts
+A1 real handler stored: payments_disabled during /users/me ... ok (15ms)
+A1 real handler stored: business_closed during /users/me ... ok (4ms)
+A1 real handler stored: generation during /users/me ... ok (4ms)
+A1 real handler stored: credential during /users/me ... ok (5ms)
+A1 real handler stored: disconnected during /users/me ... ok (3ms)
+A1 real handler stored: settings_version during /users/me ... ok (4ms)
+A1 real handler stored: review during /users/me ... ok (4ms)
+A1 real handler stored: smoke during /users/me ... ok (4ms)
+A1 real handler stored: reservation during /users/me ... ok (4ms)
+A1 real handler stored: expired during /users/me ... ok (3ms)
+A1 real handler stored: none during /users/me ... ok (3ms)
+A1 real handler stored: cancelled during /users/me ... ok (4ms)
+A1 real handler stored: superseded during /users/me ... ok (2ms)
+A1 real handler stored: attempt_id during /users/me ... ok (3ms)
+A1 real handler stored: same_seller_other_attempt during /users/me ... ok (3ms)
+A1 real handler stored: preference during /users/me ... ok (4ms)
+A1 real handler stored: url during /users/me ... ok (3ms)
+A1 real handler stored: aba during /users/me ... ok (3ms)
+A1 real handler stored: intent_cancelled during /users/me ... ok (2ms)
+A1 real handler stored_legacy: payments_disabled during /users/me ... ok (3ms)
+A1 real handler stored_legacy: business_closed during /users/me ... ok (3ms)
+A1 real handler stored_legacy: generation during /users/me ... ok (3ms)
+A1 real handler stored_legacy: credential during /users/me ... ok (3ms)
+A1 real handler stored_legacy: disconnected during /users/me ... ok (3ms)
+A1 real handler stored_legacy: settings_version during /users/me ... ok (11ms)
+A1 real handler stored_legacy: review during /users/me ... ok (3ms)
+A1 real handler stored_legacy: smoke during /users/me ... ok (3ms)
+A1 real handler stored_legacy: reservation during /users/me ... ok (3ms)
+A1 real handler stored_legacy: expired during /users/me ... ok (2ms)
+A1 real handler stored_legacy: none during /users/me ... ok (2ms)
+A1 real handler stored_legacy: cancelled during /users/me ... ok (3ms)
+A1 real handler stored_legacy: superseded during /users/me ... ok (2ms)
+A1 real handler stored_legacy: attempt_id during /users/me ... ok (4ms)
+A1 real handler stored_legacy: same_seller_other_attempt during /users/me ... ok (3ms)
+A1 real handler stored_legacy: preference during /users/me ... ok (3ms)
+A1 real handler stored_legacy: url during /users/me ... ok (3ms)
+A1 real handler stored_legacy: aba during /users/me ... ok (3ms)
+A1 real handler stored_legacy: intent_cancelled during /users/me ... ok (2ms)
+A1 real handler recovered: payments_disabled during /users/me ... ok (3ms)
+A1 real handler recovered: business_closed during /users/me ... ok (3ms)
+A1 real handler recovered: generation during /users/me ... ok (5ms)
+A1 real handler recovered: credential during /users/me ... ok (3ms)
+A1 real handler recovered: disconnected during /users/me ... ok (2ms)
+A1 real handler recovered: settings_version during /users/me ... ok (3ms)
+A1 real handler recovered: review during /users/me ... ok (2ms)
+A1 real handler recovered: smoke during /users/me ... ok (2ms)
+A1 real handler recovered: reservation during /users/me ... ok (2ms)
+A1 real handler recovered: expired during /users/me ... ok (3ms)
+A1 real handler recovered: none during /users/me ... ok (4ms)
+A1 real handler recovered: cancelled during /users/me ... ok (2ms)
+A1 real handler recovered: superseded during /users/me ... ok (2ms)
+A1 real handler recovered: attempt_id during /users/me ... ok (2ms)
+A1 real handler recovered: same_seller_other_attempt during /users/me ... ok (2ms)
+A1 real handler recovered: preference during /users/me ... ok (3ms)
+A1 real handler recovered: url during /users/me ... ok (3ms)
+A1 real handler recovered: aba during /users/me ... ok (2ms)
+A1 real handler recovered: intent_cancelled during /users/me ... ok (3ms)
+A1 real handler new: payments_disabled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.374Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"ad6501f0-f0fe-4046-902d-9609dc582f28"}
+----- post-test output end -----
+A1 real handler new: payments_disabled during /users/me ... ok (3ms)
+A1 real handler new: business_closed during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.378Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"8890c573-5613-437a-a207-2c0f4f4078cf"}
+----- post-test output end -----
+A1 real handler new: business_closed during /users/me ... ok (3ms)
+A1 real handler new: generation during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.382Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"f81d0b4a-f1e1-426d-99f3-e76739e089ee"}
+----- post-test output end -----
+A1 real handler new: generation during /users/me ... ok (3ms)
+A1 real handler new: credential during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.386Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"0bf18ea0-28b6-445b-b4b3-24dd0bf1bf05"}
+----- post-test output end -----
+A1 real handler new: credential during /users/me ... ok (3ms)
+A1 real handler new: disconnected during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.389Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"502889f5-6e7b-45e0-9b1d-a8084fc62941"}
+----- post-test output end -----
+A1 real handler new: disconnected during /users/me ... ok (3ms)
+A1 real handler new: settings_version during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.392Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"e9a2d1cc-ec68-453d-ac7f-ac282c309398"}
+----- post-test output end -----
+A1 real handler new: settings_version during /users/me ... ok (3ms)
+A1 real handler new: review during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.397Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"c0c79bbb-cd8f-40c0-939f-57ffc599f779"}
+----- post-test output end -----
+A1 real handler new: review during /users/me ... ok (4ms)
+A1 real handler new: smoke during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.400Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"9577bc3c-a60e-4636-a6df-78fcfaeb7d51"}
+----- post-test output end -----
+A1 real handler new: smoke during /users/me ... ok (3ms)
+A1 real handler new: reservation during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.403Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"095d6abb-15d5-4f15-b004-c1d2f8c63dcc"}
+----- post-test output end -----
+A1 real handler new: reservation during /users/me ... ok (3ms)
+A1 real handler new: expired during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.406Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"2014f6cb-90cf-4a07-8b9d-1652bf3ebdee"}
+----- post-test output end -----
+A1 real handler new: expired during /users/me ... ok (3ms)
+A1 real handler new: none during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.410Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"1ae24fda-5150-4c6b-bd16-9edcd45d1335"}
+----- post-test output end -----
+A1 real handler new: none during /users/me ... ok (2ms)
+A1 real handler new: cancelled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.413Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"2698d39c-90e5-4c49-a5d6-a859a2416677"}
+----- post-test output end -----
+A1 real handler new: cancelled during /users/me ... ok (3ms)
+A1 real handler new: superseded during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.417Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"600dbedd-b382-4bd8-bc14-298ca9684d4a"}
+----- post-test output end -----
+A1 real handler new: superseded during /users/me ... ok (3ms)
+A1 real handler new: attempt_id during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.420Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"d6aaf5b9-9ee8-4bfa-8d0f-5c4ae4232949"}
+----- post-test output end -----
+A1 real handler new: attempt_id during /users/me ... ok (3ms)
+A1 real handler new: same_seller_other_attempt during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.425Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"ab8cfe6c-0214-4c4d-a229-7c7fd244eab7"}
+----- post-test output end -----
+A1 real handler new: same_seller_other_attempt during /users/me ... ok (4ms)
+A1 real handler new: preference during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.428Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"88f6ebdb-4f36-4790-be7f-0720330d4615"}
+----- post-test output end -----
+A1 real handler new: preference during /users/me ... ok (3ms)
+A1 real handler new: url during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.433Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"d74974b3-2437-4bee-bf32-b2217f257761"}
+----- post-test output end -----
+A1 real handler new: url during /users/me ... ok (3ms)
+A1 real handler new: aba during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.436Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"f5be97bb-04a4-4688-805c-47497cfc821d"}
+----- post-test output end -----
+A1 real handler new: aba during /users/me ... ok (3ms)
+A1 real handler new: intent_cancelled during /users/me ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:05.439Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"bead544c-ba9f-4453-82fb-59668a3773e0"}
+----- post-test output end -----
+A1 real handler new: intent_cancelled during /users/me ... ok (2ms)
+A1 stored URL initially rejects no_seller ... ok (1ms)
+A1 stored URL initially rejects disconnected ... ok (1ms)
+A1 stored URL initially rejects requires_reauthorization ... ok (1ms)
+A1 stored URL initially rejects cleared_tokens ... ok (1ms)
+A1 stored URL initially rejects wrong_business ... ok (2ms)
+A1 stored URL initially rejects wrong_environment ... ok (1ms)
+A1 stored URL initially rejects payments_disabled ... ok (2ms)
+A1 stored URL initially rejects missing_smoke ... ok (1ms)
+A1 stored URL initially rejects integrator_environment ... ok (1ms)
+an integrator application of the other environment never gets a preference (2034 Invalid users involved) ... ok (1ms)
+preference POST preserves provider uncertainty: HTTP 408 ... ok (3ms)
+preference POST preserves provider uncertainty: HTTP 409 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 425 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 429 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 500 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 502 ... ok (3ms)
+preference POST preserves provider uncertainty: HTTP 503 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 400 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 401 ... ok (3ms)
+preference POST preserves provider uncertainty: HTTP 403 ... ok (2ms)
+preference POST preserves provider uncertainty: HTTP 422 ... ok (2ms)
+running 24 tests from ./supabase/functions/_shared/recovery-deployment.deno.ts
+recovery requires explicit opt-in; legacy deployments keep their current binding ... ok (0ms)
+recovery binding accepts only staging, its own ref, test OAuth and controlled preview origin ... ok (0ms)
+recovery refuses the real-owned TABA2 Staging application as integrator ... ok (0ms)
+Free recovery bounds work while legacy environments keep their existing worker limits ... ok (0ms)
+recovery cannot adopt existing project wwcpogltfgzgkrlilbcd ... ok (0ms)
+recovery cannot adopt existing project tkanbadcglszlcyfjvpv ... ok (0ms)
+recovery cannot adopt existing project ucbtjcurawxjwjdvvcvj ... ok (0ms)
+recovery cannot adopt existing project ukxqbgswjlibmnjemrzd ... ok (0ms)
+recovery cannot adopt existing project yakhtrkukqlgzvxuvhzs ... ok (0ms)
+recovery cannot adopt existing project enznqfzhikpasjzpvjfd ... ok (0ms)
+recovery cannot adopt existing project udftddjacdsinscehlke ... ok (0ms)
+recovery cannot adopt existing project zvmfdlynnutxquktrgyl ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_CLIENT_ID ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_ENVIRONMENT ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_OAUTH_ENVIRONMENT ... ok (0ms)
+recovery rejects cross-environment field TABA_DEPLOYMENT_ENV ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_CREDENTIAL_MODE ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_PRODUCTION_REVIEW_STATUS ... ok (0ms)
+recovery rejects cross-environment field SUPABASE_URL ... ok (0ms)
+recovery rejects cross-environment field TABA_RECOVERY_CHECKOUT_ORIGIN ... ok (0ms)
+recovery rejects cross-environment field MERCADOPAGO_OAUTH_PROJECT_REF ... ok (0ms)
+real oauthConfig accepts the new test binding and derives callback and webhook on its own project ... ok (0ms)
+actual recovery worker claims one job and refreshes at most one seller ... ok (15ms)
+running 14 tests from ./supabase/functions/_shared/refund-correlation.deno.ts
+refund correlation requires durable request identity even with one new refund ... ok (0ms)
+known refund identity selects the exact resource independently of older refunds ... ok (0ms)
+refund correlation excludes provider IDs associated with other local refunds ... ok (0ms)
+refund correlation preserves ambiguity when two candidates remain ... ok (0ms)
+refund correlation is independent of provider array order ... ok (0ms)
+known provider refund ID is idempotent and authoritative ... ok (0ms)
+specific refund validation: wrong payment ... ok (0ms)
+specific refund validation: wrong amount ... ok (0ms)
+specific refund validation: missing amount ... ok (0ms)
+specific refund validation: missing timestamp ... ok (0ms)
+specific refund validation: pre-request ... ok (0ms)
+specific refund validation: future ... ok (0ms)
+specific refund validation: missing status ... ok (0ms)
+same-time unassociated refunds remain ambiguous under concurrent reconciliation ... ok (0ms)
+running 6 tests from ./supabase/functions/_shared/refund-no-guess.deno.ts
+A4 unknown identity remains ambiguous: missing timestamp ... ok (0ms)
+A4 unknown identity remains ambiguous: pre-request refund ... ok (0ms)
+A4 unknown identity remains ambiguous: future refund ... ok (0ms)
+A4 unknown identity remains ambiguous: two plausible refunds ... ok (0ms)
+A4 unknown identity remains ambiguous: one plausible refund without request identity ... ok (0ms)
+A4 unknown identity remains ambiguous: empty list after lost response ... ok (0ms)
+running 18 tests from ./supabase/functions/_shared/refund-runtime.deno.ts
+A4 actual worker: unknown-missing-time ... ok (20ms)
+A4 actual worker: unknown-prior ... ok (4ms)
+A4 actual worker: unknown-future ... ok (5ms)
+A4 actual worker: unknown-plausible ... ok (4ms)
+A4 actual worker: known-wrong-payment ... ok (3ms)
+A4 actual worker: known-wrong-amount ... ok (3ms)
+A4 actual worker: known-owned ... ok (2ms)
+A4 actual worker: valid ... ok (5ms)
+A4 actual refund POST: valid ... ok (3ms)
+A4 actual refund POST: partial-response ... ok (1ms)
+A4 actual refund POST: lost-response ... ok (2ms)
+A4 actual refund POST: known-wrong-payment ... ok (2ms)
+A4 actual refund POST: known-wrong-amount ... ok (1ms)
+A4 actual refund POST: throttled ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.117Z","event":"provider_rejection","operation":"refund","business_id":"96000000-0000-4000-8000-000000000001","payment_intent_id":"96000000-0000-4000-8000-000000000002","final":false,"http_status":429}
+----- post-test output end -----
+A4 actual refund POST: throttled ... ok (2ms)
+A4 actual refund POST: final-rejection ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.119Z","event":"provider_rejection","operation":"refund","business_id":"96000000-0000-4000-8000-000000000001","payment_intent_id":"96000000-0000-4000-8000-000000000002","final":true,"http_status":400}
+----- post-test output end -----
+A4 actual refund POST: final-rejection ... ok (1ms)
+provider 4xx: only final answers become rejections ... ok (0ms)
+a refused refund leaves its provider status, request id and cause codes in the log, never the body ... ok (2ms)
+provider rejection facts keep only shape-checked fields ... ok (0ms)
+running 9 tests from ./supabase/functions/_shared/cancel-runtime.deno.ts
+cancellation POST: cancelled ... ok (12ms)
+cancellation POST: final-rejection ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.288Z","event":"provider_rejection","operation":"cancellation","business_id":"97000000-0000-4000-8000-000000000001","payment_intent_id":"97000000-0000-4000-8000-000000000002","final":true,"http_status":400}
+----- post-test output end -----
+cancellation POST: final-rejection ... ok (3ms)
+cancellation POST: throttled ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.291Z","event":"provider_rejection","operation":"cancellation","business_id":"97000000-0000-4000-8000-000000000001","payment_intent_id":"97000000-0000-4000-8000-000000000002","final":false,"http_status":429}
+----- post-test output end -----
+cancellation POST: throttled ... ok (3ms)
+cancellation POST: in-flight ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.295Z","event":"provider_rejection","operation":"cancellation","business_id":"97000000-0000-4000-8000-000000000001","payment_intent_id":"97000000-0000-4000-8000-000000000002","final":false,"http_status":409}
+----- post-test output end -----
+cancellation POST: in-flight ... ok (3ms)
+cancellation POST: lost-response ... ok (3ms)
+cancellation POST: wrong-payment ... ok (2ms)
+cancellation POST: missing-payment ... ok (2ms)
+cancellation POST: replay-in-flight ... ok (1ms)
+cancellation POST: replay-rejected ... ok (1ms)
+running 9 tests from ./supabase/functions/_shared/checkout-session-availability.deno.ts
+a seller that cannot charge never gets a checkout: no stock is reserved ... ok (8ms)
+an availability lookup failure fails closed before reserving stock ... ok (1ms)
+a connected seller keeps the normal checkout path ... ok (2ms)
+an integrator application of the other environment never reserves stock ... ok (1ms)
+an unreadable integrator identity fails closed before reserving stock ... ok (2ms)
+without seller OAuth there is no integrator to check ... ok (1ms)
+the integrator guard also runs when the credential mode carries stray whitespace ... ok (1ms)
+production without the final key refuses the checkout before reserving stock ... ok (1ms)
+production with the final key keeps the normal checkout path ... ok (1ms)
+running 3 tests from ./supabase/functions/_shared/worker-business-isolation.deno.ts
+a webhook job of seller B never applies its payment to the checkout of business A ... ok (17ms)
+control: the same job for the seller's own checkout is applied as before ... ok (4ms)
+a lookup that does not say the business (a database that predates the change) behaves as before ... ok (3ms)
+running 1 test from ./supabase/functions/_shared/payment-preference-race-audit.deno.ts
+independent audit: concurrent preference requests dispatch at most one provider POST ...
+------- post-test output -------
+{"timestamp":"2026-10-26T03:47:06.799Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"366237ed-78d2-4735-ad11-e0d1e29783b7"}
+{"case":"concurrent-preference","providerPosts":1,"responseStatuses":[200,202]}
+----- post-test output end -----
+independent audit: concurrent preference requests dispatch at most one provider POST ... ok (23ms)
+
+ok | 297 passed | 0 failed (3s)

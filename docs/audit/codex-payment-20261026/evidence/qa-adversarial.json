@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-26T03:35:05.503Z",
+  "ref": "ixewllzzuzpqrkxzmfzx",
+  "synthetic": true,
+  "provider_payments_created": 0,
+  "negative_requests": [
+    {
+      "name": "price manipulation",
+      "http": 409,
+      "code": "CHECKOUT_NOT_AVAILABLE",
+      "refused": true
+    },
+    {
+      "name": "negative quantity",
+      "http": 409,
+      "code": "CHECKOUT_NOT_AVAILABLE",
+      "refused": true
+    },
+    {
+      "name": "fractional quantity",
+      "http": 409,
+      "code": "CHECKOUT_NOT_AVAILABLE",
+      "refused": true
+    },
+    {
+      "name": "foreign merchant",
+      "http": 409,
+      "code": "PAYMENTS_NOT_ENABLED",
+      "refused": true
+    },
+    {
+      "name": "insufficient stock",
+      "http": 409,
+      "code": "CHECKOUT_NOT_AVAILABLE",
+      "refused": true
+    },
+    {
+      "name": "other customer checkout",
+      "http": 404,
+      "code": "CHECKOUT_NOT_FOUND",
+      "refused": true
+    }
+  ],
+  "stock_unchanged": true,
+  "signed_replay": [
+    {
+      "http": 201,
+      "receipt_id": "c3827704-ef74-4792-858b-f89cda774047",
+      "duplicate": false,
+      "queued": true
+    },
+    {
+      "http": 201,
+      "receipt_id": "c3827704-ef74-4792-858b-f89cda774047",
+      "duplicate": true,
+      "queued": false
+    }
+  ],
+  "payment_replayed": "185029125913"
+}

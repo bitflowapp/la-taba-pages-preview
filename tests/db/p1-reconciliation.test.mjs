@@ -135,7 +135,7 @@ test('F09 a refund with a lost identity is parked, blocks recovery, and is resol
     v_result:=${snap('approved')}; update public.products set stock=10 where id=v_product;
     v_extra:=public.prepare_payment_refund_v2(v_intent,null,v_key,'forensic'); v_refund:=(v_extra->>'refund_id')::uuid;
     perform public.mark_payment_refund_ambiguous(v_refund,repeat('3',64),'response_lost');
-    perform public.park_refund_identity_unknown(v_refund,'{"provider_refunds":[{"id":"881000009","amount":2500}]}'::jsonb);
+    perform public.park_refund_identity_unknown(v_refund,'{"provider_refunds":[{"id":"881000009","amount":2500,"status":"approved"}]}'::jsonb);
     begin perform public.recover_paid_checkout_order(v_session); v_before:=jsonb_build_object('recovery','allowed'); exception when others then v_before:=jsonb_build_object('recovery',SQLSTATE); end;
     v_result:=public.resolve_ambiguous_refund(v_refund,'executed','881000009','confirmed in the provider panel, refund 881000009');
     v_extra:=jsonb_build_object('refund',(select jsonb_build_object('status',status,'id',provider_refund_id) from public.payment_refunds where id=v_refund),
@@ -148,17 +148,18 @@ test('F09 a refund with a lost identity is parked, blocks recovery, and is resol
   assert.equal(s.orders, 0);
 });
 
-test('F09 "not executed" releases the hold and a second resolution is refused', () => {
+test('F09 an operator note cannot release an unknown refund hold', () => {
   const s = runScenario(`${ACTOR} ${EXPIRE} update public.products set stock=1 where id=v_product;
     v_result:=${snap('approved')}; update public.products set stock=10 where id=v_product;
     v_extra:=public.prepare_payment_refund_v2(v_intent,null,v_key,'forensic'); v_refund:=(v_extra->>'refund_id')::uuid;
     perform public.mark_payment_refund_ambiguous(v_refund,repeat('3',64),'response_lost');
-    v_result:=public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment');
-    begin perform public.resolve_ambiguous_refund(v_refund,'executed','881000009','second attempt with a long note'); v_before:=jsonb_build_object('again','allowed'); exception when others then v_before:=jsonb_build_object('again',SQLSTATE); end;
+    begin perform public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment');
+      v_before:=jsonb_build_object('released',true); exception when others then v_before:=jsonb_build_object('released',false,'code',SQLSTATE); end;
     v_extra:=jsonb_build_object('hold',private.payment_financial_hold(v_intent),'refund_status',(select status from public.payment_refunds where id=v_refund));`);
-  assert.equal(s.extra.hold, null);
-  assert.equal(s.extra.refund_status, 'failed');
-  assert.equal(s.before.again, '55000');
+  assert.notEqual(s.extra.hold, null);
+  assert.equal(s.extra.refund_status, 'ambiguous');
+  assert.equal(s.before.released, false);
+  assert.equal(s.before.code, '55000');
   assert.equal(s.intent.refunded, 0);
 });
 

@@ -1,0 +1,31 @@
+running 1 test from ./supabase/functions/_shared/payment-preference-race-audit.deno.ts
+independent audit: concurrent preference requests dispatch at most one provider POST ...
+------- output -------
+{"timestamp":"2026-10-26T03:23:32.768Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"9fe7754e-cf87-4adc-9e72-3a6a5b8c8fba"}
+{"timestamp":"2026-10-26T03:23:32.768Z","event":"preference_created","business_id":"94000000-0000-4000-8000-000000000001","correlation_id":"6bef3f2a-0f12-46cb-8123-1a7f2dd732c2"}
+{"case":"concurrent-preference","providerPosts":2,"responseStatuses":[200,409]}
+----- output end -----
+independent audit: concurrent preference requests dispatch at most one provider POST ... FAILED (136ms)
+
+ ERRORS
+
+independent audit: concurrent preference requests dispatch at most one provider POST => ./supabase/functions/_shared/payment-preference-race-audit.deno.ts:11:6
+error: AssertionError: Values are not equal: local transaction safety must not depend on undocumented provider preference idempotency
+
+
+    [Diff] Actual / Expected
+
+
+-   2
++   1
+
+  throw new AssertionError(message);
+        ^
+    at assertEquals (https://jsr.io/@std/assert/1.0.19/equals.ts:67:9)
+    at file:///<AUDIT_WORKTREE>/supabase/functions/_shared/payment-preference-race-audit.deno.ts:81:5
+
+ FAILURES
+
+independent audit: concurrent preference requests dispatch at most one provider POST => ./supabase/functions/_shared/payment-preference-race-audit.deno.ts:11:6
+
+FAILED | 0 passed | 1 failed (143ms)

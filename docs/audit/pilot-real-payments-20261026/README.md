@@ -58,7 +58,7 @@ Proyecto `la-taba-recovery-test` (`ixewllzzuzpqrkxzmfzx`, entorno `test`, dinero
 
 **No se pudo: un pago aprobado nuevo en QA.** Checkout Pro responde «Hubo un error accediendo a esta página» a un navegador automatizado ([`log`](evidencia/qa-v170/checkout-pro-bloquea-navegador-automatizado.log)); es una barrera anti-bot y no se esquiva. Lo paga una persona (§ 10, E7). La extensión de Chrome tampoco estaba conectada.
 
-**Ensayo del piloto contra la base alojada (QA):** `preflight` sin bloqueos → `autorizar` (importe y huella tipeados) → cantidad distinta y producto distinto: **409 rechazados** → la compra exacta: **aceptada una vez con preferencia real de Mercado Pago** → la segunda: 409 → nueva autorización con un checkout en vuelo: **rechazada** → importe o huella mal tipeados: rechazados → `verificar` marca la compra sin pagar como falla.
+**Ensayo del piloto contra la base alojada (QA):** `preflight` sin bloqueos → `autorizar` (importe y huella tipeados) → cantidad distinta y producto distinto: **409 rechazados** → la compra exacta: **aceptada una vez con preferencia real de Mercado Pago** → la segunda: 409 → nueva autorización con un checkout en vuelo: **rechazada** → importe o huella mal tipeados: rechazados → `verificar` marca la compra sin pagar como falla → el checkout sin pagar venció solo, reserva liberada, stock 17 → autorizar de nuevo y **abortar**: la compra exacta pasó a 409. Después el comercio A de QA volvió a su alcance normal y la ventana se cerró (`COORDINACION-la-taba-QA-claude-v170-20261026.json`: CLOSED).
 
 ## 4. Configuración productiva preparada
 

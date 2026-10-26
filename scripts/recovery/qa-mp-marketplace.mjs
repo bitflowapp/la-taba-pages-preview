@@ -4,12 +4,14 @@
 // `marketplace: NONE` and a webhook `user_id` cannot be told apart between "seller" and "application owner".
 //
 //   node scripts/recovery/qa-mp-marketplace.mjs preflight [--seller <id>]   read-only readiness report
-//   node scripts/recovery/qa-mp-marketplace.mjs verify --session <id> --seller <id>   read-only evidence after a payment
+//   node scripts/recovery/qa-mp-marketplace.mjs snapshot --out <file>   read-only counts (orders, payment intents, stock) of both tenants; take it BEFORE the payment
+//   node scripts/recovery/qa-mp-marketplace.mjs verify --session <id> --seller <id> [--baseline <file>]   read-only evidence after a payment; with a baseline it also proves orders, intents and stock moved in tenant B only
 //   node scripts/recovery/qa-mp-marketplace.mjs prepare [--apply]   makes QA tenant B able to sell ONE synthetic product (dry run unless --apply)
 //
 // Nothing here creates Mercado Pago accounts, connects a seller, pays or refunds. The runbook
 // (docs/audit/mercadopago-final-20261023/lanzamiento/VERIFICACION-MARKETPLACE.md) marks which steps need authorization.
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
@@ -18,7 +20,7 @@ import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 const ref = 'ixewllzzuzpqrkxzmfzx', app = RECOVERY_TEST_APPLICATION_ID;
 const arg = (name) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const command = process.argv[2];
-assert.ok(['preflight', 'verify', 'prepare'].includes(command), 'preflight | verify | prepare');
+assert.ok(['preflight', 'verify', 'prepare', 'snapshot'].includes(command), 'preflight | verify | prepare | snapshot');
 const credential = leerSecreto('RECOVERY SUPABASE SERVICE KEY');
 assert.equal(credential.usuario, ref);
 const db = createClient(`https://${ref}.supabase.co`, credential.secreto, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -45,6 +47,26 @@ async function sellerToken(businessId) {
   const key = await crypto.subtle.importKey('raw', Buffer.from(leerSecreto('RECOVERY MERCADOPAGO TOKEN ENCRYPTION KEY').secreto, 'base64url'), 'AES-GCM', false, ['decrypt']);
   const token = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: Buffer.from(iv, 'base64url'), additionalData: Buffer.from(`${ref}:test:${app}:${businessId}:tokens`) }, key, Buffer.from(ciphertext, 'base64url')))).access_token;
   return { seller_id: String(c.seller_id), token };
+}
+
+// Counts per tenant: the baseline that lets `verify` prove that a payment of tenant B moved nothing in tenant A.
+async function tenantCounts() {
+  const out = {};
+  for (const [name, id] of Object.entries(RECOVERY_QA)) {
+    const { count: orders } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', id);
+    const { count: intents } = await db.from('payment_intents').select('*', { count: 'exact', head: true }).eq('business_id', id);
+    const { data: products } = await db.from('products').select('sku,stock').eq('business_id', id).order('sku');
+    out[name] = { orders, payment_intents: intents, stock: Object.fromEntries((products || []).map((p) => [p.sku, p.stock])) };
+  }
+  return out;
+}
+
+if (command === 'snapshot') {
+  const file = arg('--out');
+  assert.ok(file, '--out <file> is required');
+  const counts = { at: new Date().toISOString(), tenants: await tenantCounts() };
+  fs.writeFileSync(file, JSON.stringify(counts, null, 2), { flag: 'wx' });
+  console.log(JSON.stringify(counts, null, 2));
 }
 
 if (command === 'preflight') {
@@ -99,7 +121,21 @@ if (command === 'verify') {
   const { data: receipts } = await db.from('payment_webhook_receipts').select('event_type,resource_id,signature_valid,processing_status,seller_business_id').eq('resource_id', String(intent.provider_payment_id ?? ''));
   const { count: ordersB } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', RECOVERY_QA.b);
   const { count: ordersAForRef } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', RECOVERY_QA.a).eq('id', intent.order_id ?? '00000000-0000-0000-0000-000000000000');
+  // With a baseline (taken before the payment): the purchase moved orders, intents and stock in tenant B ONLY.
+  const baselineFile = arg('--baseline');
+  let isolation = null;
+  if (baselineFile) {
+    const before = JSON.parse(fs.readFileSync(baselineFile, 'utf8')).tenants, after = await tenantCounts();
+    isolation = {
+      tenant_a_unchanged: JSON.stringify(before.a) === JSON.stringify(after.a),
+      tenant_b_one_order: after.b.orders === before.b.orders + 1,
+      tenant_b_one_intent: after.b.payment_intents === before.b.payment_intents + 1,
+      tenant_b_stock_down_by_purchase: Object.entries(before.b.stock).some(([sku, stock]) => after.b.stock[sku] < stock)
+        && Object.entries(before.b.stock).every(([sku, stock]) => after.b.stock[sku] <= stock),
+    };
+  }
   const checks = {
+    ...(isolation ?? {}),
     preference_collector_is_seller_b: String(pref.collector_id) === sellerB,
     preference_client_is_testapp: String(pref.client_id) === app,
     preference_is_marketplace: String(pref.marketplace) === `MP-MKT-${app}`,

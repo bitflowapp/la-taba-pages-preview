@@ -185,3 +185,7 @@ node scripts/mercadopago/asistente-activacion.mjs          # checklist de activa
 ## 10. Adenda: pantalla de retorno del pago
 
 Dos defectos del retorno (un rechazo se leía como «pendiente»; un combo pagado seguía en el carrito) corregidos y con prueba de navegador: [`RETORNO-DEL-PAGO.md`](RETORNO-DEL-PAGO.md).
+
+## 11. Adenda: R-MKT-1 con segundo vendedor
+
+Procedimiento completo y criterios en [`R-MKT-1-PROCEDIMIENTO.md`](R-MKT-1-PROCEDIMIENTO.md) (preparado; falta la autorización del plugin con la cuenta correcta). El aislamiento de pedidos, stock, pagos, devoluciones y visibilidad entre comercios ya está medido en la base real: `tests/db/marketplace-isolation.test.mjs`.

@@ -24,7 +24,7 @@ function healthy(overrides = {}) {
     if (overrides[key]) return overrides[key](init);
     if (u.origin === target.origin) {
       if (u.pathname === '/runtime-config.js') return new Response(`window.TABA = { supabaseUrl: '${supabase}' };`);
-      if (u.pathname === '/release-identity.json') return Response.json({ cacheName: 'la-taba-runtime-v167-catalog-rights-review' });
+      if (u.pathname === '/release-identity.json') return Response.json({ cacheName: 'la-taba-runtime-v168-pago-retorno' });
       return new Response('<!doctype html>');
     }
     if (u.pathname === '/functions/v1/mercadopago-oauth-callback') {

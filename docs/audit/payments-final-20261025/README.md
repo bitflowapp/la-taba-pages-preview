@@ -181,3 +181,7 @@ npm run test:webhook               # Deno + Node de pagos
 node --import ./tests/test-bootstrap.mjs --test tests/mercadopago-asistente-activacion.test.mjs
 node scripts/mercadopago/asistente-activacion.mjs          # checklist de activación
 ```
+
+## 10. Adenda: pantalla de retorno del pago
+
+Dos defectos del retorno (un rechazo se leía como «pendiente»; un combo pagado seguía en el carrito) corregidos y con prueba de navegador: [`RETORNO-DEL-PAGO.md`](RETORNO-DEL-PAGO.md).

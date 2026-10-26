@@ -1224,7 +1224,9 @@ export function createSupabaseOrderRepository({
     if (!isUuid(checkoutSessionId)) {
       return repositoryResult(false, { message: 'No recibimos una sesión de pago válida.' });
     }
-    writeMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId);
+    writeMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, {
+      combos: comboItems.map((item) => ({ comboId: item.combo_id, quantity: item.quantity })),
+    });
     const preferenceResult = await invokePaymentFunction('mercadopago-create-preference', {
       checkout_session_id: checkoutSessionId,
     });

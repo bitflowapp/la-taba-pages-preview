@@ -642,7 +642,7 @@ export const SCENARIOS = [
       // El sitio no forma parte del banco: se sirve lo mínimo que publica Deploy production.
       const site = { '/': ['<!doctype html><title>La Taba</title>', 'text/html'],
         '/runtime-config.js': [`window.TABA_RUNTIME_CONFIG = { supabaseUrl: 'https://${ctx.ref}.supabase.co' };`, 'text/javascript'],
-        '/release-identity.json': [JSON.stringify({ cacheName: 'la-taba-runtime-v167-catalog-rights-review' }), 'application/json'] };
+        '/release-identity.json': [JSON.stringify({ cacheName: 'la-taba-runtime-v168-pago-retorno' }), 'application/json'] };
       const routed = async (url, init = {}) => {
         const target2 = new URL(url);
         if (target2.origin === `https://${ctx.ref}.supabase.co`) {

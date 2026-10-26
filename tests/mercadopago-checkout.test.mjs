@@ -72,11 +72,42 @@ test('return state is derived from the server checkout, never from redirect quer
   assert.equal(paymentStatusPresentation({ status: 'manual_review_required', payment_status: 'approved' }).state, 'manual_review');
   assert.equal(paymentStatusPresentation({ status: 'manual_review_required', payment_status: 'approved' }).label, 'Necesitamos revisar este pago');
   assert.equal(paymentStatusPresentation({ status: 'cancelled', payment_status: 'cancelled' }).state, 'rejected');
+  // Un rechazo deja la sesión abierta (`payment_pending`, reserva activa) para reintentar con otro medio.
+  assert.deepEqual(paymentStatusPresentation({ status: 'payment_pending', payment_status: 'rejected' }), {
+    state: 'rejected', label: 'Pago rechazado', terminal: true, clearCart: false,
+  });
+  assert.equal(paymentStatusPresentation({ status: 'payment_pending', payment_status: 'cancelled' }).state, 'rejected');
+  assert.equal(paymentStatusPresentation({ status: 'payment_approved', payment_status: 'approved_order_pending' }).state, 'finalizing');
   assert.equal(paymentStatusPresentation({ status: 'redirected', payment_status: 'created' }).label, 'Verificando el pago');
 
   const returnScript = fs.readFileSync(path.join(root, 'js/payments/mercadopago-return.js'), 'utf8');
   assert.match(returnScript, /getMercadoPagoCheckoutStatus/);
   assert.doesNotMatch(returnScript, /URLSearchParams|[?&]status=/);
+});
+
+test('the recovery record remembers which combos travelled in the checkout, and nothing else', () => {
+  const entries = new Map();
+  const storage = {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => entries.set(key, value),
+    removeItem: (key) => entries.delete(key),
+  };
+  assert.equal(writeMercadoPagoCheckoutRecord(storage, businessId, checkoutId, {
+    combos: [
+      { comboId: 'combo-asado-de-la-casa', quantity: 2 },
+      { comboId: 'No Valido!', quantity: 1 },
+      { comboId: 'combo-sin-cantidad', quantity: 0 },
+      { comboId: 'combo-con-precio', quantity: 1, price: 9999, name: 'Asado' },
+    ],
+  }), true);
+  assert.deepEqual(readMercadoPagoCheckoutRecord(storage, businessId).combos, [
+    { comboId: 'combo-asado-de-la-casa', quantity: 2 },
+    { comboId: 'combo-con-precio', quantity: 1 },
+  ]);
+  assert.doesNotMatch(entries.get(checkoutStorageKey(businessId)), /9999|Asado"/);
+  // Un registro anterior a este cambio no trae combos: se lee como lista vacía.
+  entries.set(checkoutStorageKey(businessId), JSON.stringify({ checkoutSessionId: checkoutId, updatedAt: 'x' }));
+  assert.deepEqual(readMercadoPagoCheckoutRecord(storage, businessId).combos, []);
 });
 
 test('storefront redirects only after server-side checkout session and preference creation', () => {

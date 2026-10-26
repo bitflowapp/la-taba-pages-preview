@@ -1,9 +1,16 @@
-import { clearCart, decrementCartItem, getCartItems } from '../cart.js';
+import {
+  clearCart,
+  decrementCartItem,
+  decrementComboItem,
+  getCartItems,
+} from '../cart.js';
 import { paymentStatusPresentation } from './mercadopago-checkout.js';
 import { getOrderRepository } from '../repositories/repository_factory.js';
 
 const POLL_INTERVAL_MS = 3_000;
 const POLL_MAX_ATTEMPTS = 20;
+
+const REJECTED_DETAIL = 'No se confirmó el pago. Tu carrito sigue como lo dejaste: podés volver a intentarlo con otro medio de pago.';
 
 let attempts = 0;
 let timer = null;
@@ -19,10 +26,10 @@ async function start() {
     show('No encontramos una sesión de pago en este navegador. Volvé a La Taba para revisar tu carrito.', 'manual_review');
     return;
   }
-  await verify(repository, recovery.checkoutSessionId);
+  await verify(repository, recovery.checkoutSessionId, recovery.combos);
 }
 
-async function verify(repository, checkoutSessionId) {
+async function verify(repository, checkoutSessionId, combos = []) {
   clearTimer();
   show('Verificando el pago', 'verifying');
   if (navigator.onLine === false) {
@@ -31,29 +38,38 @@ async function verify(repository, checkoutSessionId) {
   }
   const result = await repository.getMercadoPagoCheckoutStatus(checkoutSessionId);
   if (!result?.ok || !result.checkout) {
-    schedule(repository, checkoutSessionId);
+    schedule(repository, checkoutSessionId, combos);
     return;
   }
   const presentation = paymentStatusPresentation(result.checkout);
-  show(presentation.label, presentation.state, result.checkout);
+  show(
+    presentation.state === 'rejected' ? REJECTED_DETAIL : presentation.label,
+    presentation.state,
+    result.checkout,
+  );
   if (presentation.clearCart) {
-    removeCompletedCheckoutItems(result.checkout.items);
+    removeCompletedCheckoutItems(result.checkout.items, combos);
     repository.clearMercadoPagoCheckoutRecovery?.();
     return;
   }
-  if (!presentation.terminal) schedule(repository, checkoutSessionId);
+  if (!presentation.terminal) schedule(repository, checkoutSessionId, combos);
 }
 
-function schedule(repository, checkoutSessionId) {
+function schedule(repository, checkoutSessionId, combos) {
   if (attempts >= POLL_MAX_ATTEMPTS) {
     show('Seguimos verificando tu pago. Podés volver más tarde: no vamos a crear otro pedido.', 'pending');
     return;
   }
   attempts += 1;
-  timer = window.setTimeout(() => verify(repository, checkoutSessionId), POLL_INTERVAL_MS);
+  timer = window.setTimeout(() => verify(repository, checkoutSessionId, combos), POLL_INTERVAL_MS);
 }
 
-function removeCompletedCheckoutItems(items) {
+function removeCompletedCheckoutItems(items, combos = []) {
+  // El servidor devuelve los combos ya expandidos a productos; los combos que
+  // pagó esta sesión salen por identificador, con lo que el checkout guardó.
+  for (const { comboId, quantity } of Array.isArray(combos) ? combos : []) {
+    for (let index = 0; index < quantity; index += 1) decrementComboItem(comboId);
+  }
   const purchased = new Map((Array.isArray(items) ? items : []).map((item) => [
     String(item?.product_id || ''),
     Math.max(0, Math.floor(Number(item?.quantity) || 0)),

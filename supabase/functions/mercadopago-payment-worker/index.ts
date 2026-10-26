@@ -453,9 +453,13 @@ async function reconcileRefund(service: Service, job: OutboxJob, context: JobCon
     // stays ambiguous (recovery and full-refund orders stay blocked), a critical discrepancy is opened with the
     // provider's own list as read-only evidence, and an owner/admin resolves it with proof.
     let seen: Array<Record<string, unknown>> = [];
+    let complete = false;
     try {
       await context.beat();
-      seen = (await listPaymentRefunds(String(data.provider_payment_id), job.business_id, deadline)).slice(0, 20)
+      const listed = await listPaymentRefunds(String(data.provider_payment_id), job.business_id, deadline);
+      // A truncated list proves nothing about what is missing from it.
+      complete = listed.length <= 20;
+      seen = listed.slice(0, 20)
         .map((row) => ({ id: String(row.id ?? ''), amount: row.amount ?? null, status: row.status ?? null, date_created: row.date_created ?? null }));
     } catch (error) {
       // Evidence is optional; the parking is not. Running out of time or losing the lease is not "no evidence".
@@ -466,6 +470,15 @@ async function reconcileRefund(service: Service, job: OutboxJob, context: JobCon
       p_evidence: { provider_refunds: seen },
     });
     if (parked.error) throw new Error('Unable to park refund with unknown identity');
+    // The way out of "ambiguous" is provider evidence, decided by the database: a complete list in which every refund
+    // is already recorded settles the request as not executed. Too early, or an unreadable list, is retried with the
+    // outbox backoff; a refund the provider holds that we do not (adoptable by the owner) stays parked.
+    const settled = await service.rpc('settle_ambiguous_refund_from_provider', {
+      p_refund_id: job.refund_id,
+      p_evidence: { provider_refunds: seen, list_complete: complete },
+    });
+    if (settled.error) throw new Error('Unable to evaluate provider refund evidence');
+    if (settled.data === 'too_recent' || settled.data === 'incomplete_evidence') throw new Error('Refund outcome still unavailable');
     return;
   }
   const associated = await service.from('payment_refunds')

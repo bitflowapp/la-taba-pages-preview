@@ -5,6 +5,20 @@ import { createFixture, dropDatabases, query as q, REFERENCE } from './worker-fi
 
 const setup = createFixture;
 
+async function agedLostRefund(tag, providerHoldsRefund) {
+  const t = await setup(tag);
+  const pay = t.provider.addPayment({ id: 991000001, reference: t.ids.reference, status: 'approved' });
+  t.snapshot(pay);
+  t.sql(`select public.finalize_paid_checkout_session('${t.ids.session}');`);
+  t.sql(`insert into public.payment_refunds(payment_intent_id,amount,status,reason,requested_at) values('${t.ids.intent}',2500,'ambiguous','lost response',clock_timestamp()-interval '20 minutes');
+    insert into public.payment_outbox(payment_intent_id,refund_id,topic) select '${t.ids.intent}',id,'refund_reconcile' from public.payment_refunds where payment_intent_id='${t.ids.intent}';`);
+  if (providerHoldsRefund) t.provider.addRefundTo(991000001, { id: 881000009, amount: 2500, payment_id: 991000001 });
+  const run = await t.worker.invoke();
+  const hold = q(t.db, `select to_jsonb(private.payment_financial_hold('${t.ids.intent}'))`);
+  const refund = q(t.db, `select to_jsonb(r) - 'raw_response_hash' from public.payment_refunds r where payment_intent_id='${t.ids.intent}'`);
+  return { run, state: t.state(), hold, refund, posts: t.provider.calls.filter(c => c.method === 'POST') };
+}
+
 const scenarios = {
   // F06: the rejected attempt is already pinned; the approved retry has no webhook and the buyer never came back.
   async f06_rejected_pinned_then_approved_retry() {
@@ -60,6 +74,11 @@ const scenarios = {
     const refund = q(t.db, `select to_jsonb(r) - 'raw_response_hash' from public.payment_refunds r where payment_intent_id='${t.ids.intent}'`);
     return { run, state: t.state(), hold, refund, posts: t.provider.calls.filter(c => c.method === 'POST') };
   },
+  // F09 recovery (PR #157 review): the lost request is older than any invocation that could still be sending it.
+  // The way out is the provider's own refund list: empty (or fully recorded) = the request never executed;
+  // a refund the provider holds and we do not = it may be ours, so it stays parked for the owner to adopt.
+  async f09_aged_lost_refund_empty_provider_list() { return agedLostRefund('f09empty', false); },
+  async f09_aged_lost_refund_unrecorded_provider_refund() { return agedLostRefund('f09held', true); },
   // F08: no webhook, no job, no browser. The ledger sweep finds the approved payment and an orphan.
   async f08_ledger_sweep_without_webhook() {
     const t = await setup('f08ledger', { connect: true });

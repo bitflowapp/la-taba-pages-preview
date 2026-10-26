@@ -145,12 +145,11 @@ export async function sweepLedgerWindow(
     }
 
     const queriedMs = Date.parse(queried.at);
-    // A full page at the cursor timestamp may hide more members of that group.
-    // Offset alone can return the same IDs twice and skip others. Query exactly
-    // this timestamp, keep unique IDs in memory, and require complete coverage.
-    // A crash replays this entire group; database effects are idempotent.
-    if (page.results.length >= pageSize && page.total > page.results.length
-        && page.results.every(row => ledgerItemTime(row) === queriedMs)) {
+    // An incomplete page made only of the cursor timestamp may hide more members of that group, whether the page was
+    // full or the provider answered short (a partial response with an honest total). Offset alone can return the
+    // same IDs twice and skip others. Query exactly this timestamp, keep unique IDs in memory, and require complete
+    // coverage. A crash replays this entire group; database effects are idempotent.
+    if (page.total > page.results.length && page.results.every(row => ledgerItemTime(row) === queriedMs)) {
       const covered = new Set<string>();
       const groupWindow = { ...window, begin: queried.at, end: queried.at, cursor_at: queried.at, offset: 0 };
       let expected: number | null = null;
@@ -194,7 +193,8 @@ export async function sweepLedgerWindow(
           }
         }
         if (covered.size > expected) throw new ProviderLedgerInconsistent('provider timestamp group exceeds reported total');
-        offset += pageSize;
+        // Advance by what the provider actually returned: a short page must not leave an unread gap behind it.
+        offset += group.results.length || pageSize;
         if (offset >= expected && covered.size < expected) {
           offset = 0; rounds += 1;
           if (rounds >= 3) {

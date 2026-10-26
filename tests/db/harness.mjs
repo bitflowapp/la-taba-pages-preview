@@ -93,13 +93,19 @@ export const FIXTURE_IDS = Object.freeze({
   product: '30000000-0000-4000-8000-0000000000fa',
 });
 
-export function scenarioSql(body) {
-  return `begin; set local statement_timeout='30s'; set local lock_timeout='5s'; create temp table forensic_result(result jsonb); ${PREFIX}${CHECKOUT}${body}${tail()}`;
+// A checkout whose preference has NOT been created yet: prepared through the v2 authority-aware function, so the
+// attempt is still `prepared` and the dispatch claim / stuck-attempt paths can be exercised.
+const CHECKOUT_FRESH = CHECKOUT
+  .replace('public.prepare_mercadopago_preference(', 'public.prepare_mercadopago_preference_v2(')
+  .replace(/perform public\.record_mercadopago_preference_created[\s\S]*?;\n/, '');
+
+export function scenarioSql(body, { fresh = false } = {}) {
+  return `begin; set local statement_timeout='30s'; set local lock_timeout='5s'; create temp table forensic_result(result jsonb); ${PREFIX}${fresh ? CHECKOUT_FRESH : CHECKOUT}${body}${tail()}`;
 }
 
 /** Runs one scenario and returns the parsed state. Failures of the SQL itself are thrown. */
-export function runScenario(body) {
-  const r = psqlRaw(DB, scenarioSql(body), { tuples: true, timeout: 120000 });
+export function runScenario(body, options = {}) {
+  const r = psqlRaw(DB, scenarioSql(body, options), { tuples: true, timeout: 120000 });
   const line = r.stdout.split('\n').map(s => s.trim()).filter(s => s.startsWith('{')).pop();
   if (!line) throw new Error('scenario produced no state: ' + r.stdout.slice(0, 500));
   return JSON.parse(line);

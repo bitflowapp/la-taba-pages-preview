@@ -51,11 +51,28 @@ async function verify(repository, checkoutSessionId, combos = [], originalItems 
   );
   if (presentation.clearCart) {
     completedCheckoutId = checkoutSessionId;
-    removeCompletedCheckoutItems(result.checkout.items, combos, originalItems);
-    repository.clearMercadoPagoCheckoutRecovery?.();
+    // The cart and the checkout record are shared by every tab; this tab's memory is not. Only the tab that takes the
+    // record removes the paid units, so a second tab verifying the same payment cannot remove them again.
+    if (await takeCompletedCheckoutRecord(repository, checkoutSessionId)) {
+      removeCompletedCheckoutItems(result.checkout.items, combos, originalItems);
+    }
     return;
   }
   if (!presentation.terminal) schedule(repository, checkoutSessionId, combos, originalItems);
+}
+
+async function takeCompletedCheckoutRecord(repository, checkoutSessionId) {
+  const take = () => {
+    const current = repository.getMercadoPagoCheckoutRecovery?.();
+    if (!current || current.checkoutSessionId !== checkoutSessionId) return false;
+    repository.clearMercadoPagoCheckoutRecovery?.();
+    return true;
+  };
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : null;
+  if (locks && typeof locks.request === 'function') {
+    try { return await locks.request('taba-mp-return-' + checkoutSessionId, take); } catch (_) { /* no lock: take it plainly */ }
+  }
+  return take();
 }
 
 function schedule(repository, checkoutSessionId, combos, originalItems) {

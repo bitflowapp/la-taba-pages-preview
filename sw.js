@@ -20,7 +20,7 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * dejaría dos artefactos bajo la misma identidad, y como `precargar()` borra primero la
  * caché de su propio nombre, reinstalar «v166» vaciaría la del worker activo.
  */
-const CACHE_NAME = 'la-taba-runtime-v169-payment-audit';
+const CACHE_NAME = 'la-taba-runtime-v170-payment-review';
 const ASSETS = [
   './',
   './index.html',

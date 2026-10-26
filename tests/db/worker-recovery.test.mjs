@@ -56,13 +56,36 @@ test('F04/F06 two approved payments: both recorded, one order, a critical discre
   assert.ok(s.state.discrepancies.some(d => d.kind === 'multiple_approved_payments' && d.status === 'open' && d.severity === 'critical'));
 });
 
-test('F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed', () => {
+test('F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job waits for the in-flight guard', () => {
   const s = scenario('f09_unknown_refund_identity');
-  assert.equal(s.run.body.completed, 1);
-  assert.equal(s.run.body.retried, 0);
+  // The request is seconds old: an invocation could still be sending it, so the database refuses to settle it yet
+  // and the job is handed back to the outbox backoff instead of being completed or dead-lettered.
+  assert.equal(s.run.body.completed, 0);
+  assert.equal(s.run.body.retried, 1);
   assert.equal(s.refund.status, 'ambiguous');
   assert.equal(s.refund.provider_refund_id, null, 'the id is never guessed');
   assert.equal(s.posts.length, 0, 'nothing is sent to the provider');
+  assert.equal(s.hold, 'refund_in_flight');
+  assert.ok(s.state.discrepancies.some(d => d.kind === 'refund_identity_unknown' && d.status === 'open'));
+});
+
+test('F09 a lost refund request older than any in-flight invocation, with an empty provider list, is settled as not executed', () => {
+  const s = scenario('f09_aged_lost_refund_empty_provider_list');
+  assert.equal(s.run.body.completed, 1);
+  assert.equal(s.run.body.retried, 0);
+  assert.equal(s.refund.status, 'failed');
+  assert.equal(s.refund.provider_refund_id, null);
+  assert.equal(s.posts.length, 0, 'recovery never sends a request');
+  assert.equal(s.hold, null, 'the payment is no longer frozen');
+  assert.ok(s.state.discrepancies.some(d => d.kind === 'refund_identity_unknown' && d.status === 'resolved'));
+});
+
+test('F09 a lost refund request older than the guard stays parked when the provider holds a refund we have not recorded', () => {
+  const s = scenario('f09_aged_lost_refund_unrecorded_provider_refund');
+  assert.equal(s.run.body.completed, 1, 'the job ends: the owner decides with the evidence it left');
+  assert.equal(s.refund.status, 'ambiguous');
+  assert.equal(s.refund.provider_refund_id, null, 'the id is never guessed');
+  assert.equal(s.posts.length, 0);
   assert.equal(s.hold, 'refund_in_flight');
   assert.ok(s.state.discrepancies.some(d => d.kind === 'refund_identity_unknown' && d.status === 'open'));
 });

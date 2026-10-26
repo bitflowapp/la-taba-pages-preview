@@ -318,13 +318,15 @@ export async function searchPaymentsByLastUpdate(
   return { results, total, offset };
 }
 
-// Read-only evidence for an operator: what the provider lists as refunds of a payment.
+// Evidence of what the provider lists as refunds of a payment. An answer that is not a JSON list is an error, never
+// "no refunds": this list is also the proof that an unknown refund request did not execute.
 export async function listPaymentRefunds(paymentId: string, businessId: string, deadline?: Deadline): Promise<Record<string, unknown>[]> {
   const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds`, { businessId, deadline });
   if (!result.response.ok) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   let parsed: unknown = result.body;
   if (!parsed) { try { parsed = JSON.parse(result.rawText); } catch (_) { parsed = null; } }
-  return Array.isArray(parsed) ? parsed.map(object) : [];
+  if (!Array.isArray(parsed)) throw incompleteSearch();
+  return parsed.map(object);
 }
 
 function pagingTotal(body: Record<string, unknown>): number | null {

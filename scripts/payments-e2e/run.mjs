@@ -22,12 +22,12 @@ import path from 'node:path';
 import process from 'node:process';
 import readline from 'node:readline';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 import { ROOT } from '../release-v5/model.mjs';
 import { bindSellerOauth, addRefToList, FILES, PRODUCTION_CLIENT_ID } from '../production/bind-production.mjs';
-import { startPaymentStack } from './stack.mjs';
+import { PUBLISH_PORTS, startPaymentStack } from './stack.mjs';
 import { MercadoPagoEmulator } from './mp-emulator.mjs';
 import { FunctionsClient, signJwt } from './lib.mjs';
 import { fixtureIds, seedSql } from './seed.mjs';
@@ -54,7 +54,9 @@ export async function runBench({ environment = 'test', only = null, log = consol
   const cleanups = [];
   const report = {
     generated_at: new Date().toISOString(), environment, project_ref: `${ref} (ficticio)`, provider: 'emulador (mp-emulator.mjs)',
-    real_money: false, network: 'red interna de Docker sin salida; fetch del host limitado a PostgREST, Auth local y el emulador',
+    real_money: false, network: PUBLISH_PORTS
+      ? 'Docker Desktop: puertos sólo en 127.0.0.1 y contenedores sin DNS externo; fetch del host limitado a PostgREST, Auth local y el emulador'
+      : 'red interna de Docker sin salida; fetch del host limitado a PostgREST, Auth local y el emulador',
     scenarios: [],
   };
   try {
@@ -120,7 +122,8 @@ export async function runBench({ environment = 'test', only = null, log = consol
         // y el emulador. Es el camino de código del cobro real, sin un solo peso real.
         : { MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved', MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE' }),
     };
-    const hostConfig = { ref, restUrl: stack.restUrl, jwtSecret: stack.jwtSecret, providerUrl: emulator.url, functionsDir, functions: FUNCTIONS };
+    // Como URL de archivo: una ruta de Windows (D:...) no es un especificador de módulo para el import dinámico del Worker.
+    const hostConfig = { ref, restUrl: stack.restUrl, jwtSecret: stack.jwtSecret, providerUrl: emulator.url, functionsDir: pathToFileURL(functionsDir).href, functions: FUNCTIONS };
     const host = await startEdgeHost(hostConfig, env, log);
     cleanups.push(() => host.stop());
     gateway = host.gateway;
@@ -170,18 +173,24 @@ function summarizeCalls(calls) {
 }
 
 async function startEdgeHost(config, env, log) {
-  const child = spawn('npx', ['--yes', 'deno@2.6.1', 'run', '--node-modules-dir=none', '--allow-net', '--allow-env', '--allow-read',
+  const windows = process.platform === 'win32';
+  const child = spawn(windows ? 'npx.cmd' : 'npx', ['--yes', 'deno@2.6.1', 'run', '--node-modules-dir=none', '--allow-net', '--allow-env', '--allow-read',
     path.join(ROOT, 'scripts', 'payments-e2e', 'edge-host.ts')], {
     cwd: ROOT, env: { ...process.env, ...env, TABA_BENCH_HOST: JSON.stringify(config) }, stdio: ['ignore', 'pipe', 'pipe'],
-    // Grupo de procesos propio: npx → lanzador de Node → binario de Deno; se termina el grupo entero.
-    detached: true,
+    // Grupo de procesos propio: npx → lanzador de Node → binario de Deno; se termina el grupo entero (en Windows, con taskkill /T).
+    detached: !windows, shell: windows, windowsHide: true,
   });
-  const killGroup = (signal) => { try { process.kill(-child.pid, signal); } catch { /* ya terminó */ } };
+  const killGroup = (signal) => {
+    try {
+      if (windows) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      else process.kill(-child.pid, signal);
+    } catch { /* ya terminó */ }
+  };
   process.once('exit', () => killGroup('SIGKILL'));
   const lines = [];
   const remember = (line) => { lines.push(line); if (lines.length > 400) lines.shift(); };
   const port = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`EDGE_HOST_TIMEOUT\n${lines.slice(-30).join('\n')}`)), 240_000);
+    const timer = setTimeout(() => reject(new Error(`EDGE_HOST_TIMEOUT\n${lines.slice(-30).join('\n')}`)), Number(process.env.TABA_BENCH_HOST_TIMEOUT_MS || 240_000));
     readline.createInterface({ input: child.stdout }).on('line', (line) => {
       remember(line);
       const match = /^BENCH_HOST_READY (\d+)$/.exec(line);

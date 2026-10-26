@@ -7,7 +7,8 @@
  * privilegios de la plataforma administrada, el interlock y todas las posteriores como `postgres` sin superusuario.
  * Si aquel orden cambia, este también: las constantes se importan de scripts/release-v5/model.mjs.
  *
- * Nada de esto toca un proyecto alojado: la base vive en tmpfs, la red es `--internal` y los contenedores se
+ * Nada de esto toca un proyecto alojado: la base vive en tmpfs, la red es `--internal` (en Docker Desktop: puertos sólo en
+ * 127.0.0.1 y sin DNS externo, ver PUBLISH_PORTS) y los contenedores se
  * borran al terminar (también si el proceso falla).
  */
 import assert from 'node:assert/strict';
@@ -40,6 +41,12 @@ const MANAGED_PLATFORM_PRIVILEGES = `alter database postgres owner to postgres;
     grant set on parameter session_replication_role to postgres;
     grant anon, authenticated, service_role to postgres with admin option;
     alter role postgres nosuperuser bypassrls createdb createrole;`;
+
+// En Linux (la CI) el host alcanza la IP del contenedor dentro de una red `--internal`. En Docker Desktop (Windows/macOS) las
+// IP de los contenedores viven dentro de una máquina virtual: el host sólo los alcanza por puertos publicados, y Docker no
+// publica puertos de redes internas. Ahí la red es normal, los puertos van SOLO a 127.0.0.1 y los contenedores no resuelven
+// nombres externos (--dns 127.0.0.1): el cron de la base está apagado y ninguna prueba necesita salir a internet.
+export const PUBLISH_PORTS = process.platform !== 'linux' || process.env.TABA_BENCH_PUBLISH_PORTS === '1';
 
 const docker = (args, options = {}) => execFileSync('docker', args, {
   cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'], ...options,
@@ -96,10 +103,10 @@ export async function startPaymentStack({ egress = false, log = () => {} } = {})
     if (created.network) { try { docker(['network', 'rm', network]); } catch { /* ya no existe */ } }
   };
   try {
-    docker(['network', 'create', ...(egress ? [] : ['--internal']), network]);
+    docker(['network', 'create', ...(egress || PUBLISH_PORTS ? [] : ['--internal']), network]);
     created.network = true;
     // Igual que startCluster() de run-release-v5-db.mjs, más: escucha en la red interna con contraseña (scram).
-    docker(['run', '-d', '--name', db, '--network', network, '--user', 'postgres',
+    docker(['run', '-d', '--name', db, '--network', network, ...(PUBLISH_PORTS ? ['-p', '127.0.0.1::5432', '--dns', '127.0.0.1'] : []), '--user', 'postgres',
       '--tmpfs', '/var/lib/postgresql/data:rw,size=1536m,uid=100,gid=101', '--tmpfs', '/tmp:rw,size=128m',
       '--tmpfs', '/etc/postgresql-custom:rw,size=1m,uid=100,gid=101',
       '--entrypoint', '/bin/sh', POSTGRES_IMAGE, '-c',
@@ -168,25 +175,33 @@ export async function startPaymentStack({ egress = false, log = () => {} } = {})
     psql(db, `create role authenticator noinherit login password '${password}';
       grant anon, authenticated, service_role to authenticator;`, { user: 'supabase_admin', searchPath: false });
     psql(db, `alter role postgres password '${password}'`, { user: 'supabase_admin', searchPath: false });
-    const dbIp = containerIp(db, network);
+    const hostPort = (name, port) => {
+      const mapped = docker(['port', name, `${port}/tcp`]).trim().split(/\r?\n/)[0] || '';
+      const match = /127\.0\.0\.1:(\d+)$/.exec(mapped);
+      assert.ok(match, `sin puerto publicado para ${name}:${port} (${mapped})`);
+      return Number(match[1]);
+    };
+    const dbIp = PUBLISH_PORTS ? '127.0.0.1' : containerIp(db, network);
+    const dbPort = PUBLISH_PORTS ? hostPort(db, 5432) : 5432;
 
-    docker(['run', '-d', '--name', rest, '--network', network,
+    docker(['run', '-d', '--name', rest, '--network', network, ...(PUBLISH_PORTS ? ['-p', '127.0.0.1::3000', '-p', '127.0.0.1::3001', '--dns', '127.0.0.1'] : []),
       '-e', `PGRST_DB_URI=postgres://authenticator:${password}@${db}:5432/postgres`,
       '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-e', 'PGRST_DB_EXTRA_SEARCH_PATH=public,extensions',
       '-e', 'PGRST_DB_MAX_ROWS=1000', '-e', `PGRST_JWT_SECRET=${jwtSecret}`, '-e', 'PGRST_ADMIN_SERVER_PORT=3001',
       '-e', 'PGRST_DB_POOL=20', POSTGREST_IMAGE]);
     created.rest = true;
-    const restIp = containerIp(rest, network);
-    const restUrl = `http://${restIp}:3000`;
+    const restIp = PUBLISH_PORTS ? '127.0.0.1' : containerIp(rest, network);
+    const restUrl = `http://${restIp}:${PUBLISH_PORTS ? hostPort(rest, 3000) : 3000}`;
+    const adminUrl = `http://${restIp}:${PUBLISH_PORTS ? hostPort(rest, 3001) : 3001}`;
     for (let attempt = 0; ; attempt += 1) {
       try {
-        const ready = await fetch(`http://${restIp}:3001/ready`);
+        const ready = await fetch(`${adminUrl}/ready`, { signal: AbortSignal.timeout(2000) });
         if (ready.ok) break;
       } catch { /* todavía arrancando */ }
       if (attempt === 200) throw new Error('POSTGREST_NOT_READY');
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    const pool = new pg.Pool({ host: dbIp, port: 5432, user: 'postgres', password, database: 'postgres', max: 8 });
+    const pool = new pg.Pool({ host: dbIp, port: dbPort, user: 'postgres', password, database: 'postgres', max: 8 });
     pool.on('error', () => {});
     return {
       id, network, dbContainer: db, restContainer: rest, dbIp, restUrl, jwtSecret,

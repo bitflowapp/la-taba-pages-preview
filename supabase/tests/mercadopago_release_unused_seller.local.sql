@@ -11,6 +11,9 @@ select public.mp_finish_oauth((select id from fixture where label='wrong'),'prod
 select public.mp_finish_oauth((select id from fixture where label='sold'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='sold')),'333','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day');
 insert into public.checkout_sessions(business_id,customer_id,client_request_id,normalized_intent_hash,fulfillment_type,subtotal,total,expires_at)
 values((select id from fixture where label='sold'),(select id from fixture where label='owner'),'release_test_1',repeat('b',64),'pickup',10,10,now()+interval '1 day');
+-- Este comercio ya vendió en producción: su historia se sembró cuando estaba abierto al público (el candado del piloto cerrado
+-- sólo deja crear un pago real con una autorización escrita; ver 20261027010000_live_pilot_gate.sql).
+do $open$ begin perform public.set_live_payment_scope((select id from fixture where label='sold'),'production','public','fixture de prueba','I_AUTHORIZE_PUBLIC_REAL_PAYMENTS'); end $open$;
 insert into public.payment_intents(business_id,checkout_session_id,environment,external_reference,expected_amount,preference_id,live_mode)
 select business_id,id,'production','taba2:checkout:'||id,10,'release-preference:'||id,true from public.checkout_sessions where client_request_id='release_test_1';
 

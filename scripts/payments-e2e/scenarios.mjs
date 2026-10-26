@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 
 import { drainWorker, sleep, userToken } from './lib.mjs';
 import { CATALOG, DELIVERY_FEE, checkoutPayload } from './seed.mjs';
+import { huella, parametrosRpc, validar as validarDocumento } from '../mercadopago/piloto/documento.mjs';
+import { verificarCompra, verificarDevolucion } from '../mercadopago/piloto/verificacion.mjs';
 
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
 const CANCELLATION_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION';
@@ -87,13 +89,25 @@ async function enableForSales(ctx, key) {
     p_expected_application_id: ctx.clientId, p_production_review_approved: true,
   });
   assert.equal(enabled.status, 200, `operador ${key}: ${JSON.stringify(enabled.json)}`);
+  // Los demás escenarios ensayan el flujo con el comercio ya abierto al público; el candado del piloto cerrado (que en
+  // producción es el estado por defecto) se prueba entero en pilot_gate, que lo cierra y lo vuelve a abrir.
+  await setScope(ctx, key, 'public');
   return enabled.json;
 }
 
-async function startCheckout(ctx, { business = 'A', buyer = 'one', items, delivery = false, payload } = {}) {
+async function setScope(ctx, key, scope) {
+  const result = await rpcAsService(ctx, 'set_live_payment_scope', {
+    p_business_id: ctx.ids.businesses[key], p_environment: ctx.environment === 'production' ? 'production' : 'test',
+    p_scope: scope, p_changed_by: 'banco de cobros', ...(scope === 'public' ? { p_confirmation: 'I_AUTHORIZE_PUBLIC_REAL_PAYMENTS' } : {}),
+  });
+  assert.equal(result.status, 200, `alcance ${scope} de ${key}: ${JSON.stringify(result.json)}`);
+  return result.json;
+}
+
+async function startCheckout(ctx, { business = 'A', buyer = 'one', items, delivery = false, payload, ip } = {}) {
   const person = customer(ctx, buyer);
   const body = payload || checkoutPayload(ctx.ids.businesses[business], items, { delivery });
-  const session = await ctx.functions.call('mercadopago-create-checkout-session', { token: person.token, body, ip: `200.1.1.${buyer.length}` });
+  const session = await ctx.functions.call('mercadopago-create-checkout-session', { token: person.token, body, ip: ip || `200.1.1.${buyer.length}` });
   if (session.status !== 200) return { failed: session };
   const checkout = session.json.checkout;
   const sessionId = checkout.checkout_session_id;
@@ -672,6 +686,147 @@ export const SCENARIOS = [
       return { network: network.rows.map(({ id, observed, ok }) => ({ id, observed, ok })),
         integrator: { owner_id: integrator.owner_id, owner_is_test_user: integrator.owner_is_test_user, wrong_secret: wrongIntegrator.step },
         webhook_secret: { right: good.verdict, wrong: bad.verdict }, receipts_written: { probes_and_right_key: 0, wrong_key: 1 } };
+    },
+  },
+  {
+    id: 'pilot_gate',
+    title: 'Piloto cerrado: sólo la compra autorizada por escrito (comprador, producto, importe y cuenta) pasa; se paga, se verifica y se devuelve por API con evidencia',
+    async run(ctx) {
+      const env = ctx.environment === 'production' ? 'production' : 'test';
+      let attemptNumber = 0;
+      const attempt = (options) => startCheckout(ctx, { ...options, ip: `200.9.9.${++attemptNumber}` });
+      await setScope(ctx, 'A', 'pilot');
+      // Autorizar exige que ninguna otra compra pueda mover dinero: los checkouts que dejaron los escenarios anteriores
+      // (abiertos mientras el comercio estaba abierto al público) se dan por vencidos, como lo haría el reloj, y se barren.
+      const open = await all(ctx, `select cs.id, (select count(*)::int from public.payment_provider_payments p join public.payment_intents pi on pi.id = p.payment_intent_id
+          where pi.checkout_session_id = cs.id) as payments from public.checkout_sessions cs
+        where cs.business_id = $1 and cs.status in ('ready_for_payment', 'redirected', 'payment_pending') and cs.expires_at > now()`, [ctx.ids.businesses.A]);
+      assert.ok(open.every((row) => row.payments === 0), `checkouts con pagos en vuelo: ${JSON.stringify(open)}`);
+      for (const row of open) {
+        await ctx.stack.query(`update public.checkout_sessions set created_at = now() - interval '2 hours', expires_at = now() - interval '1 second' where id = $1`, [row.id]);
+        await ctx.stack.query(`update public.inventory_reservations set created_at = now() - interval '2 hours', expires_at = now() - interval '1 second' where checkout_session_id = $1`, [row.id]);
+      }
+      await one(ctx, 'select public.sweep_expired_checkout_sessions() as n');
+      const stockBefore = await stockOf(ctx, 'agua');
+      const items = [{ product_id: ctx.ids.products.agua, quantity: 2 }];
+      const total = money(priceOf('agua') * 2);
+
+      // 1) Sin autorización, nadie compra: el público no puede pagar y el stock no se mueve.
+      const closed = await attempt({ items });
+      assert.equal(closed.failed?.status, 409, 'sin autorización el checkout se rechaza');
+      assert.equal(closed.failed.json.code, 'CHECKOUT_NOT_AVAILABLE');
+      assert.equal(await stockOf(ctx, 'agua'), stockBefore, 'el rechazo devolvió el stock');
+
+      // 2) La autorización sale del MISMO documento que firma el titular (validación, huella y parámetros de la herramienta).
+      const documento = {
+        esquema: 'taba-autorizacion-cobro-real/1', destino: ctx.environment === 'production' ? 'production' : 'qa',
+        comercio: { id: ctx.ids.businesses.A, slug: 'almacen-banco-a' },
+        vendedor: { collector_id: String(ctx.sellers.A), titular: 'Vendedor A del banco', cuenta_mercado_pago: 'vendedor-a@bench.invalid' },
+        comprador: { cliente_taba_id: ctx.ids.customers.one, cuenta_mercado_pago: 'comprador-uno@bench.invalid', distinta_del_vendedor: true },
+        compra: { concepto: 'Compra de control del banco de cobros', items: [{ producto_id: ctx.ids.products.agua, sku: 'bench-a-agua', cantidad: 2 }], importe_ars: total, entrega: 'retiro' },
+        comisiones: { las_asume: 'vendedor', detalle: 'La comisión de Mercado Pago se descuenta del vendedor.' },
+        devolucion: { via: 'api', quien: 'Dueño del comercio A', importe_ars: total },
+        abortar_si: 'El importe o el cobrador que muestra el pago no son los autorizados.',
+        vigencia_minutos: 60,
+        autoriza: { nombre: 'Titular del banco', cargo: 'Titular del comercio A', fecha: new Date().toISOString().slice(0, 10) },
+        declaraciones: { dinero_real: true, una_sola_compra: true, devolucion_incluida: true, importe_elegido_por_el_titular: true },
+      };
+      assert.deepEqual(validarDocumento(documento), []);
+      const wrongTotal = await rpcAsService(ctx, 'authorize_live_pilot_payment', { ...parametrosRpc(documento), p_amount: total + 1 });
+      assert.notEqual(wrongTotal.status, 200, 'la base rechaza un importe que no es el del catálogo');
+      const selfBuyer = await rpcAsService(ctx, 'authorize_live_pilot_payment', { ...parametrosRpc(documento), p_buyer_account: String(ctx.sellers.A) });
+      assert.notEqual(selfBuyer.status, 200, 'el comprador no puede ser la cuenta del vendedor');
+      const authorized = await rpcAsService(ctx, 'authorize_live_pilot_payment', parametrosRpc(documento));
+      assert.equal(authorized.status, 200, JSON.stringify(authorized.json));
+      const authorizationId = authorized.json.authorization_id;
+
+      // 3) Otro comprador, otra cantidad, otro medio de entrega: rechazados, y la autorización sigue abierta.
+      const stranger = await attempt({ items, buyer: 'two' });
+      const otherQuantity = await attempt({ items: [{ product_id: ctx.ids.products.agua, quantity: 1 }] });
+      const delivery = await attempt({ items, delivery: true });
+      for (const [name, attempt] of Object.entries({ stranger, otherQuantity, delivery })) {
+        assert.equal(attempt.failed?.status, 409, `${name} debía rechazarse`);
+      }
+      assert.equal(await stockOf(ctx, 'agua'), stockBefore, 'los rechazos no retienen stock');
+      const stillOpen = await rpcAsService(ctx, 'get_live_pilot_status', { p_business_id: ctx.ids.businesses.A, p_environment: env });
+      assert.equal(stillOpen.json.authorizations[0].status, 'authorized');
+
+      // 4) La compra exacta pasa y consume la autorización; una segunda, igual, ya no.
+      const purchase = await attempt({ items });
+      assert.ok(!purchase.failed, `la compra autorizada debía pasar: ${purchase.failed?.text}`);
+      assert.equal(money(purchase.checkout.total), total);
+      const again = await attempt({ items });
+      assert.equal(again.failed?.status, 409, 'la autorización se consumió con la primera compra');
+      assert.equal(await stockOf(ctx, 'agua'), stockBefore - 2);
+
+      // 5) El pago, la verificación y la conciliación con las mismas funciones que usa el operador.
+      const payment = await ctx.emulator.pay(purchase.preferenceId, { buyerId: ctx.buyers.one, scenario: 'APRO' });
+      await worker(ctx);
+      const after = await snapshot(ctx, purchase.sessionId);
+      assert.equal(after.status, 'completed', JSON.stringify(after));
+      const rowsOf = async (sql, params) => (await all(ctx, sql, params)).map((row) => row.row);
+      const instantanea = async () => {
+        const authRow = (await one(ctx, 'select to_jsonb(a) as row from public.payment_live_pilot_authorizations a where a.id = $1', [authorizationId])).row;
+        const intents = await rowsOf('select to_jsonb(i) as row from public.payment_intents i where i.checkout_session_id = $1', [purchase.sessionId]);
+        const ids = intents.map((row) => row.id);
+        const byIntent = (table) => rowsOf(`select to_jsonb(t) as row from public.${table} t where t.payment_intent_id = any($1::uuid[])`, [ids]);
+        const session = (await one(ctx, 'select to_jsonb(s) as row from public.checkout_sessions s where s.id = $1', [purchase.sessionId])).row;
+        const paymentIds = [...new Set(intents.map((row) => row.provider_payment_id).filter(Boolean))];
+        const orderIds = [session.completed_order_id, ...intents.map((row) => row.order_id)].filter(Boolean);
+        return {
+          authorization: authRow, session, intents,
+          settings: await one(ctx, 'select collector_id, environment from public.business_payment_settings where business_id = $1', [ctx.ids.businesses.A]),
+          payments: await byIntent('payment_provider_payments'), attempts: await byIntent('payment_attempts'), outbox: await byIntent('payment_outbox'),
+          refunds: await byIntent('payment_refunds'), discrepancies: await byIntent('payment_discrepancies'),
+          receipts: await rowsOf('select to_jsonb(r) as row from public.payment_webhook_receipts r where r.resource_id = any($1::text[])', [paymentIds]),
+          orders: await rowsOf('select to_jsonb(o) as row from public.orders o where o.id = any($1::uuid[])', [orderIds]),
+          reservations: await rowsOf('select to_jsonb(r) as row from public.inventory_reservations r where r.checkout_session_id = $1', [purchase.sessionId]),
+          stockNow: await all(ctx, 'select id, sku, stock from public.products where business_id = $1', [ctx.ids.businesses.A]),
+        };
+      };
+      const baseline = { [ctx.ids.products.agua]: stockBefore };
+      const verification = verificarCompra(await instantanea(), { baselineStock: baseline, integratorOwnerId: String(ctx.application.ownerId) });
+      assert.equal(verification.ok, true, JSON.stringify([verification.checks.filter((check) => check.estado === 'FAIL'), (await instantanea()).payments]));
+
+      // 6) La devolución de control por API: idempotente, con evidencia del proveedor, pedido cancelado y stock repuesto.
+      const person = await panelLogin(ctx, 'A');
+      const intent = await snapshot(ctx, purchase.sessionId);
+      const refundBody = { payment_intent_id: intent.intent_id, idempotency_key: randomUUID(), reason: 'Devolución de control del piloto', confirmation: REFUND_CONFIRMATION };
+      const refund = await ctx.functions.call('mercadopago-refund', { token: person.token, body: refundBody });
+      assert.equal(refund.status, 200, `devolución: ${refund.status} ${refund.text}`);
+      const refundAgain = await ctx.functions.call('mercadopago-refund', { token: person.token, body: refundBody });
+      await sleep(200);
+      await fastForwardQueue(ctx);
+      await worker(ctx);
+      const posts = ctx.emulator.calls.filter((call) => call.method === 'POST' && call.path === `/v1/payments/${payment.id}/refunds`);
+      assert.equal(posts.length, 1, 'un solo pedido de devolución al proveedor, aunque se repita la solicitud');
+      const order = after.orders[0];
+      const cancel = await fetch(`${ctx.stack.restUrl}/rpc/cancel_order`, {
+        method: 'POST', headers: { authorization: `Bearer ${person.token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ p_order_id: order.id, p_expected_revision: (await one(ctx, 'select revision from public.orders where id = $1', [order.id])).revision,
+          p_reason: 'Devolución de control del piloto', p_idempotency_key: `bench_cancel_${order.id.replaceAll('-', '')}` }),
+      });
+      assert.equal(cancel.status, 200, await cancel.text());
+      const refunded = verificarDevolucion(await instantanea(), { importeDevuelto: total, operacion: String(payment.id), baselineStock: baseline, entregado: false });
+      assert.equal(refunded.ok, true, JSON.stringify(refunded.checks.filter((check) => check.estado === 'FAIL')));
+
+      // 7) Abortar una autorización abierta la cierra; una consumida no se puede abortar. Después el banco vuelve a abrir el comercio.
+      const second = await rpcAsService(ctx, 'authorize_live_pilot_payment', parametrosRpc(documento));
+      assert.equal(second.status, 200, JSON.stringify(second.json));
+      const aborted = await rpcAsService(ctx, 'abort_live_pilot_payment', { p_authorization_id: second.json.authorization_id, p_reason: 'El banco prueba el aborto' });
+      assert.equal(aborted.json.status, 'aborted');
+      const consumedAbort = await rpcAsService(ctx, 'abort_live_pilot_payment', { p_authorization_id: authorizationId, p_reason: 'No se puede abortar una compra hecha' });
+      assert.notEqual(consumedAbort.status, 200);
+      const afterAbort = await attempt({ items });
+      assert.equal(afterAbort.failed?.status, 409, 'abortada, la autorización no habilita nada');
+      await setScope(ctx, 'A', 'public');
+      return {
+        sin_autorizacion: closed.failed.json.code, huella_documento: huella(documento).slice(0, 12), autorizacion: authorizationId,
+        rechazos_con_autorizacion_abierta: ['otro comprador', 'otra cantidad', 'entrega a domicilio'],
+        compra: { checkout_session_id: purchase.sessionId, total, provider_payment_id: String(payment.id) },
+        segunda_compra: 'rechazada (autorización consumida)', verificacion_de_la_compra: verification.checks.map(({ id, estado }) => [id, estado]),
+        devolucion: { http: refund.status, repetida: refundAgain.status, posts_al_proveedor: posts.length }, verificacion_de_la_devolucion: refunded.checks.map(({ id, estado }) => [id, estado]),
+      };
     },
   },
   {

@@ -1,0 +1,97 @@
+{
+ "mode": "enable",
+ "jobs": [
+  {
+   "jobname": "taba-checkout-expiry-sweep",
+   "schedule": "* * * * *",
+   "active": true
+  },
+  {
+   "jobname": "taba-checkout-provider-truth-sweep",
+   "schedule": "* * * * *",
+   "active": true
+  },
+  {
+   "jobname": "taba-operational-alerts-sweep",
+   "schedule": "* * * * *",
+   "active": true
+  },
+  {
+   "jobname": "taba-payment-outbox-worker",
+   "schedule": "30 seconds",
+   "active": true
+  },
+  {
+   "jobname": "taba-qa-window-expiry",
+   "schedule": "* * * * *",
+   "active": true
+  },
+  {
+   "jobname": "taba-security-retention-sweep",
+   "schedule": "*/5 * * * *",
+   "active": false
+  }
+ ],
+ "recentRuns": [
+  {
+   "jobname": "taba-payment-outbox-worker",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:49:22.984837+00"
+  },
+  {
+   "jobname": "taba-checkout-expiry-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:49:00.049787+00"
+  },
+  {
+   "jobname": "taba-qa-window-expiry",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:49:00.047824+00"
+  },
+  {
+   "jobname": "taba-checkout-provider-truth-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:49:00.044022+00"
+  },
+  {
+   "jobname": "taba-operational-alerts-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:49:00.040472+00"
+  },
+  {
+   "jobname": "taba-payment-outbox-worker",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:52.964547+00"
+  },
+  {
+   "jobname": "taba-payment-outbox-worker",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:22.942717+00"
+  },
+  {
+   "jobname": "taba-checkout-provider-truth-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:00.048145+00"
+  },
+  {
+   "jobname": "taba-checkout-expiry-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:00.046958+00"
+  },
+  {
+   "jobname": "taba-operational-alerts-sweep",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:00.033967+00"
+  },
+  {
+   "jobname": "taba-qa-window-expiry",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:48:00.032734+00"
+  },
+  {
+   "jobname": "taba-payment-outbox-worker",
+   "status": "succeeded",
+   "start_time": "2026-10-26 19:47:52.920527+00"
+  }
+ ]
+}

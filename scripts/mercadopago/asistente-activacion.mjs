@@ -256,7 +256,7 @@ export function checklist(target, binding) {
     { id: 'P10', title: 'Walter vincula SU cuenta y «Verificar» no muestra más que «cobro apagado»', who: 'Walter, en su dispositivo',
       state: 'acción del titular', command: 'docs/audit/mp-commercial-onboarding-20261024/CONECTAR-WALTER.md' },
     { id: 'P11', title: 'Primer cobro y primera devolución reales de control (cierran R-MKT-1 y la API de reembolsos con dinero real)', who: 'Walter (importe y producto, D5) + operador',
-      state: 'autorización del titular', command: 'docs/audit/commercial-readiness-20261023/LANZAMIENTO.md §5–§6' },
+      state: 'autorización del titular', command: 'node scripts/mercadopago/piloto-pago-real.mjs plantilla|validar|preflight|autorizar|verificar|verificar-devolucion · docs/audit/pilot-real-payments-20261026/PROCEDIMIENTO-COMPRA-REAL.md' },
   ];
 }
 

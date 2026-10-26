@@ -264,6 +264,20 @@ for (const [nombre, cambios, esperado] of bloqueos) {
   });
 }
 
+test('preflight: avisos con firma rechazada se informan pero no bloquean; una cola muerta sí', () => {
+  const rechazados = Array.from({ length: 3 }, () => ({ processing_status: 'rejected_signature', signature_valid: false }));
+  const valido = { processing_status: 'completed', signature_valid: true };
+  const conValidos = evaluarPreflight(preflightOk({ mp: { outbox: [], intents: [], refunds: [], receipts: [...rechazados, valido] } }));
+  assert.equal(conValidos.ok, true);
+  assert.match(conValidos.checks.find((c) => c.id === 'avisos_con_firma_rechazada').detalle, /3/);
+  const sinValidos = evaluarPreflight(preflightOk({ mp: { outbox: [], intents: [], refunds: [], receipts: rechazados } }));
+  assert.equal(sinValidos.ok, true);
+  assert.match(sinValidos.checks.find((c) => c.id === 'avisos_con_firma_rechazada').detalle, /NINGUNO válido/);
+  const muerta = evaluarPreflight(preflightOk({ mp: { outbox: [{ status: 'dead_letter' }], intents: [], refunds: [], receipts: [] } }));
+  assert.equal(muerta.ok, false);
+  assert.equal(muerta.checks.find((c) => c.id === 'cola_y_conciliacion').estado, 'FAIL');
+});
+
 test('preflight de QA no exige proyecto de producción ni revisión productiva', () => {
   const r = evaluarPreflight(preflightOk({ target: 'qa', registro: undefined,
     settings: { enabled: true, environment: 'test', production_review_status: 'not_requested', collector_id: '555000111', application_id: '7677852968049976' },

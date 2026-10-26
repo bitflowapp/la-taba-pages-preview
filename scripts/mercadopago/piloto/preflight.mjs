@@ -67,7 +67,14 @@ export function evaluarPreflight(entrada) {
     intencionesEntorno === 0 ? 'ninguno: la compra de control será la primera' : `${intencionesEntorno} intención(es) de pago previas`));
 
   const clasificacion = classifyMercadoPago({ settings: settings ? [settings] : [], connections: conexion ? [conexion] : [], ...mp }, ahora);
-  const avisos = clasificacion.warn.filter((w) => !w.startsWith('MP_SELLER_TOKEN_EXPIRING'));
+  // Una firma rechazada es el sistema funcionando (rechazó un aviso falso o de otra clave): se informa, no bloquea. Lo que
+  // bloquea es lo que deja dinero sin conciliar: cola frenada o muerta, pagos en revisión, pago sin pedido, devolución ambigua.
+  const rechazadas = clasificacion.warn.find((w) => w.startsWith('MP_WEBHOOK_SIGNATURE_REJECTED'));
+  const avisos = clasificacion.warn.filter((w) => !w.startsWith('MP_SELLER_TOKEN_EXPIRING') && !w.startsWith('MP_WEBHOOK_SIGNATURE_REJECTED'));
+  if (rechazadas) {
+    out.push(check('avisos_con_firma_rechazada', 'INFO', 'Avisos de Mercado Pago rechazados por firma en los últimos 7 días',
+      `${rechazadas.split(':')[1]}${rechazadas.endsWith(':NONE_VALID') ? ' y NINGUNO válido: si no son pruebas de firmas falsas, la clave del webhook cargada puede no ser la de la aplicación (asistente-activacion webhook-firma)' : ' (hay avisos válidos: son firmas falsas o viejas rechazadas a propósito)'}`));
+  }
   out.push(check('cola_y_conciliacion', avisos.length === 0 && discrepanciasAbiertas === 0 ? 'PASS' : 'FAIL',
     'Cola de pagos sana y ninguna discrepancia abierta', avisos.length || discrepanciasAbiertas
       ? `${avisos.join(', ')}${discrepanciasAbiertas ? ` · discrepancias abiertas: ${discrepanciasAbiertas}` : ''}` : 'sin avisos'));

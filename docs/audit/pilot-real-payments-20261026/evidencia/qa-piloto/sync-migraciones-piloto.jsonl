@@ -1,0 +1,3 @@
+{"at":"2026-10-26T20:55:15.518Z","phase":"migrations","applied":178,"pending":["20261027010000 20261027010000_live_pilot_gate.sql"],"apply":true}
+{"at":"2026-10-26T20:55:17.706Z","phase":"migration","version":"20261027010000","sha256":"627358a1f7d8797b9c50b46bbff5cd44df1f83109252075876cd76b97645a82a","result":"applied"}
+{"at":"2026-10-26T20:55:19.134Z","phase":"schedulers","paused":["taba-checkout-expiry-sweep","taba-checkout-provider-truth-sweep","taba-operational-alerts-sweep","taba-payment-outbox-worker","taba-qa-window-expiry","taba-security-retention-sweep"],"next":"deploy the functions (--functions), then re-enable the jobs that were active: qa-schedulers.mjs --enable <jobs>"}

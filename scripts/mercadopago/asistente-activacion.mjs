@@ -371,7 +371,13 @@ async function main() {
     const report = path.join(ROOT, 'artifacts', 'ci', 'ensayo-activacion.json');
     const bench = spawnSync(process.execPath, [path.join(ROOT, 'scripts/payments-e2e/run.mjs'), '--environment', 'production', '--report', report], { stdio: 'inherit', cwd: ROOT });
     const onboarding = spawnSync(process.execPath, [path.join(ROOT, 'scripts/production/rehearse-mp-onboarding.mjs')], { stdio: 'inherit', cwd: ROOT });
-    const ok = bench.status === 0 && onboarding.status === 0;
+    // Salir con 0 no alcanza: el informe tiene que existir, estar en verde y haber corrido escenarios.
+    let benchReportOk = false;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(report, 'utf8'));
+      benchReportOk = parsed.ok === true && parsed.runs?.length > 0 && parsed.runs.every((run) => run.scenarios?.length > 0);
+    } catch { benchReportOk = false; }
+    const ok = bench.status === 0 && benchReportOk && onboarding.status === 0;
     console.log(ok ? `\nENSAYO DE ACTIVACIÓN OK (informe: ${path.relative(ROOT, report)})` : '\nENSAYO DE ACTIVACIÓN FALLÓ');
     process.exitCode = ok ? 0 : 1;
     return;

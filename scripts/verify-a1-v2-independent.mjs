@@ -17,6 +17,13 @@ assert.equal(info.Mounts.some(m=>m.Type==='bind'),false);
 const args=['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'];
 const sql=q=>execFileSync('docker',args,{input:'set search_path=public,extensions;\n'+q,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
 const quote=v=>v===null?'NULL':"'"+String(v).replaceAll("'","''")+"'";
+// The working-tree preference handler elects ONE dispatcher before any provider POST (migration 20261026020000, additive).
+// Deploy order is migrations first, functions after: on a database without it the handler must fail closed with no POST.
+const CLAIM_MIGRATION='supabase/migrations/20261026020000_preference_dispatch_claim.sql';
+const CLAIM_SIGNATURE='public.claim_mercadopago_preference_dispatch(uuid,uuid,text)';
+const ensureClaim=()=>{if(sql(`select to_regprocedure('${CLAIM_SIGNATURE}') is not null`)!=='t')sql(fs.readFileSync(CLAIM_MIGRATION,'utf8'));};
+// The verifier leaves the schema exactly as it found it: the lifecycle steps that follow compare fingerprints.
+const dropClaim=()=>sql(`drop function if exists ${CLAIM_SIGNATURE}`);
 const call=(name,p)=>JSON.parse(sql(`select to_jsonb(public.${name}(${Object.entries(p).map(([k,v])=>k+' => '+quote(v)).join(',')}))`));
 const uid=randomUUID(),bid=randomUUID(),product=randomUUID(),asset=randomUUID();
 const sellerId=String(100000000+Math.floor(Math.random()*800000000));
@@ -48,7 +55,7 @@ const client={auth:{getUser:async()=>({data:{user:{id:uid}},error:null})},
  const q={select(){return q;},eq(k,v){assert.match(k,/^\w+$/);filters.push(k+'='+quote(v));return q;},
  async maybeSingle(){return {data:JSON.parse(sql(`select coalesce((select to_jsonb(t) from ${table} t where ${filters.join(' and ')}),'null'::jsonb)`)),error:null};},async single(){return q.maybeSingle();}};return q;},
  async rpc(name,p){
-  assert.match(name,/^(prepare_payment_refund|prepare_mercadopago_preference|record_mercadopago_preference|get_mercadopago_payment_authority|consume_payment_rate_limit)/);
+  assert.match(name,/^(prepare_payment_refund|prepare_mercadopago_preference|record_mercadopago_preference|claim_mercadopago_preference_dispatch|get_mercadopago_payment_authority|consume_payment_rate_limit)/);
   if(name==='consume_payment_rate_limit')return {data:{allowed:true},error:null};
   try {return {data:call(name,p),error:null};}catch(e){return {data:null,error:{message:'fixture SQL rejected',detail:e.stderr?.toString()}};}
  }
@@ -136,7 +143,8 @@ async function verifyRetiredRefundHandlers(){
  assert.equal(financialPosts,0);console.log('OLD_REFUND_HANDLERS_CONTRACT: NO_PROVIDER_POST');
 }
 if(process.argv.includes('--current-contract')){
- phase='contract';revision='working-tree';await load(null);await currentSuite();
+ phase='contract';revision='working-tree';await load(null);ensureClaim();
+ try{await currentSuite();}finally{dropClaim();}
  console.log('CURRENT_CONTRACT_REPLAY: PASS');process.exit(0);
 }
 if(process.argv.includes('--retired-contract')){
@@ -146,7 +154,8 @@ if(process.argv.includes('--expanded-v5')){
  phase='old';await load('a56a9c5');
  for(route of ['stored','recovered','new']){mutation='none';stage='identity';reset();await run(true);}
  console.log('OLD_EDGE_PRE_RELEASE_V5_DB: PASS');
- phase='expand';await load(null);await currentSuite();
+ phase='expand';await load(null);ensureClaim();
+ try{await currentSuite();}finally{dropClaim();}
  console.log('NEW_EDGE_PRE_RELEASE_V5_DB: PASS');process.exit(0);
 }
 async function run(expected){mutationError=null;const response=await handler(request());const body=await response.json();if(mutationError)throw mutationError;assert.equal(Boolean(body.init_point),expected,JSON.stringify({phase,revision,route,mutation,stage,body}));console.log(JSON.stringify({phase,revision,route,mutation,stage,urlReleased:Boolean(body.init_point),status:response.status}));}
@@ -171,6 +180,11 @@ revision='a56a9c5';await load(revision);
 for(route of ['stored','recovered','new']){mutation='none';reset();await run(true);}
 console.log('OLD_EDGE_EXPAND_DB_CHECKOUT: PASS');
 revision='working-tree';await load(null);
+// Migrations are applied BEFORE the functions: until 20261026020000 exists the new handler fails closed and sends nothing.
+{const postsBefore=providerPosts;mutation='none';route='new';stage='identity';reset();await run(false);
+ assert.equal(providerPosts,postsBefore,'new handler without the claim function reached the provider');
+ console.log('NEW_EDGE_EXPAND_DB_WITHOUT_CLAIM: FAIL_CLOSED');}
+ensureClaim();
 async function currentSuite(){
  for(route of ['stored','stored_legacy','recovered','new'])for(mutation of ['none','cancel','supersede','preference','url','id','same-seller-other-attempt','aba','disable','close','credential']){stage='identity';reset();await run(mutation==='none');}
  for(route of ['recovered','new'])for(mutation of ['cancel','supersede','preference','url','credential','disable','close']){stage='persist';reset();await run(false);}
@@ -207,4 +221,5 @@ for(const date of [undefined,new Date(now-60000).toISOString(),new Date(now+6000
 }
 assert.equal(correlation.correlateProviderRefund([{id:'99000001',payment_id:'90001',amount:100,status:'approved',date_created:requestedAt}],known,new Set(),now).kind,'matched');
 console.log('A4_INDEPENDENT_MISSING_PRE_REQUEST_FUTURE_UNKNOWN_AND_KNOWN: PASS');
+dropClaim();
 console.log('INDEPENDENT_V2_EXPAND_REPRODUCTIONS: PASS');

@@ -41,6 +41,12 @@ async function run(scenario: string, creation = false) {
     expires_at: new Date(Date.now() + 172800000).toISOString(), refresh_owner: null };
   const requests: string[] = [], events: string[] = [], recordings: Record<string, unknown>[] = [];
   let posted = 0, settledEvents = 0, failedJobs = 0, claimedThisRun = false;
+  // What the provider's refund list looks like and what the database decides about it (its own tests cover the SQL).
+  const providerListed = !scenario.startsWith('unknown-settled') && scenario !== 'unknown-list-not-a-list';
+  const settleVerdict = scenario === 'unknown-settled' ? 'settled_not_executed'
+    : scenario === 'unknown-too-recent' ? 'too_recent'
+    : scenario === 'unknown-list-not-a-list' ? 'incomplete_evidence' : 'unaccounted';
+  const settleEvidence: Array<{ list_complete: boolean; provider_refunds: unknown[] }> = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(String(input)), init = options as RequestInit | undefined;
@@ -64,8 +70,13 @@ async function run(scenario: string, creation = false) {
     if (url.pathname.endsWith('/claim_provider_ledger_window')) return Response.json(null);
     if (url.pathname.endsWith('/park_refund_identity_unknown')) {
       assertEquals(body.p_refund_id, rid);
-      assertEquals(body.p_evidence.provider_refunds.map((r: { id: string }) => r.id), ['10001']);
+      assertEquals(body.p_evidence.provider_refunds.map((r: { id: string }) => r.id), providerListed ? ['10001'] : []);
       events.push('parked'); return Response.json({ ok: true });
+    }
+    if (url.pathname.endsWith('/settle_ambiguous_refund_from_provider')) {
+      assertEquals(body.p_refund_id, rid);
+      settleEvidence.push(body.p_evidence);
+      events.push('settle'); return Response.json(settleVerdict);
     }
     if (url.pathname.endsWith('/start_payment_outbox_job') || url.pathname.endsWith('/complete_payment_outbox_job')) return Response.json(true);
     if (url.pathname.endsWith('/fail_payment_outbox_job')) { failedJobs++; return Response.json(true); }
@@ -99,7 +110,11 @@ async function run(scenario: string, creation = false) {
     }
     // Since the financial-integrity migration, the list is evidence for the
     // parked case ONLY. It must never identify or settle an unknown refund.
-    if (url.pathname === '/v1/payments/90001/refunds') return Response.json([resource]);
+    if (url.pathname === '/v1/payments/90001/refunds') {
+      // An empty list is a legitimate answer; an object (an error body with 200) is NOT "no refunds".
+      if (scenario === 'unknown-list-not-a-list') return Response.json({ message: 'temporarily unavailable' });
+      return Response.json(providerListed ? [resource] : []);
+    }
     if (url.pathname === '/v1/payments/90001') return Response.json({ id: 90001, refunds: [resource] });
     assertEquals(url.pathname, '/v1/payments/90001/refunds/10001');
     return Response.json(resource);
@@ -136,9 +151,14 @@ async function run(scenario: string, creation = false) {
       } else {
         assertEquals(recordings.length, 0);
         if (scenario.startsWith('unknown')) {
-          assertEquals(failedJobs, 0); assertEquals(events, ['parked']);
+          // Still too early, or a list that could not be read, is retried by the outbox; every other verdict ends the job.
+          assertEquals(failedJobs, scenario === 'unknown-too-recent' || scenario === 'unknown-list-not-a-list' ? 1 : 0);
+          assertEquals(events, ['parked', 'settle']);
           assertEquals(local.provider_refund_id, null);
           assertEquals(requests, ['/v1/payments/90001/refunds']);
+          // Only a list that was read completely may be offered as proof, and a list that was not read is never "empty".
+          assertEquals(settleEvidence.length, 1);
+          assertEquals(settleEvidence[0].list_complete, scenario !== 'unknown-list-not-a-list');
         } else assertEquals(failedJobs, 1);
       }
       if (scenario === 'known-owned') assertEquals(requests.length, 0);
@@ -148,6 +168,7 @@ async function run(scenario: string, creation = false) {
 }
 
 for (const scenario of ['unknown-missing-time', 'unknown-prior', 'unknown-future', 'unknown-plausible',
+  'unknown-settled', 'unknown-too-recent', 'unknown-list-not-a-list',
   'known-wrong-payment', 'known-wrong-amount', 'known-owned', 'valid']) {
   Deno.test('A4 actual worker: ' + scenario, () => run(scenario));
 }

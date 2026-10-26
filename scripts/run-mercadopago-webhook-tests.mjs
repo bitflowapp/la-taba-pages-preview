@@ -56,6 +56,8 @@ const steps = [
     'supabase/functions/_shared/clean-business-oauth.deno.ts',
     'supabase/functions/_shared/seller-webhook-runtime.deno.ts',
     'supabase/functions/_shared/current-payment-authority.deno.ts',
+    'supabase/functions/_shared/payment-preference-race-audit.deno.ts',
+    'supabase/functions/_shared/payment-preference-review.deno.ts',
     'supabase/functions/_shared/recovery-deployment.deno.ts',
     'supabase/functions/_shared/refund-correlation.deno.ts',
     'supabase/functions/_shared/refund-no-guess.deno.ts',

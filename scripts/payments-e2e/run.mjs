@@ -23,6 +23,7 @@ import process from 'node:process';
 import readline from 'node:readline';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 import { ROOT } from '../release-v5/model.mjs';
 import { bindSellerOauth, addRefToList, FILES, PRODUCTION_CLIENT_ID } from '../production/bind-production.mjs';
@@ -201,13 +202,15 @@ async function startEdgeHost(config, env, log) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL: en Windows `file://${argv[1]}` nunca coincide con import.meta.url y el banco salía con 0 sin correr nada.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const environments = (option('--environment', 'test,production')).split(',');
   const only = option('--only', null)?.split(',') ?? null;
   const reportPath = option('--report', null);
   const reports = [];
   for (const environment of environments) reports.push(await runBench({ environment, only }));
-  const ok = reports.every((report) => report.ok);
+  // Un banco que no ejecutó ningún escenario no certifica nada.
+  const ok = reports.length > 0 && reports.every((report) => report.ok && report.scenarios.length > 0);
   const output = { ok, generated_at: new Date().toISOString(), runs: reports };
   if (reportPath) {
     fs.mkdirSync(path.dirname(path.resolve(reportPath)), { recursive: true });

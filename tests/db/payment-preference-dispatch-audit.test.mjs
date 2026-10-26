@@ -5,7 +5,7 @@ import { committedFixtureSql, FIXTURE_IDS } from './harness.mjs';
 
 test('eight SQL sessions claim exactly one preference dispatch; retry after lost response cannot reclaim', async()=>{
   const template=process.env.TABA_LOCAL_DB;
-  assert.match(template,/^taba_local_codex_payment_fixed$/);
+  assert.match(template,/^taba_local_[a-z0-9_]+$/);
   const db=`taba_local_codex_dispatch_${process.pid}`;
   psqlRaw('postgres',`create database ${db} template ${template}`);
   try{

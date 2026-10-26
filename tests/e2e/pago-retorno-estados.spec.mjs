@@ -253,6 +253,52 @@ test.describe('retorno de Mercado Pago', () => {
    * checkout lo devuelve ya expandido a productos, así que el cliente sólo puede
    * saber qué combos pagó si los guardó al iniciar el pago.
    */
+  /*
+   * Dos pestañas de la tienda comparten el carrito y el registro del checkout (localStorage), no la memoria. Si las
+   * dos reciben «aprobado» a la vez, lo pagado tiene que salir UNA vez: una segunda baja se llevaría unidades que
+   * la persona sumó después de iniciar el pago.
+   */
+  test('dos pestañas que verifican el mismo pago aprobado a la vez retiran lo pagado una sola vez', async ({ page, context }) => {
+    const segunda = await context.newPage();
+    let liberar;
+    const compuerta = new Promise((resolve) => { liberar = resolve; });
+    let respondidas = 0;
+    // Las dos pestañas preguntan al servidor antes de que cualquiera reciba respuesta: ambas la reciben juntas.
+    for (const pestania of [page, segunda]) {
+      await pestania.route(`${SUPABASE_URL}/**`, async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname.includes('/functions/v1/mercadopago-checkout-status')) {
+          respondidas += 1;
+          if (respondidas >= 2) liberar();
+          await compuerta;
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, checkout: COMPLETADO }) });
+        }
+        if (url.pathname.includes('/auth/v1/')) {
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+            access_token: 'test-access-token', refresh_token: 'test-refresh-token', token_type: 'bearer', expires_in: 3600,
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: '10000000-0000-4000-8000-000000000001', is_anonymous: true, aud: 'authenticated' } }) });
+        }
+        return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': '0-0/0' }, body: '[]' });
+      });
+      await pestania.addInitScript(({ supabaseUrl, businessId }) => {
+        globalThis.__LA_TABA_RUNTIME_CONFIG__ = { mode: 'production', repository: { provider: 'supabase', supabaseUrl, publishableKey: 'sb_publishable_test_key', businessId } };
+      }, { supabaseUrl: SUPABASE_URL, businessId: BUSINESS_ID });
+    }
+    await sembrar(page, {
+      registro: { checkoutSessionId: CHECKOUT_ID, items: [{ productId: PRODUCTO_PAGADO, quantity: 2 }], combos: [] },
+      carrito: { cart: [{ productId: PRODUCTO_PAGADO, quantity: 3 }], comboSelections: [] },
+    });
+
+    await Promise.all([page.goto('/pago/resultado/'), segunda.goto('/pago/resultado/')]);
+    await expect(titulo(page)).toHaveText('Pedido confirmado', { timeout: 15_000 });
+    await expect(titulo(segunda)).toHaveText('Pedido confirmado', { timeout: 15_000 });
+
+    // 3 en el carrito, 2 pagadas: queda 1 (la que se sumó después), no 0.
+    expect((await leerCarrito(page)).cart).toEqual([{ productId: PRODUCTO_PAGADO, quantity: 1 }]);
+    expect(await registroGuardado(page)).toBeNull();
+  });
+
   test('un combo pagado sale del carrito; otro combo agregado después se queda', async ({ page }) => {
     await instalarBackend(page, [checkout({
       status: 'completed',

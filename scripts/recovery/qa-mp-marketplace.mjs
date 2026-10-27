@@ -4,6 +4,7 @@
 // `marketplace: NONE` and a webhook `user_id` cannot be told apart between "seller" and "application owner".
 //
 //   node scripts/recovery/qa-mp-marketplace.mjs preflight [--seller <id>]   read-only readiness report
+//   node scripts/recovery/qa-mp-marketplace.mjs identities --seller <idB> [--reserve <id>]   read-only: who owns the integrator application, who is seller A / the buyer, and whether B (and a standby) are valid distinct Argentine accounts
 //   node scripts/recovery/qa-mp-marketplace.mjs snapshot --out <file>   read-only counts (orders, payment intents, stock) of both tenants; take it BEFORE the payment
 //   node scripts/recovery/qa-mp-marketplace.mjs verify --session <id> --seller <id> [--baseline <file>]   read-only evidence after a payment; with a baseline it also proves orders, intents and stock moved in tenant B only
 //   node scripts/recovery/qa-mp-marketplace.mjs prepare [--apply]   makes QA tenant B able to sell ONE synthetic product (dry run unless --apply)
@@ -20,7 +21,7 @@ import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 const ref = 'ixewllzzuzpqrkxzmfzx', app = RECOVERY_TEST_APPLICATION_ID;
 const arg = (name) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const command = process.argv[2];
-assert.ok(['preflight', 'verify', 'prepare', 'snapshot'].includes(command), 'preflight | verify | prepare | snapshot');
+assert.ok(['preflight', 'identities', 'verify', 'prepare', 'snapshot'].includes(command), 'preflight | identities | verify | prepare | snapshot');
 const credential = leerSecreto('RECOVERY SUPABASE SERVICE KEY');
 assert.equal(credential.usuario, ref);
 const db = createClient(`https://${ref}.supabase.co`, credential.secreto, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -31,12 +32,16 @@ async function mp(token, path) {
   let body = null; try { body = await r.json(); } catch { /* not JSON */ }
   return { http: r.status, requestId: r.headers.get('x-request-id'), body };
 }
-async function integratorOwner() {
+async function appToken() {
   const secret = leerSecreto('RECOVERY MP TESTAPP CLIENT SECRET')?.secreto;
   assert.ok(secret, 'TestApp client secret unavailable');
   const grant = await (await fetch('https://api.mercadopago.com/oauth/token', { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ grant_type: 'client_credentials', client_id: app, client_secret: secret }), signal: AbortSignal.timeout(15000) })).json();
-  const me = (await mp(grant.access_token, '/users/me')).body;
+  assert.ok(grant.access_token, 'Mercado Pago did not grant the application token');
+  return grant.access_token;
+}
+async function integratorOwner() {
+  const me = (await mp(await appToken(), '/users/me')).body;
   return { id: String(me.id), test_user: Array.isArray(me.tags) && me.tags.includes('test_user') };
 }
 async function sellerToken(businessId) {
@@ -100,6 +105,55 @@ if (command === 'preflight') {
   ];
   if (wanted && wanted === owner.id) report.blockers.push('the second seller must NOT be the owner of the integrator application');
   console.log(JSON.stringify(report, null, 2));
+}
+
+if (command === 'identities') {
+  // Read-only. Who is who before anything is paid: the owner of the integrator application, seller A (QA tenant A), the
+  // buyer, and the candidate sellers B. Public account reads use the application's own token; no id is printed that
+  // is not already in the repository documentation, and no token or password is ever printed.
+  const sellerB = arg('--seller'), reserve = arg('--reserve');
+  assert.match(sellerB || '', /^\d+$/, '--seller <id> is required');
+  assert.ok(!reserve || /^\d+$/.test(reserve), '--reserve must be numeric');
+  const token = await appToken();
+  const owner = (await mp(token, '/users/me')).body;
+  const direct = leerSecreto('RECOVERY MP TEST ACCESS TOKEN')?.secreto;
+  const directMe = direct ? (await mp(direct, '/users/me')).body : null;
+  const application = direct ? (await mp(direct, `/applications/${app}`)).body : null;
+  const buyerStored = (() => { try { return JSON.parse(leerSecreto('RECOVERY MP TEST BUYER')?.secreto || '{}'); } catch { return {}; } })();
+  const a = await sellerToken(RECOVERY_QA.a);
+  const aMe = a ? (await mp(a.token, '/users/me')).body : null;
+  const b = await sellerToken(RECOVERY_QA.b);
+  const publicRead = async (id) => {
+    const r = await mp(token, `/users/${id}`);
+    return { http: r.http, exists: r.http === 200 && String(r.body?.id) === id, site_id: r.body?.site_id ?? null, country_id: r.body?.country_id ?? null, status: r.body?.status?.site_status ?? null };
+  };
+  const candidates = { seller_b: { id: sellerB, ...(await publicRead(sellerB)) } };
+  if (reserve) candidates.standby = { id: reserve, ...(await publicRead(reserve)) };
+  const ownerId = String(owner.id), buyerId = String(buyerStored.id ?? '');
+  const checks = {
+    integrator_owner_is_test_user: Array.isArray(owner.tags) && owner.tags.includes('test_user'),
+    integrator_application_is_testapp: String(application?.id) === app,
+    direct_test_token_belongs_to_owner: directMe ? String(directMe.id) === ownerId : null,
+    tenant_a_oauth_seller_is_owner: aMe ? String(aMe.id) === ownerId && a.seller_id === ownerId : null,
+    buyer_is_a_different_account: Boolean(buyerId) && buyerId !== ownerId,
+    seller_b_exists_ar: candidates.seller_b.exists && candidates.seller_b.site_id === 'MLA' && candidates.seller_b.country_id === 'AR',
+    seller_b_differs_from_owner: sellerB !== ownerId,
+    seller_b_differs_from_seller_a: sellerB !== (a?.seller_id ?? ownerId),
+    seller_b_differs_from_buyer: sellerB !== buyerId,
+    ...(reserve ? {
+      standby_exists_ar: candidates.standby.exists && candidates.standby.site_id === 'MLA' && candidates.standby.country_id === 'AR',
+      standby_differs_from_everyone: ![ownerId, buyerId, sellerB].includes(reserve),
+    } : {}),
+  };
+  console.log(JSON.stringify({
+    at: new Date().toISOString(), integrator_application: { id: app, name: application?.name ?? null, owner_user_id: ownerId },
+    seller_a: { tenant_a_seller_id: a?.seller_id ?? null, is_integrator_owner: a ? a.seller_id === ownerId : null,
+      note: 'seller A is the owner of the integrator application: Mercado Pago marks its preferences marketplace=NONE and its webhook user_id cannot tell seller from owner (R-MKT-1)' },
+    buyer: { id: buyerId || null }, candidates,
+    tenant_b_connection: b ? { connected: true, seller_id: b.seller_id, is_candidate: b.seller_id === sellerB } : { connected: false },
+    checks, all_pass: Object.values(checks).every((v) => v === true || v === null),
+    cannot_prove_by_api: 'tags (test_user) of accounts other than the application owner are not exposed; the OAuth consent and the APRO card only work with test accounts',
+  }, null, 2));
 }
 
 if (command === 'verify') {

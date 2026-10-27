@@ -6,8 +6,8 @@
 //
 //   node scripts/recovery/qa-mp-e2e.mjs <command> [--flags]
 //   commands: connect-url | status | verify | activation | window-open | window-close | checkout | session |
-//             inspect | forged-webhooks | worker | cancel | refund | disconnect-preview | disconnect | counts |
-//             orders | order-cancel
+//             inspect | forged-webhooks | replay-webhook | worker | cancel | refund | disconnect-preview | disconnect |
+//             counts | orders | order-cancel
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
@@ -246,6 +246,56 @@ async function main() {
     record({ results });
     out({ results, allRefused: results.every(r => r.refused) });
     assert.ok(results.every(r => r.refused), 'forged notifications were not all rejected with 401; check webhook secret/configuration');
+    return;
+  }
+  if (command === 'replay-webhook') {
+    // Idempotency and routing with GENUINELY SIGNED deliveries: the payment is real QA, the deliveries are generated here
+    // with the QA application's webhook secret (the way Mercado Pago would resend them). `--user-id` is the body hint:
+    // the integrator owner's id (the R-MKT-1 case: it is also seller A), another account's id, or none. Nothing in the
+    // body is trusted by the handler; the provider read with each connected seller's token decides the business.
+    const payment = arg('--payment');
+    assert.match(payment || '', /^\d+$/, '--payment <provider payment id> is required');
+    const userId = arg('--user-id');
+    assert.ok(!userId || /^\d+$/.test(userId), '--user-id must be numeric');
+    const secret = leerSecreto('RECOVERY MP TESTAPP WEBHOOK SECRET');
+    assert.equal(String(secret?.usuario), TEST_APPLICATION, 'webhook secret is not bound to the QA integrator application');
+    const db = admin();
+    const names = Object.fromEntries(Object.entries(RECOVERY_QA).map(([name, id]) => [id, name]));
+    const snapshot = async () => {
+      const ordersOf = async id => (await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', id)).count;
+      const { data: receipts } = await db.from('payment_webhook_receipts').select('signature_valid,processing_status,seller_business_id').eq('resource_id', payment);
+      const { data: intents } = await db.from('payment_intents').select('business_id,order_id,internal_status').eq('provider_payment_id', payment);
+      return { orders_a: await ordersOf(RECOVERY_QA.a), orders_b: await ordersOf(RECOVERY_QA.b), receipts: (receipts || []).length,
+        routed_to: [...new Set((receipts || []).map(r => names[r.seller_business_id] ?? null))].sort(),
+        intents: (intents || []).map(i => ({ tenant: names[i.business_id] ?? null, has_order: Boolean(i.order_id), status: i.internal_status })) };
+    };
+    const before = await snapshot();
+    const deliveries = [];
+    const newEvent = () => ({ id: randomUUID(), type: 'payment', action: 'payment.updated', data: { id: payment }, live_mode: true,
+      ...(userId ? { user_id: Number(userId) } : {}) });
+    // A resend by Mercado Pago carries the same body and headers; only a new notification has a new event id.
+    const send = async (label, requestId, ts, event) => {
+      const v1 = createHmac('sha256', secret.secreto).update(`id:${payment};request-id:${requestId};ts:${ts};`).digest('hex');
+      const response = await fetch(`${url}/functions/v1/mercadopago-webhook?data.id=${payment}&type=payment`, { method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-request-id': requestId, 'x-signature': `ts=${ts},v1=${v1}` },
+        body: JSON.stringify(event), signal: AbortSignal.timeout(30000) });
+      const body = await response.json().catch(() => ({}));
+      deliveries.push({ label, http: response.status, code: body.code ?? null, receipt_id: body.receipt_id ?? null, duplicate: body.duplicate ?? null, queued: body.queued ?? null });
+    };
+    const request = { requestId: randomUUID(), ts: String(Math.floor(Date.now() / 1000)), event: newEvent() };
+    await send('first delivery', request.requestId, request.ts, request.event);
+    await send('same delivery again', request.requestId, request.ts, request.event);
+    await send('new notification (new event and request id)', randomUUID(), String(Math.floor(Date.now() / 1000)), newEvent());
+    const after = await snapshot();
+    const result = { payment, body_user_id_hint: userId ?? null, deliveries, before, after,
+      checks: {
+        all_accepted: deliveries.every(d => [200, 201].includes(d.http)),
+        same_delivery_is_a_duplicate: deliveries[1].duplicate === true && deliveries[0].receipt_id === deliveries[1].receipt_id,
+        no_order_created_by_replays: before.orders_a === after.orders_a && before.orders_b === after.orders_b,
+        routed_to_one_tenant_only: after.routed_to.filter(Boolean).length <= 1,
+      } };
+    record(result);
+    out(result);
     return;
   }
   if (command === 'worker') {

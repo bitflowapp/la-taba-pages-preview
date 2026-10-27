@@ -45,8 +45,12 @@ const marker = await admin.from('products').insert({ business_id: B, sku: 'QA-IS
 assert.ifError(marker.error);
 try {
   // 1. Reads across tenants.
+  // The expected count is the ground truth read with the service key, not a number baked into the script: tenant A
+  // gained a fourth product (the real-catalogue fixture) and the old `=== 3` reported a leak that did not exist.
   const own = await ownerA.from('products').select('id,business_id').eq('business_id', A);
-  check('owner A reads its own products', !own.error && own.data.length === 3, `rows=${own.data?.length}`);
+  const truth = await admin.from('products').select('*', { count: 'exact', head: true }).eq('business_id', A);
+  check('owner A reads exactly its own products', !own.error && !truth.error && truth.count > 0 && own.data.length === truth.count
+    && own.data.every(p => p.business_id === A), `rows=${own.data?.length} expected=${truth.count}`);
   const cross = await ownerA.from('products').select('id').eq('business_id', B);
   check('owner A cannot read tenant B products', !cross.error && cross.data.length === 0, `rows=${cross.data?.length}`);
   const crossB = await ownerB.from('products').select('id').eq('business_id', A);

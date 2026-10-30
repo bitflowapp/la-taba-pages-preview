@@ -1,5 +1,7 @@
 # Ejecución real de R-MKT-1 — 30/10/2026
 
+Estado más reciente: [misión autónoma OAuth/Moto G15](../oauth-night-20261030/INFORME.md). A confirmado en Developers; B sigue desconectado, sin compra ni certificación R-MKT-1. Los enlaces de intentos anteriores no se reutilizan.
+
 Inicio: 05:42 UTC (02:42 de Argentina). Base: PR #161, `f7f1f45c0de2045e6546290c486a97c976686dab`, sin cambios de código; CI tools y financial_sql verdes. No se repitieron las auditorías/suites certificadas.
 
 ## Preparación de OAuth

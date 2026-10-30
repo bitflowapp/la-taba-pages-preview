@@ -1,5 +1,7 @@
 # Bloqueo OAuth TestApp — 30/10/2026
 
+Actualización de la misión autónoma: se logró entrar como A y revisar su TestApp en Developers; el perfil bloquea la sección de cuentas de prueba y falta acceso/consentimiento de B. Ver [informe y evidencia nuevos](../oauth-night-20261030/INFORME.md). No se cambió configuración externa y el rechazo aún no tiene causa única demostrada.
+
 **NO-GO de consentimiento hasta revisar la configuración de la aplicación.** El usuario reportó «La aplicación no está preparada para conectarse a Mercado Pago» en `/appstore/access`, sin llegar al consentimiento B. No se corrigió externamente ningún ajuste y no se generó otro enlace de conexión.
 
 Alcance exclusivo: identidad de aplicación/vendedor, registro OAuth y parámetros. Sin auditorías generales, nuevas cuentas, pagos, renovación de credenciales, producción, cambios de permisos ni despliegues. La API de aplicación puede devolver tokens: se seleccionaron campos de configuración seguros antes de imprimir o guardar; ningún token ni secreto está en la evidencia.

@@ -1,0 +1,54 @@
+{
+  "at": "2026-10-30T05:47:55.859Z",
+  "source": "GET /applications/4861627125869370; GET /users/me; GET /users/3796774164",
+  "http": 200,
+  "request_id": "1e56c926-4fbb-486b-8524-ec5ee4450f58",
+  "application": {
+    "id": 4861627125869370,
+    "name": "TestApp-ae01fd1d",
+    "active": true,
+    "blocked": false,
+    "disabled": false,
+    "sandbox_mode": true,
+    "callback_url": "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+    "callback_urls": [
+      "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+      "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback"
+    ],
+    "allow_flow": [],
+    "use_pkce": true,
+    "public_oauth_scopes": [
+      "read",
+      "offline_access",
+      "write"
+    ],
+    "catalog_product_id": null,
+    "usage_profile": null
+  },
+  "owner": {
+    "http": 200,
+    "id": 3594962708,
+    "site_id": "MLA",
+    "test_user": true
+  },
+  "seller_b": {
+    "http": 200,
+    "id": 3796774164,
+    "site_id": "MLA",
+    "country_id": "AR",
+    "differs_from_owner": true
+  },
+  "expected_callback": "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback",
+  "assessment": {
+    "application_identity": "CONFIRMED",
+    "callback_in_registered_list": true,
+    "primary_callback_matches": false,
+    "required_scopes_present": true,
+    "pkce_panel_and_code_compatible": true,
+    "marketplace_third_party_authorization": "NOT_CONFIRMED",
+    "empty_allow_flow_semantics": "NOT_DOCUMENTED_DO_NOT_INFER",
+    "provider_rejection_root_cause": "NOT_ISOLATED_WITHOUT_PANEL_OR_SELLER_SESSION",
+    "external_changes": false,
+    "payments_created": false
+  }
+}

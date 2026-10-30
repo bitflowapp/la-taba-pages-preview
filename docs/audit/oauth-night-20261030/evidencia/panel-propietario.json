@@ -1,0 +1,52 @@
+{
+  "observed_at": "2026-10-30T06:24:00.383Z",
+  "method": "isolated Chrome; authorized existing test seller A credentials read only from Windows Credential Manager; no personal account used",
+  "owner": {
+    "id": "3594962708",
+    "test_user_api_confirmed": true,
+    "login_succeeded": true,
+    "otp_needed": false,
+    "personal_confirmation_needed": false
+  },
+  "application_card": {
+    "at": "2026-10-30T06:11:29.137Z",
+    "id": "4861627125869370",
+    "name": "TestApp-ae01fd1d",
+    "present_in_owner_panel": true,
+    "displayed_model": "Integración para tu cuenta"
+  },
+  "application_details": {
+    "at": "2026-10-30T06:24:00.383Z",
+    "user_id": "3594962708",
+    "application_id": "4861627125869370",
+    "product": "Checkout Pro"
+  },
+  "application_settings": {
+    "at": "2026-10-30T06:13:05.449Z",
+    "checkout_pro_selected": true,
+    "preferences_selected": true,
+    "pkce_yes_selected": true,
+    "scopes": {
+      "read": true,
+      "offline access": true,
+      "write": true
+    },
+    "marketplace_selector_observed": false,
+    "settings_saved": false
+  },
+  "test_account_access": {
+    "at": "2026-10-30T06:21:04.215Z",
+    "result": "BLOCKED_BY_PROVIDER_PROFILE",
+    "provider_message": "No es posible crear cuentas de prueba desde este perfil",
+    "details": "Provider requires the principal account; the modal was not bypassed; account B credentials were not obtained"
+  },
+  "security": {
+    "personal_account_used": false,
+    "new_test_accounts": false,
+    "credentials_rotated": false,
+    "permissions_changed": false,
+    "callbacks_changed": false,
+    "oauth_consent_clicked": false,
+    "payment_attempted": false
+  }
+}

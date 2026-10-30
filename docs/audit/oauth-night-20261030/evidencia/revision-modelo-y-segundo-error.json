@@ -1,0 +1,76 @@
+{
+  "at": "2026-10-30T17:31:23.796Z",
+  "method": "authenticated isolated Chrome using authorized existing test account A; read only",
+  "application": "4861627125869370",
+  "owner": "3594962708",
+  "personal_account_used": false,
+  "basic_settings": {
+    "category_options": [
+      "Alimentos/Dietética",
+      "Arte/Artesanías",
+      "Bar/Restaurantes",
+      "Belleza, estética y salud",
+      "Educación / Capacitación",
+      "Electrónicos, audio y video",
+      "Herrería y carpintería",
+      "Hogar y decoración",
+      "Indumentaria, calzado y accesorios",
+      "Librería y juguetería",
+      "ONG & crowdfunding",
+      "Servicio de informática",
+      "Servicio de consultoría",
+      "Transporte/Turismo",
+      "Vehículos y refacciones",
+      "Otros"
+    ],
+    "marketplace_option_present": false,
+    "category_changed": false
+  },
+  "product_settings": {
+    "payment_type": "online",
+    "product": "Checkout Pro",
+    "api": "Preferences",
+    "ecommerce_platform_selected": false,
+    "marketplace_selector_observed": false
+  },
+  "oauth_settings": {
+    "use_pkce": true,
+    "scopes": [
+      "read",
+      "offline_access",
+      "write"
+    ],
+    "callback_url": "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+    "callback_urls": [
+      "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+      "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback"
+    ],
+    "allow_flow": [],
+    "active": true,
+    "blocked": false,
+    "disabled": false
+  },
+  "save_button_disabled": true,
+  "external_changes": false,
+  "api_read_request_id": "019578cc-b556-4e07-b4cf-3e6cfcb5a690",
+  "business_b": {
+    "checked_at": "2026-10-30T17:32:35.729Z",
+    "status": "disconnected",
+    "seller_id": null,
+    "application_id": null,
+    "environment": "test",
+    "scopes": "",
+    "expires_at": null
+  },
+  "reported_errors": [
+    {
+      "source": "user report; no browser correlation id provided",
+      "text": "La aplicación no está preparada para conectarse a Mercado Pago"
+    },
+    {
+      "source": "user report; no browser correlation id provided",
+      "text": "La aplicación no puede conectarse a tu cuenta. Esta aplicación solicita acceso a información que, por seguridad, no podemos compartir"
+    }
+  ],
+  "root_cause": "provider authorization denial confirmed by reported UI; precise policy or configuration predicate not exposed by inspected settings"
+}

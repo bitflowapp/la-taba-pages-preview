@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-30T06:26:34.923Z",
+  "method": "ADB devices -l; getprop ro.product.model; foreground and keyguard metadata only",
+  "model": "moto g15",
+  "adb_authorized": true,
+  "screen_unlocked": true,
+  "chrome_installed": true,
+  "unrelated_foreground_content_read": false,
+  "notifications_read": false,
+  "codes_read": false,
+  "screenshots_taken": false,
+  "apps_installed": false,
+  "settings_changed": false
+}

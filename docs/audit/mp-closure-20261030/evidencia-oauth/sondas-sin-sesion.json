@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-30T05:49:06.367Z",
+  "no_user_session": true,
+  "no_consent": true,
+  "probes": [
+    {
+      "explicit_scopes": true,
+      "chain": [
+        {
+          "http": 302,
+          "host": "auth.mercadopago.com.ar",
+          "path": "/authorization",
+          "request_id": "600fada5-7569-481a-8429-af8a1ed95c94",
+          "title": null,
+          "not_ready": false,
+          "snippets": [],
+          "next": {
+            "host": "www.mercadolibre.com",
+            "path": "/jms/mla/lgz/login",
+            "errors": {}
+          }
+        }
+      ]
+    },
+    {
+      "explicit_scopes": false,
+      "chain": [
+        {
+          "http": 302,
+          "host": "auth.mercadopago.com.ar",
+          "path": "/authorization",
+          "request_id": "b1dfb694-1cb2-4336-8cdf-08c23fecb63e",
+          "title": null,
+          "not_ready": false,
+          "snippets": [],
+          "next": {
+            "host": "www.mercadolibre.com",
+            "path": "/jms/mla/lgz/login",
+            "errors": {}
+          }
+        }
+      ]
+    }
+  ]
+}

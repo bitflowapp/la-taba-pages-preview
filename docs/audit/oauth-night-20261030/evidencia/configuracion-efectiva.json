@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-30T06:10:46.988Z",
+  "http": 200,
+  "request_id": "1e00bc65-203b-4153-8db1-e2f3d1f0df15",
+  "id": 4861627125869370,
+  "name": "TestApp-ae01fd1d",
+  "callback_url": "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+  "callback_urls": [
+    "https://ucbtjcurawxjwjdvvcvj.supabase.co/functions/v1/mercadopago-oauth-callback",
+    "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback"
+  ],
+  "allow_flow": [],
+  "use_pkce": true,
+  "scopes": [
+    "read",
+    "offline_access",
+    "write"
+  ],
+  "active": true,
+  "blocked": false,
+  "disabled": false,
+  "owner": {
+    "http": 200,
+    "id": 3594962708,
+    "site_id": "MLA",
+    "test_user": true
+  },
+  "seller_b": {
+    "http": 200,
+    "id": 3796774164,
+    "site_id": "MLA",
+    "country_id": "AR",
+    "differs_from_owner": true
+  },
+  "changes_applied": false
+}

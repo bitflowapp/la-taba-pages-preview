@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-30T06:23:20.192Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "business": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a02",
+  "application": "4861627125869370",
+  "expected_seller": "3796774164",
+  "connection": {
+    "environment": "test",
+    "status": "disconnected",
+    "seller_id": null,
+    "application_id": null
+  },
+  "business_state": {
+    "status": "closed",
+    "qa_fixture": true,
+    "ordering_enabled": true,
+    "ordering_verified": true
+  },
+  "product": {
+    "id": "8aba920f-f1b3-4590-b30b-7d7b4447f716",
+    "sku": "QA-MKT-001",
+    "price": 100,
+    "stock": 5,
+    "available": true,
+    "is_active": true,
+    "price_status": "confirmed",
+    "is_alcoholic": false
+  },
+  "orders": 0,
+  "intents": 0,
+  "checkout_created": false,
+  "preference_created": false,
+  "payment_attempted": false,
+  "rmkt1_certified": false
+}

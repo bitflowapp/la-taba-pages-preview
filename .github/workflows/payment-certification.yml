@@ -54,7 +54,8 @@ jobs:
           test -x "$pg_bin/pg_ctl"
           echo "TABA_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
           "$pg_bin/initdb" -D "$RUNNER_TEMP/taba-payment-pg" -U postgres -A trust
-          "$pg_bin/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -l "$RUNNER_TEMP/taba-payment-pg.log" -o '-p 55440 -h 127.0.0.1' -w start
+          "$pg_bin/postgres" --version
+          "$pg_bin/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -l "$RUNNER_TEMP/taba-payment-pg.log" -o "-p 55440 -h 127.0.0.1 -k $RUNNER_TEMP" -w start || { cat "$RUNNER_TEMP/taba-payment-pg.log"; exit 1; }
       - name: Apply every migration with local platform stubs
         run: node scripts/local-db/bootstrap.mjs "$TABA_LOCAL_DB"
       - name: SQL money safety, tenant isolation, pilot, dispatch and refund regressions

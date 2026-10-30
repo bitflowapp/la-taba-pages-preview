@@ -42,7 +42,7 @@ export function evaluarPreflight(entrada) {
   {
     const dias = (Date.parse(conexion?.expires_at) - ahora) / DIA;
     out.push(check('credencial_vigente', dias >= 7 ? 'PASS' : 'FAIL', 'La credencial del vendedor no vence pronto',
-      `vence en ${Math.floor(dias)} días${dias < 30 && dias >= 7 ? ' (se renueva sola con el refresh)' : ''}`));
+      Number.isFinite(dias) ? `vence en ${Math.floor(dias)} días${dias < 30 && dias >= 7 ? ' (se renueva sola con el refresh)' : ''}` : 'vencimiento no disponible: verificar la conexión'));
   }
 
   out.push(check('interruptor_del_comercio', 'INFO', 'Interruptor de Mercado Pago del comercio',

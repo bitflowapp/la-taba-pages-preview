@@ -1,5 +1,7 @@
 # R-MKT-1: estado y pasos para cerrarlo (27/10/2026)
 
+**Actualización 30/10:** [PREFLIGHT vigente](../mp-closure-20261030/PREFLIGHT.md). Sigue pendiente consentimiento B y APRO manual. El verificador ahora exige baseline **v2** anterior al checkout, delta exacto y evidencia positiva; las lecturas desconocidas fallan. No hace falta guardar el login del vendedor y no se solicita en este encargo.
+
 Entorno: QA alojado `ixewllzzuzpqrkxzmfzx` (`environment: test`), integradora TestApp `4861627125869370`, dinero ficticio. Sin
 producción, sin la cuenta de Walter, sin aplicaciones nuevas. Rama `fix/rmkt1-qa-tooling-20261027` apilada sobre #159 (sin merge).
 

@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-30T05:30:19.697Z",
+  "results": [
+    {
+      "name": "unknown evidence accepted",
+      "killed": true,
+      "exit": 1,
+      "failures": [
+        "✖ unknown checks, empty reports and provider errors never certify isolation (1.2966ms)",
+        "ℹ fail 1",
+        "✖ failing tests:",
+        "✖ unknown checks, empty reports and provider errors never certify isolation (1.2966ms)"
+      ]
+    },
+    {
+      "name": "approximate stock delta accepted",
+      "killed": true,
+      "exit": 1,
+      "failures": [
+        "✖ does not certify wrong quantity deducted (0.6308ms)",
+        "✖ does not certify unrelated product deducted (0.2044ms)",
+        "✖ does not certify new product in B (0.2034ms)",
+        "ℹ fail 3",
+        "✖ failing tests:",
+        "✖ does not certify wrong quantity deducted (0.6308ms)",
+        "✖ does not certify unrelated product deducted (0.2044ms)",
+        "✖ does not certify new product in B (0.2034ms)"
+      ]
+    },
+    {
+      "name": "truncated financial read accepted",
+      "killed": true,
+      "exit": 1,
+      "failures": [
+        "✖ pilot rejects capped PostgREST results, errors and missing exact counts (1.19ms)",
+        "ℹ fail 1",
+        "✖ failing tests:",
+        "✖ pilot rejects capped PostgREST results, errors and missing exact counts (1.19ms)"
+      ]
+    }
+  ]
+}

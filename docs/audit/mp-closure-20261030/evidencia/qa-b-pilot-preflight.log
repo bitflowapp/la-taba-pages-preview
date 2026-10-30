@@ -1,0 +1,33 @@
+PASS   QA: proyecto de prueba con dinero ficticio
+       sin dinero real
+FAIL   El vendedor está conectado y es el configurado en el comercio
+       conexión disconnected; cobrador configurado —
+FAIL   La credencial del vendedor no vence pronto
+       vence en NaN días
+INFO   Interruptor de Mercado Pago del comercio
+       apagado · entorno — · revisión —
+FAIL   El comercio cobra en el entorno de este destino
+       comercio: —; destino: test
+FAIL   El comercio está en modo piloto cerrado (el público no puede pagar)
+       alcance: public (no lock) — abierto al público o sin candado
+PASS   No queda una autorización anterior abierta
+PASS   No hay compras en curso (reservas activas)
+       sesiones de pago abiertas: 0
+PASS   Pagos ya registrados en este entorno
+       ninguno: la compra de control será la primera
+INFO   Avisos de Mercado Pago rechazados por firma en los últimos 7 días
+       33 (hay avisos válidos: son firmas falsas o viejas rechazadas a propósito)
+PASS   Cola de pagos sana y ninguna discrepancia abierta
+       sin avisos
+MANUAL La integradora es una cuenta distinta del vendedor (dueña real en producción)
+       node scripts/mercadopago/asistente-activacion.mjs integradora --target qa
+MANUAL Sitio, redirección OAuth, webhook y CORS
+       node scripts/mercadopago/asistente-activacion.mjs red --target qa   (y webhook-firma --confirm <ref>)
+MANUAL Secretos y llave final en el estado esperado
+       node scripts/mercadopago/verificar-configuracion.mjs --ref=qa
+MANUAL Respaldo de menos de 26 h y restauración ensayada
+       node scripts/recovery/backup-freshness.mjs   ·   docs/audit/commercial-readiness-20261023/RESPALDOS-Y-RECUPERACION.md
+MANUAL Los 7 niveles de reversión están a mano
+       node scripts/mercadopago/asistente-activacion.mjs reversion --business <uuid> --slug <slug>
+
+PREFLIGHT: 4 BLOQUEO(S) · 5 comprobación(es) manual(es) · no se movió dinero ni se creó ninguna operación

@@ -1,5 +1,7 @@
 # Conectar la cuenta de Mercado Pago de Walter
 
+Actualización 30/10: producción todavía no está aprovisionada. El estado y las instrucciones vigentes están en [WALTER.md](../mp-closure-20261030/WALTER.md); no hay enlace productivo verificado hoy.
+
 Procedimiento para el día en que Walter acepte la propuesta. **No requiere programar.** Requiere que antes estén
 hechos los pasos de [`PRODUCCION.md`](PRODUCCION.md) §2 (proyecto de producción creado, binding mergeado, funciones
 desplegadas, secretos cargados **sin** la llave final).
@@ -9,7 +11,7 @@ desplegadas, secretos cargados **sin** la llave final).
 1. `node scripts/mercadopago/verificar-configuracion.mjs --ref=produccion` → configuración completa.
 2. Confirmar que `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` **no** está cargada: vincular no la necesita, y sin
    ella no se puede cobrar con dinero real aunque la cuenta quede vinculada.
-3. Tener a mano el usuario del Panel de Walter (dueño o encargado del comercio).
+3. Walter debe poder entrar al Panel con su propia sesión de dueño o encargado; soporte no recibe sus credenciales.
 
 ## Con Walter (él en su teléfono o PC; 3 minutos)
 
@@ -49,7 +51,7 @@ Ningún mensaje muestra números de vendedor, tokens ni textos técnicos.
 La regla de La Taba es que un comercio **no cambia de cuenta receptora** por su cuenta: así ningún cobro se concilia
 contra la cuenta de otro. Si la equivocación se nota antes del primer cobro, soporte la corrige así:
 
-1. Walter (o Marco con el usuario de Walter) toca **Desvincular → Sí, desvincular** en el Panel.
+1. Walter toca **Desvincular → Sí, desvincular** en el Panel con su propia sesión. Marco no usa las credenciales de Walter.
 2. Marco, en el SQL Editor del proyecto de producción (sesión de la organización), ejecuta:
 
    ```sql

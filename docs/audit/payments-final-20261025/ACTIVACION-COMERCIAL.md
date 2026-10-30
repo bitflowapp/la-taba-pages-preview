@@ -1,5 +1,7 @@
 # Activación comercial de Mercado Pago: el procedimiento del día que Walter autoriza
 
+**Actualización 30/10:** procedimiento histórico. Usar [PREFLIGHT.md](../mp-closure-20261030/PREFLIGHT.md): faltan certificaciones humanas y habilitación productiva; no pasar de una devolución externa a declarar aprobada la API ni abrir pagos públicos sin aprobación separada.
+
 Una página. Todo lo de ingeniería está hecho; lo que sigue son autorizaciones y cargas de titulares, cada una con su
 comprobación automática. Ninguna cobra dinero hasta el paso 9, y el paso 9 lo autoriza Walter.
 

@@ -1,5 +1,7 @@
 # LA TABA — LISTA PARA PILOTO DE PAGOS REALES
 
+**Estado actualizado 30/10:** [informe de cierre](../mp-closure-20261030/INFORME.md) y [preflight vigente](../mp-closure-20261030/PREFLIGHT.md). Este informe histórico no autoriza activación: producción no está aprovisionada, B no consintió y R-MKT-1/pago manual/devolución API siguen sin certificar. La CI SQL antes pendiente ya se incorporó; no crear otra cuenta B ni pedir su contraseña.
+
 26/10/2026. Sesión de Claude Sonnet 5.5 para Marco. **Nada de esto movió dinero real ni tocó producción**: el proyecto de producción no existe. Lo que se certificó es el software y el procedimiento; la primera transacción productiva **no se ejecutó y no está certificada**.
 
 ## Veredicto

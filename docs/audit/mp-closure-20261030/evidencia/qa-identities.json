@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-30T05:29:10.983Z",
+  "integrator_application": {
+    "id": "4861627125869370",
+    "name": "TestApp-ae01fd1d",
+    "owner_user_id": "3594962708"
+  },
+  "seller_a": {
+    "tenant_a_seller_id": "3594962708",
+    "is_integrator_owner": true,
+    "note": "seller A is the owner of the integrator application: Mercado Pago marks its preferences marketplace=NONE and its webhook user_id cannot tell seller from owner (R-MKT-1)"
+  },
+  "buyer": {
+    "id": "3594962710"
+  },
+  "candidates": {
+    "seller_b": {
+      "id": "3796774164",
+      "http": 200,
+      "exists": true,
+      "site_id": "MLA",
+      "country_id": "AR",
+      "status": "active"
+    },
+    "standby": {
+      "id": "3796774158",
+      "http": 200,
+      "exists": true,
+      "site_id": "MLA",
+      "country_id": "AR",
+      "status": "active"
+    }
+  },
+  "tenant_b_connection": {
+    "connected": false
+  },
+  "checks": {
+    "integrator_owner_is_test_user": true,
+    "integrator_application_is_testapp": true,
+    "direct_test_token_belongs_to_owner": true,
+    "tenant_a_oauth_seller_is_owner": true,
+    "buyer_is_a_different_account": true,
+    "seller_b_exists_ar": true,
+    "seller_b_differs_from_owner": true,
+    "seller_b_differs_from_seller_a": true,
+    "seller_b_differs_from_buyer": true,
+    "standby_exists_ar": true,
+    "standby_differs_from_everyone": true
+  },
+  "all_pass": true,
+  "cannot_prove_by_api": "tags (test_user) of accounts other than the application owner are not exposed; the OAuth consent and the APRO card only work with test accounts"
+}

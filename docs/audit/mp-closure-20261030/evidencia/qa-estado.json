@@ -1,0 +1,674 @@
+{
+  "at": "2026-10-30",
+  "source": "read-only Supabase SQL; no customer data or credentials",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "state": {
+    "cron": [
+      {
+        "active": false,
+        "jobname": "taba-security-retention-sweep",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "active": true,
+        "jobname": "taba-operational-alerts-sweep",
+        "schedule": "* * * * *"
+      },
+      {
+        "active": true,
+        "jobname": "taba-qa-window-expiry",
+        "schedule": "* * * * *"
+      },
+      {
+        "active": true,
+        "jobname": "taba-checkout-expiry-sweep",
+        "schedule": "* * * * *"
+      },
+      {
+        "active": true,
+        "jobname": "taba-checkout-provider-truth-sweep",
+        "schedule": "* * * * *"
+      },
+      {
+        "active": true,
+        "jobname": "taba-payment-outbox-worker",
+        "schedule": "30 seconds"
+      }
+    ],
+    "outbox": [
+      {
+        "count": 649,
+        "status": "completed"
+      }
+    ],
+    "intents": [
+      {
+        "count": 3,
+        "environment": "test",
+        "internal_status": "cancelled"
+      },
+      {
+        "count": 10,
+        "environment": "test",
+        "internal_status": "expired"
+      },
+      {
+        "count": 3,
+        "environment": "test",
+        "internal_status": "completed"
+      },
+      {
+        "count": 1,
+        "environment": "test",
+        "internal_status": "refunded"
+      }
+    ],
+    "refunds": [
+      {
+        "count": 1,
+        "status": "approved"
+      },
+      {
+        "count": 2,
+        "status": "rejected"
+      }
+    ],
+    "connections": [
+      {
+        "seller": "3594962708",
+        "status": "connected",
+        "expires_at": "2027-04-23T19:15:18.433+00:00",
+        "application": "4861627125869370",
+        "business_id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01",
+        "environment": "test"
+      },
+      {
+        "seller": null,
+        "status": "disconnected",
+        "expires_at": null,
+        "application": null,
+        "business_id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a02",
+        "environment": "test"
+      }
+    ],
+    "environments": [
+      {
+        "review": "not_requested",
+        "enabled": true,
+        "collector": "3594962708",
+        "application": "4861627125869370",
+        "business_id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01",
+        "environment": "test"
+      }
+    ],
+    "discrepancies": null
+  },
+  "security": {
+    "counts": {
+      "b_orders": 0,
+      "b_intents": 0,
+      "non_test_intents": 0,
+      "open_discrepancies": 0,
+      "outstanding_outbox": 0
+    },
+    "privileged_rpc": [
+      {
+        "args": "p_business_id uuid, p_environment text, p_customer_id uuid, p_items jsonb, p_amount numeric, p_concept text, p_seller_collector_id text, p_seller_holder text, p_buyer_account text, p_fee_bearer text, p_refund_plan text, p_abort_conditions text, p_authorized_by text, p_authorization_sha256 text, p_valid_minutes integer",
+        "name": "authorize_live_pilot_payment",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_payment_attempt_id uuid, p_customer_id uuid, p_expected_authority text",
+        "name": "claim_mercadopago_preference_dispatch",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_business_id uuid, p_user_id uuid, p_environment text, p_state_hash text, p_protected_verifier text",
+        "name": "mp_begin_oauth",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_state_hash text, p_environment text",
+        "name": "mp_consume_oauth",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_business_id uuid, p_environment text, p_generation uuid, p_seller_id text, p_application_id text, p_scopes text, p_protected_tokens text, p_expires_at timestamp with time zone",
+        "name": "mp_finish_oauth",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_refund_id uuid, p_provider_refund_id text, p_status text, p_amount numeric, p_response_hash text",
+        "name": "record_payment_refund_response_v2",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      },
+      {
+        "args": "p_business_id uuid, p_environment text, p_scope text, p_changed_by text, p_confirmation text",
+        "name": "set_live_payment_scope",
+        "anon_execute": false,
+        "service_execute": true,
+        "authenticated_execute": false
+      }
+    ],
+    "financial_tables": [
+      {
+        "rls": true,
+        "name": "payment_attempts",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_events",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_webhook_receipts",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_refunds",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_cancellations",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_disputes",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_outbox",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_intents",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_rate_limit_buckets",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_provider_payments",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_discrepancies",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_live_pilot_authorizations",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_live_scope",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "payment_live_scope_log",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "mp_seller_connections",
+        "anon_select": false,
+        "authenticated_select": false
+      },
+      {
+        "rls": true,
+        "name": "mp_oauth_states",
+        "anon_select": false,
+        "authenticated_select": false
+      }
+    ]
+  },
+  "advisor_summary": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 58,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 6,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 165,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `cron.job` has policies enforced on roles that allow access to anonymous users. Policies include `{cron_job_policy}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `cron.job_run_details` has policies enforced on roles that allow access to anonymous users. Policies include `{cron_job_run_details_policy}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_command_receipts` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads command audit\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_commercial_managers` has policies enforced on roles that allow access to anonymous users. Policies include `{\"commercial managers read delegation\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_config_audit` has policies enforced on roles that allow access to anonymous users. Policies include `{\"commercial managers read config audit\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_members` has policies enforced on roles that allow access to anonymous users. Policies include `{\"production admins remove staff and riders\",\"production admins update staff and riders\",\"production members read permitted rows\",\"production owners manage members\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_payment_settings` has policies enforced on roles that allow access to anonymous users. Policies include `{\"payment settings readable by owners and admins\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_service_exceptions` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business team reads service exceptions\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.business_service_hours` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business team reads service hours\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.businesses` has policies enforced on roles that allow access to anonymous users. Policies include `{\"production owners update business ordering\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.catalog_assets` has policies enforced on roles that allow access to anonymous users. Policies include `{\"catalog team reads approved assets\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.catalog_image_uploads` has policies enforced on roles that allow access to anonymous users. Policies include `{catalog_image_uploads_owner_admin_read}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.catalog_product_drafts` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads product drafts\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.checkout_session_combos` has policies enforced on roles that allow access to anonymous users. Policies include `{\"session combos follow checkout session access\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.checkout_session_items` has policies enforced on roles that allow access to anonymous users. Policies include `{\"checkout session items follow checkout session access\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.checkout_sessions` has policies enforced on roles that allow access to anonymous users. Policies include `{\"checkout sessions readable by their customer or finance roles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.commercial_fiscal_policies` has policies enforced on roles that allow access to anonymous users. Policies include `{\"commercial fiscal policy readable by back office\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.customer_addresses` has policies enforced on roles that allow access to anonymous users. Policies include `{\"customer addresses readable by owner\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.customers` has policies enforced on roles that allow access to anonymous users. Policies include `{\"customers readable by owner\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.daily_reconciliation_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads daily reconciliation events\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.daily_reconciliations` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads daily reconciliations\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.delivery_zones` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business team reads delivery zones\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_accounting_policies` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads approved fiscal policies\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_credit_allocations` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal credit allocations\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_document_artifacts` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal artifact metadata\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_document_items` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal items\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_documents` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal documents\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal events\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_print_jobs` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal print audit\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_print_requests` has policies enforced on roles that allow access to anonymous users. Policies include `{\"fiscal print requests readable by back office\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_profile_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal profile events\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_profiles` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads fiscal profiles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.fiscal_source_snapshots` has policies enforced on roles that allow access to anonymous users. Policies include `{\"fiscal source snapshots readable by back office\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.inventory_movements` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads inventory ledger\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.inventory_receipt_items` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads receipt items\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.inventory_receipts` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads receipts\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.notification_outbox` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads notification status\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.operational_alert_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads operational alert events\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.operational_alerts` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads operational alerts\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.order_abuse_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"authorized team reads abuse events\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.order_combos` has policies enforced on roles that allow access to anonymous users. Policies include `{\"order combos follow order access\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.order_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"production order events readable by business\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.order_packing_scans` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads packing scans\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.order_packing_sessions` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads packing\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.payment_cancellations` has policies enforced on roles that allow access to anonymous users. Policies include `{\"payment cancellations readable by finance roles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.payment_disputes` has policies enforced on roles that allow access to anonymous users. Policies include `{\"payment disputes readable by finance roles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.payment_intents` has policies enforced on roles that allow access to anonymous users. Policies include `{\"payment intents readable by finance roles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.payment_refunds` has policies enforced on roles that allow access to anonymous users. Policies include `{\"payment refunds readable by finance roles\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.pos_payments` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads pos payments\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.pos_sale_items` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads pos items\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.pos_sales` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads pos sales\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.print_job_events` has policies enforced on roles that allow access to anonymous users. Policies include `{\"back office reads its print audit\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.print_jobs` has policies enforced on roles that allow access to anonymous users. Policies include `{\"back office reads its print jobs\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.product_barcodes` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads barcode catalog\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.product_combo_components` has policies enforced on roles that allow access to anonymous users. Policies include `{\"commercial team reads every combo component\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.product_combos` has policies enforced on roles that allow access to anonymous users. Policies include `{\"commercial team reads every combo\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.product_fiscal_classifications` has policies enforced on roles that allow access to anonymous users. Policies include `{\"product fiscal classification readable by back office\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.products` has policies enforced on roles that allow access to anonymous users. Policies include `{\"production team reads products\",\"production team updates products\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.riders` has policies enforced on roles that allow access to anonymous users. Policies include `{\"operational team reads legacy riders\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.scanned_product_audit` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads scanned product audit\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.stock_count_items` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads stock count items\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `public.stock_count_sessions` has policies enforced on roles that allow access to anonymous users. Policies include `{\"business reads stock counts\"}`"
+    },
+    {
+      "name": "auth_allow_anonymous_sign_ins",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "Table `storage.objects` has policies enforced on roles that allow access to anonymous users. Policies include `{team_apps_owner_admin_read}`"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "official_quality": {
+    "status": "NOT_VERIFIED",
+    "application": "4861627125869370",
+    "reason": "OAuth ownership validation failed: target application does not belong to the same owner as the OAuth app",
+    "homologation_submitted": false
+  }
+}

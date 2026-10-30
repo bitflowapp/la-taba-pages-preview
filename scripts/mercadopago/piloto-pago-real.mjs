@@ -34,6 +34,7 @@ import { productionTarget } from '../lib/environments.mjs';
 import { plantilla, validar, resumen, huella, parametrosRpc } from './piloto/documento.mjs';
 import { verificarCompra, verificarDevolucion, imprimir } from './piloto/verificacion.mjs';
 import { evaluarPreflight, imprimirPreflight } from './piloto/preflight.mjs';
+import { leerCompleto } from './piloto/lectura-completa.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,7 +98,7 @@ async function leer(pedido, etiqueta) {
   return count ?? data;
 }
 
-async function reunirPreflight({ db, entorno }, { target, business, documento }) {
+export async function reunirPreflight({ db, entorno }, { target, business, documento }) {
   const hace7 = new Date(Date.now() - 7 * 86_400_000).toISOString();
   const settings = (await leer(db.from('business_payment_settings').select('enabled,environment,production_review_status,collector_id,application_id').eq('business_id', business).eq('provider', 'mercadopago'), 'la configuración de pagos'))?.[0] ?? null;
   const conexion = (await leer(db.from('mp_seller_connections').select('environment,status,seller_id,application_id,expires_at').eq('business_id', business).eq('environment', entorno), 'la conexión del vendedor'))?.[0] ?? null;
@@ -107,15 +108,16 @@ async function reunirPreflight({ db, entorno }, { target, business, documento })
     .in('status', ['ready_for_payment', 'redirected', 'payment_pending']).gt('expires_at', new Date().toISOString()), 'las sesiones abiertas');
   const intencionesEntorno = await leer(db.from('payment_intents').select('*', { count: 'exact', head: true }).eq('business_id', business).eq('environment', entorno), 'las intenciones de pago');
   const discrepanciasAbiertas = await leer(db.from('payment_discrepancies').select('*', { count: 'exact', head: true }).eq('business_id', business).neq('status', 'resolved'), 'las discrepancias');
-  const intents = await leer(db.from('payment_intents').select('id,internal_status,order_id,updated_at').eq('business_id', business)
-    .or(`updated_at.gte.${hace7},internal_status.in.(ambiguous,security_review_required,approved_order_pending,approved)`).limit(1000), 'las intenciones recientes');
+  // Include old intents: an ambiguous refund can outlive the seven-day reporting window.
+  const intents = await leerCompleto(db.from('payment_intents').select('id,internal_status,order_id,updated_at', { count: 'exact' })
+    .eq('business_id', business).eq('environment', entorno), 'todas las intenciones del comercio');
   const ids = intents.map((fila) => fila.id);
   const outbox = [
-    ...(ids.length ? await leer(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at').in('payment_intent_id', ids).neq('status', 'completed'), 'la cola') : []),
-    ...await leer(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at').is('payment_intent_id', null).neq('status', 'completed').limit(1000), 'la cola general'),
+    ...(ids.length ? await leerCompleto(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at', { count: 'exact' }).in('payment_intent_id', ids).neq('status', 'completed'), 'la cola') : []),
+    ...await leerCompleto(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at', { count: 'exact' }).is('payment_intent_id', null).neq('status', 'completed'), 'la cola general'),
   ];
-  const refunds = ids.length ? await leer(db.from('payment_refunds').select('status').in('payment_intent_id', ids).eq('status', 'ambiguous'), 'las devoluciones') : [];
-  const receipts = await leer(db.from('payment_webhook_receipts').select('processing_status,signature_valid').gte('received_at', hace7).limit(5000), 'los avisos');
+  const refunds = ids.length ? await leerCompleto(db.from('payment_refunds').select('status', { count: 'exact' }).in('payment_intent_id', ids).eq('status', 'ambiguous'), 'las devoluciones') : [];
+  const receipts = await leerCompleto(db.from('payment_webhook_receipts').select('processing_status,signature_valid', { count: 'exact' }).gte('received_at', hace7), 'los avisos');
   let productos;
   if (documento) {
     productos = await leer(db.from('products').select('id,sku,price,stock,is_active,available,price_status,is_alcoholic')

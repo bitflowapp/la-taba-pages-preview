@@ -1,0 +1,1 @@
+Producción todavía no tiene un proyecto de Supabase (deploy/environments.json: production.status = not_provisioned). No se toca nada. Para activarla: node scripts/production/bind-production.mjs (ver docs/audit/commercial-readiness-20261023/ENTORNOS.md).

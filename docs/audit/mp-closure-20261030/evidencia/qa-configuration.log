@@ -1,0 +1,41 @@
+MERCADO PAGO — VERIFICACIÓN DE CONFIGURACIÓN
+proyecto: la-taba-recovery-test (ixewllzzuzpqrkxzmfzx)
+
+SECRETOS  (se listan nombre y huella; ningún valor sale de acá)
+  ✓ TABA_DEPLOYMENT_ENV                          presente   huella e919a7536439…
+  ✓ MERCADOPAGO_OAUTH_PROJECT_REF                presente   huella 9dd6bada9687…
+  ✓ MERCADOPAGO_OAUTH_PANEL_URL                  presente   huella d47074b51ba4…
+  ✓ MERCADOPAGO_CLIENT_ID                        presente   huella e3338ca48c56…
+  ✓ MERCADOPAGO_CLIENT_SECRET                    presente   huella b97742069803…
+  ✓ MERCADOPAGO_TOKEN_ENCRYPTION_KEY             presente   huella 31f85c90aec9…
+  ✓ MERCADOPAGO_OAUTH_WEBHOOK_SECRET             presente   huella 59adf6eafeac…
+  ✓ MERCADOPAGO_ENVIRONMENT                      presente   = «test»
+  ✓ MERCADOPAGO_OAUTH_ENVIRONMENT                presente   = «test»
+  ✓ PAYMENT_LOG_HASH_SALT                        presente   huella cab55bb1b5a6…
+  ✓ PAYMENT_WORKER_SECRET                        presente   huella a847fc0daeba…
+  ✓ TABA_CHECKOUT_BASE_URL                       presente   huella 7f12b143643b…
+  · MERCADOPAGO_PRODUCTION_REVIEW_STATUS         sin definir
+  · MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION  sin definir
+  · TABA_ALLOWED_ORIGINS                         presente   huella 7f12b143643b…
+
+MODO DECLARADO POR EL PROYECTO
+  entorno del proveedor .......... test
+  revisión de producción ......... sin declarar
+
+FUNCIONES DESPLEGADAS
+  ✓ mercadopago-connect                          v16   ACTIVE verify_jwt=false
+  ✓ mercadopago-oauth-callback                   v15   ACTIVE verify_jwt=false
+  ✓ mercadopago-create-checkout-session          v13   ACTIVE verify_jwt=false
+  ✓ mercadopago-create-preference                v15   ACTIVE verify_jwt=false
+  ✓ mercadopago-checkout-status                  v14   ACTIVE verify_jwt=false
+  ✓ mercadopago-webhook                          v19   ACTIVE verify_jwt=false
+  ✓ mercadopago-payment-worker                   v16   ACTIVE verify_jwt=false
+  · mercadopago-refund                           v16   ACTIVE verify_jwt=true
+  · mercadopago-cancel-payment                   v15   ACTIVE verify_jwt=true
+
+VEREDICTO: TEST
+  Cobra únicamente con credenciales de prueba. Ningún pago es real.
+
+Falta comprobar aparte: la fila de business_payment_settings del comercio
+(enabled, collector_id, application_id, production_review_status). Un proyecto
+configurado con esa fila apagada sigue sin ofrecer Mercado Pago, y está bien.

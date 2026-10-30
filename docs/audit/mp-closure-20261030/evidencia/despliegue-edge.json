@@ -1,0 +1,501 @@
+{
+  "at": "2026-10-30",
+  "source": "Supabase get_edge_function (read only), SHA-256 of UTF-8 source normalized to LF",
+  "repositoryCode": "2be348ab81486db80b8c3b5b625fe389ccd714b5",
+  "all_match": true,
+  "functions": [
+    {
+      "slug": "mercadopago-cancel-payment",
+      "version": 15,
+      "ezbr_sha256": "96e8262bf343097db98c295d7a0e2be243727728c4f25fc537d03178760e810f",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-cancel-payment/index.ts",
+          "sha256_lf": "181ffb951b4e3a76130e6c5e5b2fa2086406033f56a9ae244796abf3daa91df5",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/refund-correlation.ts",
+          "sha256_lf": "04357f4d502e1b61a9c3c097332f0244e228d01f1c11eddd2ab48f4598a470a9",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-checkout-status",
+      "version": 14,
+      "ezbr_sha256": "c154da5333b113c064fea97d0928799c4ba6fb08c17580c3c5da91303f64581d",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-checkout-status/index.ts",
+          "sha256_lf": "2ecc7f2af8286b4484d4669ec609def108e4d51577a3db95239f2476c51a043d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-connect",
+      "version": 16,
+      "ezbr_sha256": "6700d8f88f3ce1fcab2676f8e16f28e9c77932c5ce259100d9fc80a790ed9e0b",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-connect/index.ts",
+          "sha256_lf": "097e14a4a38c1bb41d384e0a2820f67d544116bab084efaf66e1604115466a79",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-verification.ts",
+          "sha256_lf": "5b8648f2565ffbc05b1c36fed96d1b4f68afde6ad5a0fd61aa7a455de8557db7",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-create-checkout-session",
+      "version": 13,
+      "ezbr_sha256": "edf59631562d1e7d2b6fff9841151e8beb2f60454c0a6f3fc86a793d99660ebe",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-create-checkout-session/index.ts",
+          "sha256_lf": "c925f731d10894b4efb452568702470dee796e0c8c17e6c2f532513e1e2b8677",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-create-preference",
+      "version": 15,
+      "ezbr_sha256": "fa9b1242ee94221b5f2523f701859343819b73404b06c7dcc404194e2b71c31f",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-create-preference/index.ts",
+          "sha256_lf": "4087f548af804eb87bc7101704845bbb686494a4f11644467b13e64282ff86c1",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-oauth-callback",
+      "version": 15,
+      "ezbr_sha256": "2d7a2393faaa36f91d1ab4ea8865d48ec3630011812e632d5fb1743db7de0f61",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-oauth-callback/index.ts",
+          "sha256_lf": "53e2d5c40c7b818c1dff3033fba00d5f4cb290ab57b3473cadfd3b8a3390f1be",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-payment-worker",
+      "version": 16,
+      "ezbr_sha256": "16e4a004ca86d594b5f8a241169838973fa5a8f618797e03a4e8326c20a52ecb",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-payment-worker/index.ts",
+          "sha256_lf": "768c519068056adc9823bd7126f4d5a33ddf8a2bccc496cef97d07f56dd4b4da",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/refund-correlation.ts",
+          "sha256_lf": "04357f4d502e1b61a9c3c097332f0244e228d01f1c11eddd2ab48f4598a470a9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/ledger-sweep.ts",
+          "sha256_lf": "df2ada2c0fcde3d808644e00c69dfdff4d32239bb76089dfa3faf339c9a34fa3",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-refund",
+      "version": 16,
+      "ezbr_sha256": "859fa37bc772ad3ee18c46452403d6550a20f994314f4f8bbd2495dfcc303aa6",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-refund/index.ts",
+          "sha256_lf": "3d0255ea445471e4babe7d5388fc5463f70ef9286bbaf0998aec9bf17e9f0cde",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/refund-correlation.ts",
+          "sha256_lf": "04357f4d502e1b61a9c3c097332f0244e228d01f1c11eddd2ab48f4598a470a9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/refund-amount.ts",
+          "sha256_lf": "9b138a28c7880a5ba5fdefb453509b32f611b6837fa8f38b9fd6d405d9134e32",
+          "matches_local": true
+        }
+      ]
+    },
+    {
+      "slug": "mercadopago-webhook",
+      "version": 19,
+      "ezbr_sha256": "eca2c1406f2a630248860aa69605d48653b62f60620b5c78da844a5ce8c50557",
+      "files": [
+        {
+          "path": "supabase/functions/mercadopago-webhook/index.ts",
+          "sha256_lf": "1ec126a884e6a16d9aa25d6dd9a4e63587dbc4d9090cd67623364cdbc7433311",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth.ts",
+          "sha256_lf": "bcc7840d072ef3677e658eaced770953bc09a40c2dcc24e402e3ab7957ee1fd9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-runtime.ts",
+          "sha256_lf": "cc97364968df70a0b83a27b22c17819ea139c65c6a02dc98d5b9d1feb69fc93d",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/payment-worker-signature.ts",
+          "sha256_lf": "ddbebf2a476e65299834557367cf890ce8ace5ff3478c013f5f4a4d27988e6c4",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
+          "sha256_lf": "85d559e710eea077a299c964c14241d61cd765340503e7cdaf2df6bb18b89280",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/recovery-deployment.ts",
+          "sha256_lf": "e0ffe609a892b80bc597cf046fe1cba8937989cc38a5dee0e59d7c593231fe7f",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-connection-panel.ts",
+          "sha256_lf": "3251fb6efe5706d289ab33fda8f289c775a8295828ca250ac6f13a547b2955af",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago.ts",
+          "sha256_lf": "ccb8c45802b5c6a906ac3b9f57e9f172955bb0e7dcb779a512a32fb3df93b158",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/worker-deadline.ts",
+          "sha256_lf": "24b05cb138b0f0a5549eaff22390d05db6cae80025067dfa7c67a5516de5e897",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-webhook-routing.ts",
+          "sha256_lf": "261298397665109af2f3324fed2f0781869dfe89bc506370c04482fcdb037d45",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/mercadopago-webhook-signature.ts",
+          "sha256_lf": "5ac0170d6982b626ee5fd74e90fe99716b7ce283d777d5eb28c63483d80a3eb9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/request-protocol.ts",
+          "sha256_lf": "9fd6b28d32507c47e81aad653ee527d6ab3ab0ba6d309b6c4edb3e063625f1d9",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/webhook-notification.ts",
+          "sha256_lf": "df0f91d2bf7e969ae6971b692b00a1b806748a74b02269b3ef9876cfa99a6977",
+          "matches_local": true
+        },
+        {
+          "path": "supabase/functions/_shared/seller-deauthorization.ts",
+          "sha256_lf": "acf1e707f20dd38d8860f44dc098e71c3582839021eeffeb13dff3ba4dc7cd6d",
+          "matches_local": true
+        }
+      ]
+    }
+  ]
+}

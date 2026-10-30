@@ -1,0 +1,71 @@
+name: Payment certification without money
+
+on:
+  push:
+    branches: ['audit/mp-activation-closure-20261030']
+    paths: ['scripts/**', 'tests/**', 'supabase/**', 'package*.json', '.github/workflows/payment-certification.yml']
+  pull_request:
+    paths: ['scripts/mercadopago/**', 'scripts/recovery/**', 'tests/mercadopago-*.test.mjs', 'tests/recovery-*.test.mjs', 'tests/db/**', 'supabase/**', '.github/workflows/payment-certification.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: payment-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run check
+      - name: Payment and QA tool regressions (no hosted credentials)
+        run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs
+
+  financial_sql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TABA_LOCAL_DB: taba_local_payment_certification
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Start own disposable PostgreSQL on loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin=$(find /usr/lib/postgresql -name initdb -printf '%h\n' | sort -V | tail -1)
+          test -x "$pg_bin/pg_ctl"
+          echo "TABA_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          "$pg_bin/initdb" -D "$RUNNER_TEMP/taba-payment-pg" -U postgres -A trust
+          "$pg_bin/postgres" --version
+          "$pg_bin/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -l "$RUNNER_TEMP/taba-payment-pg.log" -o "-p 55440 -h 127.0.0.1 -k $RUNNER_TEMP" -w start || { cat "$RUNNER_TEMP/taba-payment-pg.log"; exit 1; }
+      - name: Apply every migration with local platform stubs
+        run: node scripts/local-db/bootstrap.mjs "$TABA_LOCAL_DB"
+      - name: SQL money safety, tenant isolation, pilot, dispatch and refund regressions
+        run: >-
+          node --test --test-concurrency=1
+          tests/db/marketplace-isolation.test.mjs tests/db/live-pilot-gate.test.mjs
+          tests/db/payment-financial-audit.test.mjs tests/db/payment-preference-dispatch-audit.test.mjs
+          tests/db/refund-ambiguity-recovery.test.mjs tests/db/refund-concurrency.test.mjs
+          tests/db/preference-claim-recovery.test.mjs tests/db/p0-money-safety.test.mjs
+          tests/db/p1-reconciliation.test.mjs tests/db/review-fixes.test.mjs
+      - name: Stop own PostgreSQL
+        if: always()
+        run: 'test ! -f "$RUNNER_TEMP/taba-payment-pg/postmaster.pid" || "$TABA_PG_BIN/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -m immediate -w stop'

@@ -1,0 +1,50 @@
+{
+  "integrator_application": "4861627125869370",
+  "integrator_owner": {
+    "id": "3594962708",
+    "test_user": true
+  },
+  "tenants": {
+    "a": {
+      "exists": true,
+      "status": "closed",
+      "is_active": true,
+      "ordering_enabled": true,
+      "ordering_verified": true,
+      "products": 4,
+      "connection": {
+        "status": "connected",
+        "seller_id": "3594962708",
+        "application_id": "4861627125869370"
+      }
+    },
+    "b": {
+      "exists": true,
+      "status": "closed",
+      "is_active": true,
+      "ordering_enabled": true,
+      "ordering_verified": true,
+      "products": 1,
+      "connection": {
+        "status": "disconnected",
+        "seller_id": null,
+        "application_id": null
+      }
+    }
+  },
+  "credentials_available": {
+    "buyer": true,
+    "owner_b": true,
+    "seller_b": false
+  },
+  "seller_b_candidate": {
+    "id": "3796774164",
+    "differs_from_integrator_owner": true,
+    "differs_from_seller_a": true
+  },
+  "blockers": [],
+  "needs_authorization": [
+    "the existing test seller B consents to TestApp (OAuth) for tenant B in their own browser; no password sharing",
+    "one APRO purchase of ARS 100 by the QA buyer in tenant B"
+  ]
+}

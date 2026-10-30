@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
 import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
+import { completeChecks, providerSearchEmpty, proveIsolation } from './marketplace-proof.mjs';
 
 const ref = 'ixewllzzuzpqrkxzmfzx', app = RECOVERY_TEST_APPLICATION_ID;
 const arg = (name) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
@@ -58,10 +59,13 @@ async function sellerToken(businessId) {
 async function tenantCounts() {
   const out = {};
   for (const [name, id] of Object.entries(RECOVERY_QA)) {
-    const { count: orders } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', id);
-    const { count: intents } = await db.from('payment_intents').select('*', { count: 'exact', head: true }).eq('business_id', id);
-    const { data: products } = await db.from('products').select('sku,stock').eq('business_id', id).order('sku');
-    out[name] = { orders, payment_intents: intents, stock: Object.fromEntries((products || []).map((p) => [p.sku, p.stock])) };
+    const orders = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', id);
+    const intents = await db.from('payment_intents').select('*', { count: 'exact', head: true }).eq('business_id', id);
+    const products = await db.from('products').select('id,stock', { count: 'exact' }).eq('business_id', id).order('id');
+    for (const response of [orders, intents, products]) assert.ifError(response.error);
+    assert.ok(Number.isInteger(orders.count) && Number.isInteger(intents.count), 'tenant counts unavailable');
+    assert.equal(products.data?.length, products.count, 'stock snapshot truncated');
+    out[name] = { orders: orders.count, payment_intents: intents.count, stock: Object.fromEntries(products.data.map((p) => [p.id, p.stock])) };
   }
   return out;
 }
@@ -69,7 +73,7 @@ async function tenantCounts() {
 if (command === 'snapshot') {
   const file = arg('--out');
   assert.ok(file, '--out <file> is required');
-  const counts = { at: new Date().toISOString(), tenants: await tenantCounts() };
+  const counts = { schemaVersion: 2, at: new Date().toISOString(), tenants: await tenantCounts() };
   fs.writeFileSync(file, JSON.stringify(counts, null, 2), { flag: 'wx' });
   console.log(JSON.stringify(counts, null, 2));
 }
@@ -96,11 +100,9 @@ if (command === 'preflight') {
   if (!owner.test_user) report.blockers.push('integrator owner is not a test user: QA payments would fail (2034)');
   if (!tenants.b.exists) report.blockers.push('QA tenant B does not exist');
   if (!(tenants.b.products > 0)) report.blockers.push('tenant B has no product to sell (create QA-MKT-001 in the authorized step)');
-  if (tenants.b.connection?.status === 'connected') report.blockers.push('tenant B already has a connected seller: reconnecting changes it; confirm intent');
+  if (tenants.b.connection?.status === 'connected' && tenants.b.connection.seller_id !== wanted) report.blockers.push('tenant B has another connected seller: do not reconnect or pay');
   report.needs_authorization = [
-    'create ONE test account of type Vendedor in TestApp > Cuentas de prueba (limit 15, not deletable)',
-    'store its login in Credential Manager as «RECOVERY MP TEST SELLER B»',
-    'seller B consents to TestApp (OAuth) for tenant B',
+    'the existing test seller B consents to TestApp (OAuth) for tenant B in their own browser; no password sharing',
     'one APRO purchase of ARS 100 by the QA buyer in tenant B',
   ];
   if (wanted && wanted === owner.id) report.blockers.push('the second seller must NOT be the owner of the integrator application');
@@ -151,13 +153,16 @@ if (command === 'identities') {
       note: 'seller A is the owner of the integrator application: Mercado Pago marks its preferences marketplace=NONE and its webhook user_id cannot tell seller from owner (R-MKT-1)' },
     buyer: { id: buyerId || null }, candidates,
     tenant_b_connection: b ? { connected: true, seller_id: b.seller_id, is_candidate: b.seller_id === sellerB } : { connected: false },
-    checks, all_pass: Object.values(checks).every((v) => v === true || v === null),
+    checks, all_pass: completeChecks(checks),
     cannot_prove_by_api: 'tags (test_user) of accounts other than the application owner are not exposed; the OAuth consent and the APRO card only work with test accounts',
   }, null, 2));
 }
 
 if (command === 'verify') {
   const session = arg('--session'), sellerB = arg('--seller');
+  const baselineFile = arg('--baseline');
+  assert.ok(baselineFile, '--baseline <snapshot taken BEFORE checkout> is required for certification');
+  const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
   assert.match(session || '', /^[0-9a-f-]{36}$/); assert.match(sellerB || '', /^\d+$/);
   const owner = await integratorOwner();
   assert.notEqual(sellerB, owner.id, 'the second seller must differ from the integrator application owner');
@@ -168,26 +173,21 @@ if (command === 'verify') {
   assert.equal(b.seller_id, sellerB);
   const pref = (await mp(b.token, `/checkout/preferences/${intent.preference_id}`)).body;
   const reference = `taba2:checkout:${session}`;
-  const bView = (await mp(b.token, `/v1/payments/search?${new URLSearchParams({ external_reference: reference })}`)).body;
-  const aView = a ? (await mp(a.token, `/v1/payments/search?${new URLSearchParams({ external_reference: reference })}`)).body : null;
+  const bView = await mp(b.token, `/v1/payments/search?${new URLSearchParams({ external_reference: reference })}`);
+  const aView = a ? await mp(a.token, `/v1/payments/search?${new URLSearchParams({ external_reference: reference })}`) : null;
   const payment = intent.provider_payment_id ? (await mp(b.token, `/v1/payments/${intent.provider_payment_id}`)).body : null;
   const aDirect = a && intent.provider_payment_id ? await mp(a.token, `/v1/payments/${intent.provider_payment_id}`) : null;
-  const { data: receipts } = await db.from('payment_webhook_receipts').select('event_type,resource_id,signature_valid,processing_status,seller_business_id').eq('resource_id', String(intent.provider_payment_id ?? ''));
+  const { data: receipts, error: receiptsError } = await db.from('payment_webhook_receipts').select('event_type,resource_id,signature_valid,processing_status,seller_business_id').eq('environment', 'test').eq('resource_id', String(intent.provider_payment_id ?? ''));
+  assert.ifError(receiptsError);
   const { count: ordersB } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', RECOVERY_QA.b);
-  const { count: ordersAForRef } = await db.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', RECOVERY_QA.a).eq('id', intent.order_id ?? '00000000-0000-0000-0000-000000000000');
   // With a baseline (taken before the payment): the purchase moved orders, intents and stock in tenant B ONLY.
-  const baselineFile = arg('--baseline');
-  let isolation = null;
-  if (baselineFile) {
-    const before = JSON.parse(fs.readFileSync(baselineFile, 'utf8')).tenants, after = await tenantCounts();
-    isolation = {
-      tenant_a_unchanged: JSON.stringify(before.a) === JSON.stringify(after.a),
-      tenant_b_one_order: after.b.orders === before.b.orders + 1,
-      tenant_b_one_intent: after.b.payment_intents === before.b.payment_intents + 1,
-      tenant_b_stock_down_by_purchase: Object.entries(before.b.stock).some(([sku, stock]) => after.b.stock[sku] < stock)
-        && Object.entries(before.b.stock).every(([sku, stock]) => after.b.stock[sku] <= stock),
-    };
-  }
+  const read = async (query) => { const r = await query; assert.ifError(r.error); return r.data; };
+  const checkout = await read(db.from('checkout_sessions').select('id,business_id,created_at,completed_order_id').eq('id', session).single());
+  const items = await read(db.from('checkout_session_items').select('product_id,quantity').eq('checkout_session_id', session));
+  const reservations = await read(db.from('inventory_reservations').select('checkout_session_id,product_id,quantity,status').eq('checkout_session_id', session));
+  const order = intent.order_id ? await read(db.from('orders').select('id,business_id').eq('id', intent.order_id).maybeSingle()) : null;
+  const isolation = proveIsolation({ baseline, after: await tenantCounts(), items, reservations, session: checkout,
+    tenantA: RECOVERY_QA.a, tenantB: RECOVERY_QA.b, intent, order });
   const checks = {
     ...(isolation ?? {}),
     preference_collector_is_seller_b: String(pref.collector_id) === sellerB,
@@ -195,17 +195,21 @@ if (command === 'verify') {
     preference_is_marketplace: String(pref.marketplace) === `MP-MKT-${app}`,
     payment_collector_is_seller_b: payment ? String(payment.collector_id) === sellerB : null,
     payment_approved: payment ? payment.status === 'approved' : null,
-    seller_a_cannot_search_it: aView ? (aView.paging?.total ?? aView.results?.length ?? 0) === 0 : null,
-    seller_a_cannot_read_it: aDirect ? [403, 404].includes(aDirect.http) : null,
-    webhook_valid_and_routed_to_b: (receipts || []).some((r) => r.signature_valid && r.seller_business_id === RECOVERY_QA.b),
-    order_in_b_only: Boolean(intent.order_id) && ordersAForRef === 0,
+    seller_a_cannot_search_it: providerSearchEmpty(aView),
+    seller_b_can_search_it: bView.http === 200 && Array.isArray(bView.body?.results)
+      && bView.body.results.some((p) => String(p.id) === String(intent.provider_payment_id)),
+    seller_a_cannot_read_it: Boolean(aDirect && [403, 404].includes(aDirect.http)),
+    webhook_valid_and_routed_to_b: receipts.length > 0 && receipts.some((r) => r.signature_valid === true
+      && r.seller_business_id === RECOVERY_QA.b && r.processing_status === 'completed')
+      && receipts.filter((r) => r.signature_valid === true).every((r) => r.seller_business_id === RECOVERY_QA.b),
   };
   console.log(JSON.stringify({ at: new Date().toISOString(), session, integrator_owner: owner.id, seller_b: sellerB,
     intent: pick(intent, ['internal_status', 'provider_status', 'provider_payment_id', 'order_id']),
     preference: pick(pref, ['collector_id', 'client_id', 'marketplace', 'marketplace_fee', 'site_id']),
     payment: payment && pick(payment, ['status', 'status_detail', 'collector_id', 'live_mode', 'marketplace_owner', 'application_id']),
     seller_a_read_http: aDirect?.http ?? null, webhook_receipts: (receipts || []).map((r) => pick(r, ['event_type', 'signature_valid', 'processing_status'])),
-    orders_in_tenant_b: ordersB, checks, all_pass: Object.values(checks).every((v) => v === true || v === null) }, null, 2));
+    orders_in_tenant_b: ordersB, checks, all_pass: completeChecks(checks) }, null, 2));
+  if (!completeChecks(checks)) process.exitCode = 1;
 }
 
 if (command === 'prepare') {

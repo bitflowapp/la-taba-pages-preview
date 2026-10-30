@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-30",
+  "why_not_rerun": "git diff c8ddedec HEAD -- supabase/functions supabase/migrations js is empty. Reuse browser, Edge and Docker payment evidence; new tool/SQL CI covers changed tooling and brings SQL regressions into CI.",
+  "runs": [
+    {
+      "id": 40392316077,
+      "sha": "68e56906e559b340019df7eeab2022ab1bfc52a0",
+      "conclusion": "success"
+    },
+    {
+      "id": 40400371597,
+      "sha": "c8ddedec14431141a72d9f7d14aa3ca2ca0c38fb",
+      "conclusion": "success",
+      "paymentBench": "18 test + 18 production rehearsal, provider EMULATED"
+    },
+    {
+      "id": 41008760492,
+      "sha": "2be348ab81486db80b8c3b5b625fe389ccd714b5",
+      "conclusion": "success",
+      "tools": {
+        "tests": 367,
+        "pass": 366,
+        "skip": 1,
+        "fail": 0
+      },
+      "sql": {
+        "migrations": 179,
+        "tests": 119,
+        "pass": 119,
+        "fail": 0
+      }
+    },
+    {
+      "id": 40992946167,
+      "sha": "ff55f4cf6fea8f7f09b01c6eb58b33b4de971966",
+      "conclusion": "failure",
+      "workflow": "Scheduler watchdog",
+      "reason": "main still points to the retired backend; not evidence of candidate financial CI failure"
+    }
+  ]
+}

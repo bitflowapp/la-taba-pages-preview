@@ -1,5 +1,7 @@
 # Misión autónoma OAuth y Moto G15 — 30/10/2026
 
+**Actualización 17:32 UTC:** se recuperó nuevamente el panel A y se revisaron también los datos básicos/rubros; no hay opción Marketplace en esos controles. Se analizó el segundo mensaje de denegación de acceso por seguridad. Ver [modelo y dos errores](MODELO-Y-DOS-ERRORES.md) y [consulta de soporte actualizada](CONSULTA-SOPORTE.md). No se aplicó una corrección ni se afirma una causa raíz interna demostrada.
+
 **Resultado: OAuth de B todavía NO desbloqueado ni certificado.** Se confirmó al propietario con una sesión real de Developers y se completó la revisión de su aplicación. El impedimento para comprobar el rechazo como B es ahora concreto: no hay acceso de B en el almacén autorizado y Developers impide consultar/administrar cuentas de prueba desde el perfil A. No se sorteó esa restricción ni se modificó configuración sin una prueba que justificara el cambio.
 
 Rama `fix/qa-oauth-provider-20261030`, partiendo de `96a38cb1`. El diagnóstico local existía, estaba confirmado y no había cambios ajenos. El código de pagos es el de #161, `f7f1f45c`; la misión no modifica runtime, migraciones ni pruebas. No se repiten las auditorías generales certificadas.

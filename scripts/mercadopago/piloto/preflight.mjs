@@ -39,8 +39,8 @@ export function evaluarPreflight(entrada) {
       `autorizado ${documento.vendedor.collector_id}; conectado ${settings?.collector_id ?? '—'}`));
   }
 
-  if (conexion?.expires_at) {
-    const dias = (Date.parse(conexion.expires_at) - ahora) / DIA;
+  {
+    const dias = (Date.parse(conexion?.expires_at) - ahora) / DIA;
     out.push(check('credencial_vigente', dias >= 7 ? 'PASS' : 'FAIL', 'La credencial del vendedor no vence pronto',
       `vence en ${Math.floor(dias)} días${dias < 30 && dias >= 7 ? ' (se renueva sola con el refresh)' : ''}`));
   }

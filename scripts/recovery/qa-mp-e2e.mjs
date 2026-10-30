@@ -9,6 +9,7 @@
 //             inspect | forged-webhooks | replay-webhook | worker | cancel | refund | disconnect-preview | disconnect |
 //             counts | orders | order-cancel
 import assert from 'node:assert/strict';
+import { completeChecks, proveReplay } from './marketplace-proof.mjs';
 import fs from 'node:fs';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
@@ -288,14 +289,11 @@ async function main() {
     await send('new notification (new event and request id)', randomUUID(), String(Math.floor(Date.now() / 1000)), newEvent());
     const after = await snapshot();
     const result = { payment, body_user_id_hint: userId ?? null, deliveries, before, after,
-      checks: {
-        all_accepted: deliveries.every(d => [200, 201].includes(d.http)),
-        same_delivery_is_a_duplicate: deliveries[1].duplicate === true && deliveries[0].receipt_id === deliveries[1].receipt_id,
-        no_order_created_by_replays: before.orders_a === after.orders_a && before.orders_b === after.orders_b,
-        routed_to_one_tenant_only: after.routed_to.filter(Boolean).length <= 1,
-      } };
+      checks: proveReplay({ before, after, deliveries }) };
+    result.all_pass = completeChecks(result.checks);
     record(result);
     out(result);
+    if (!result.all_pass) process.exitCode = 1;
     return;
   }
   if (command === 'worker') {

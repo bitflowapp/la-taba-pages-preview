@@ -20,7 +20,7 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * dejaría dos artefactos bajo la misma identidad, y como `precargar()` borra primero la
  * caché de su propio nombre, reinstalar «v166» vaciaría la del worker activo.
  */
-const CACHE_NAME = 'la-taba-runtime-v170-payment-review';
+const CACHE_NAME = 'la-taba-runtime-v171-mobbex-checkout';
 const ASSETS = [
   './',
   './index.html',
@@ -56,6 +56,7 @@ const ASSETS = [
   './pago/resultado/index.html',
   './pago/pendiente/index.html',
   './pago/error/index.html',
+  './pago/mobbex/index.html',
   './assets/icon.svg',
   './assets/brand/taba2-emblem.svg',
   /*
@@ -235,6 +236,8 @@ const ASSETS = [
   './js/core/sandbox-tracking-presentation.js',
   './js/payments/mercadopago-checkout.js',
   './js/payments/mercadopago-return.js',
+  './js/payments/mobbex-checkout.js',
+  './js/payments/mobbex-return.js',
   './js/repositories/sandbox_customer_profile_repository.js',
   './js/repositories/sandbox_order_repository.js',
   './js/tracking/customer_tracking_poll.js',

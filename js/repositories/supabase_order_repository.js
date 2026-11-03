@@ -50,6 +50,14 @@ import {
   readMercadoPagoCheckoutRecord,
   writeMercadoPagoCheckoutRecord,
 } from '../payments/mercadopago-checkout.js';
+import {
+  MOBBEX_PAYMENT_METHOD,
+  buildMobbexCheckoutPayload,
+  clearMobbexCheckoutRecord,
+  readMobbexCheckoutRecord,
+  trustedMobbexCheckoutUrl,
+  writeMobbexCheckoutRecord,
+} from '../payments/mobbex-checkout.js';
 import { repositoryResult } from './order_repository.js';
 import {
   allowActiveOrderFallback,
@@ -1251,6 +1259,134 @@ export function createSupabaseOrderRepository({
     });
   }
 
+  // ── Mobbex (checkout hosted). Aditivo: no toca ninguna función de Mercado Pago. ───────────────────────────
+  let mobbexCheckoutInFlight = null;
+
+  async function getMobbexCheckoutAvailability() {
+    // Preguntar no crea identidad (mismo criterio que Mercado Pago): sin sesión real la respuesta es «no disponible».
+    const session = await auth.ensureCustomerSession({ createIfMissing: false });
+    if (!session.ok) return repositoryResult(false, { available: false, message: session.message });
+    const result = await invokePaymentFunction('mobbex-availability', { business_id: businessId });
+    return repositoryResult(true, { available: result.ok === true && result.data?.available === true });
+  }
+
+  async function createMobbexCheckout(orderDraft = {}) {
+    if (mobbexCheckoutInFlight) return mobbexCheckoutInFlight;
+    mobbexCheckoutInFlight = createMobbexCheckoutInternal(orderDraft);
+    try {
+      return await mobbexCheckoutInFlight;
+    } finally {
+      mobbexCheckoutInFlight = null;
+    }
+  }
+
+  async function createMobbexCheckoutInternal(orderDraft = {}) {
+    const values = normalizeOrderDraft(orderDraft);
+    if (values.paymentMethod !== MOBBEX_PAYMENT_METHOD) {
+      return repositoryResult(false, { message: 'Elegí Mobbex para continuar con este checkout.' });
+    }
+    if (businessStatus.state === 'idle') await loadBusinessConfiguration();
+    if (catalogStatus.state === 'idle') await loadCatalog();
+    if (!businessStatus.orderingReady || catalogProductCount < 1) {
+      return repositoryResult(false, { message: 'El comercio todavía no habilitó una configuración verificada para pedidos.' });
+    }
+    if (
+      (values.deliveryMode === 'delivery' && !businessStatus.deliveryEnabled)
+      || (values.deliveryMode === 'pickup' && !businessStatus.pickupEnabled)
+    ) {
+      return repositoryResult(false, { message: 'La modalidad elegida no está habilitada por el comercio.' });
+    }
+    const cartItems = getCartItems();
+    // Los combos los precia Checkout Pro y el backend no los deriva: con Mobbex no se pagan (cart.js ya lo exige).
+    if (getCartCombos().length) {
+      return repositoryResult(false, { message: 'Los combos se cobran con Mercado Pago. Sacá el combo o elegí otro medio de pago.' });
+    }
+    if (!cartItems.length) {
+      return repositoryResult(false, { message: 'Agregá al menos un producto antes de pagar.' });
+    }
+    if (cartItems.some((item) => item.product.pricePending)) {
+      return repositoryResult(false, { message: 'Hay productos con precio pendiente. No se pueden pagar todavía.' });
+    }
+    if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+      return repositoryResult(false, { message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.' });
+    }
+    const nameValidation = validateCustomerName(values.customerName);
+    if (!nameValidation.ok) return repositoryResult(false, { message: nameValidation.message });
+    const customerPhone = normalizeArgentinePhone(values.customerPhone);
+    if (!isValidArgentinePhone(customerPhone)) {
+      return repositoryResult(false, { message: 'Ingresá un teléfono argentino válido, con código de área.' });
+    }
+    if (values.deliveryMode === 'delivery' && !values.customerAddress) {
+      return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
+    }
+    const checkoutLocation = requireConfirmedDeliveryLocation({
+      fulfillmentType: values.deliveryMode,
+      location: {
+        latitude: values.deliveryLatitude,
+        longitude: values.deliveryLongitude,
+        locationSource: values.deliveryLocationSource,
+        accuracyMeters: values.deliveryGeolocationAccuracy,
+        confirmedAt: values.deliveryLocationConfirmedAt,
+      },
+    });
+    if (!checkoutLocation.ok) {
+      return repositoryResult(false, { code: checkoutLocation.code, message: checkoutLocation.message });
+    }
+    const items = cartItems.map((item) => ({
+      product_id: String(item.product.id || ''),
+      quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    }));
+    if (items.some((item) => !isUuid(item.product_id) || item.quantity < 1)) {
+      return repositoryResult(false, { message: 'El catálogo productivo no está sincronizado. Actualizá la página antes de pagar.' });
+    }
+    const availability = await getMobbexCheckoutAvailability();
+    if (!availability.ok || !availability.available) {
+      return repositoryResult(false, { message: 'Mobbex todavía no está habilitado para este comercio.' });
+    }
+    let clientRequestId;
+    try {
+      clientRequestId = createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, { message: 'Este dispositivo no puede generar una solicitud de pago segura.' });
+    }
+    // Sin importes: el servidor precia la sesión y devuelve la URL de Mobbex.
+    const payload = buildMobbexCheckoutPayload({
+      businessId,
+      clientRequestId,
+      values: { ...values, customerName: nameValidation.name, customerPhone },
+      items,
+    });
+    const created = await invokePaymentFunction('mobbex-create-checkout', payload);
+    const checkoutSessionId = String(created.data?.checkout_session_id || '').trim();
+    if (!created.ok || !created.data?.redirect_url) {
+      return repositoryResult(false, {
+        code: created.data?.code || 'CHECKOUT_NOT_AVAILABLE',
+        status: created.data?.status || '',
+        checkoutSessionId: isUuid(checkoutSessionId) ? checkoutSessionId : '',
+        message: created.data?.message || 'No pudimos preparar este pago. Revisá el carrito y volvé a intentar.',
+      });
+    }
+    const redirectUrl = trustedMobbexCheckoutUrl(created.data.redirect_url);
+    if (!redirectUrl || !isUuid(checkoutSessionId)) {
+      return repositoryResult(false, { message: 'No recibimos una URL de pago segura.' });
+    }
+    writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, {
+      items: items.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
+    });
+    return repositoryResult(true, { checkoutSessionId, redirectUrl, expiresAt: String(created.data.expires_at || '') });
+  }
+
+  async function getMobbexCheckoutStatus(checkoutSessionId) {
+    if (!isUuid(checkoutSessionId)) return repositoryResult(false, { message: 'La sesión de pago no es válida.' });
+    const session = await auth.ensureCustomerSession();
+    if (!session.ok) return repositoryResult(false, { message: session.message });
+    const result = await invokePaymentFunction('mobbex-checkout-status', { checkout_session_id: checkoutSessionId });
+    if (!result.ok || !result.data?.checkout) {
+      return repositoryResult(false, { message: result.data?.message || 'No pudimos verificar el pago todavía.' });
+    }
+    return repositoryResult(true, { checkout: result.data.checkout });
+  }
+
   async function getMercadoPagoCheckoutStatus(checkoutSessionId) {
     if (!isUuid(checkoutSessionId)) {
       return repositoryResult(false, { message: 'La sesión de pago no es válida.' });
@@ -1571,6 +1707,21 @@ export function createSupabaseOrderRepository({
     },
     async getMercadoPagoCheckoutAvailability() {
       return getMercadoPagoCheckoutAvailability();
+    },
+    async getMobbexCheckoutAvailability() {
+      return getMobbexCheckoutAvailability();
+    },
+    async createMobbexCheckout(orderDraft = {}) {
+      return createMobbexCheckout(orderDraft);
+    },
+    async getMobbexCheckoutStatus(checkoutSessionId) {
+      return getMobbexCheckoutStatus(checkoutSessionId);
+    },
+    getMobbexCheckoutRecovery() {
+      return readMobbexCheckoutRecord(mercadoPagoStorage);
+    },
+    clearMobbexCheckoutRecovery() {
+      clearMobbexCheckoutRecord(mercadoPagoStorage);
     },
     // La disponibilidad de Mercado Pago se pregunta CON la sesión del cliente: la
     // RPC es sólo de `authenticated` por contrato, y sin sesión la respuesta es «no

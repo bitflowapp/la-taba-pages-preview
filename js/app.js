@@ -35,6 +35,7 @@ import {
   refreshCheckoutPaymentCopy,
   rememberCheckoutBaseCopy,
   setMercadoPagoCheckoutAvailability,
+  setMobbexCheckoutAvailability,
   setComboCheckoutAvailability,
   setCategory,
   setCatalogFilter,
@@ -679,7 +680,26 @@ async function bootstrap() {
  * Fuera de producción no aplica: el repositorio de demostración arma y cobra el
  * combo por su cuenta, y los combos siguen funcionando como siempre.
  */
+/**
+ * Mobbex está apagado por defecto: sólo entra al selector si el servidor responde «disponible» (flag de plataforma,
+ * ajuste por comercio y, en producción, autorización abierta para ESTA persona). Cualquier fallo lo deja apagado.
+ */
+async function refreshMobbexCheckoutAvailability() {
+  try {
+    const repository = getOrderRepository();
+    if (getAppMode() !== APP_MODE_PRODUCTION || typeof repository?.getMobbexCheckoutAvailability !== 'function') {
+      setMobbexCheckoutAvailability({ available: false });
+      return;
+    }
+    const result = await repository.getMobbexCheckoutAvailability();
+    setMobbexCheckoutAvailability({ available: Boolean(result?.ok && result.available === true) });
+  } catch (_) {
+    setMobbexCheckoutAvailability({ available: false });
+  }
+}
+
 async function refreshMercadoPagoCheckoutAvailability() {
+  refreshMobbexCheckoutAvailability();
   const declarar = (disponible) => {
     setMercadoPagoCheckoutAvailability({ available: disponible });
     setComboCheckoutAvailability({
@@ -819,6 +839,7 @@ function applyAppMode() {
 
   applyProductionCatalogGate(mode);
   if (!production) setMercadoPagoCheckoutAvailability({ available: false });
+  if (!production) setMobbexCheckoutAvailability({ available: false });
   // Falla cerrada: en producción los combos arrancan apagados y sólo los
   // enciende la respuesta del proveedor. Al revés, entre el primer render y esa
   // respuesta la góndola ofrecería un combo que todavía no sabe si puede cobrar.
@@ -1010,7 +1031,8 @@ function setTextIfChanged(node, text) {
 function hayConfirmacionDeCheckoutEnCurso() {
   const form = document.querySelector('[data-checkout-form]');
   return form?.dataset.motionBusy === 'true'
-    || form?.dataset.checkoutHandoff === 'mercadopago';
+    || form?.dataset.checkoutHandoff === 'mercadopago'
+    || form?.dataset.checkoutHandoff === 'mobbex';
 }
 
 function isProductionOrderingBlocked(mode = getAppMode()) {
@@ -2388,6 +2410,21 @@ function bindEvents() {
         entregadoAMercadoPago = true;
         form.dataset.checkoutHandoff = 'mercadopago';
         window.location.assign(result.initPoint);
+        return;
+      }
+      if (values.paymentMethod === 'mobbex') {
+        if (button) button.textContent = 'Preparando pago…';
+        const result = await Promise.resolve(getOrderRepository().createMobbexCheckout?.(values));
+        if (!result?.ok || !result.redirectUrl) {
+          const message = result?.message || 'No pudimos preparar Mobbex. Conservamos tu carrito para que vuelvas a intentar.';
+          showToast(showCheckoutInlineError(form, message));
+          return;
+        }
+        if (button) button.textContent = 'Te llevamos a Mobbex…';
+        showToast('Te llevamos a Mobbex para completar el pago de forma segura.');
+        entregadoAMercadoPago = true;
+        form.dataset.checkoutHandoff = 'mobbex';
+        window.location.assign(result.redirectUrl);
         return;
       }
       const result = await Promise.resolve(getOrderRepository().createOrder(values));

@@ -9,7 +9,7 @@
  * and auth fixture; every migration in order EXCEPT the Mobbex one.
  *
  * `--native` (fallback when Docker cannot run, e.g. the host has no disk space): a throwaway PostgreSQL started from
- * the PostgreSQL binaries on PATH in MOBBEX_NATIVE_PG_DIR (default G:/mbx-pg-data), with minimal STUBS of the
+ * the PostgreSQL binaries on PATH in MOBBEX_NATIVE_PG_DIR (default: a mobbex-native-pg folder under the OS temp dir), with minimal STUBS of the
  * Supabase-only extensions (pg_cron, pg_net, supabase_vault). Same migrations, same test, a WEAKER fixture than the
  * pinned image: results are reported as such and the Docker bench in CI stays the canonical gate.
  *
@@ -26,6 +26,7 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -41,7 +42,7 @@ const native = process.argv.includes('--native');
 const keep = process.argv.includes('--keep');
 const given = (process.argv.find((a) => a.startsWith('--container=')) || '').split('=')[1];
 const container = native ? 'native' : given || `taba-a1-a4-local-mbx-${process.pid}-${randomUUID().slice(0, 8)}`;
-const NATIVE_DIR = (process.env.MOBBEX_NATIVE_PG_DIR || 'G:/mbx-pg-data').replace(/\\/g, '/');
+const NATIVE_DIR = (process.env.MOBBEX_NATIVE_PG_DIR || path.join(os.tmpdir(), 'mobbex-native-pg')).replace(/\\/g, '/');
 const NATIVE_PORT = Number(process.env.MOBBEX_NATIVE_PG_PORT || 54329);
 assert.ok(native || /^taba-a1-a4-local-[\w-]+$/.test(container), 'only a disposable taba-a1-a4-local-* container may be used');
 

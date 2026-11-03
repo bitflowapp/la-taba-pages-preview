@@ -30,7 +30,8 @@ Deno.serve(async (request) => {
       resolveConfig: mobbexConfigFromEnv,
       operations: mobbexOperations,
       supabaseUrl: getRequiredEnv('SUPABASE_URL'),
-      returnUrl: checkoutReturnUrl('/pago/resultado'),
+      // Its own return page: the Mercado Pago one looks for a Mercado Pago record. Returning never marks anything paid.
+      returnUrl: new URL('./mobbex/', checkoutReturnUrl('/pago/resultado')).toString(),
       now: Date.now,
     }, { userId: user.id, userEmail: user.email ?? 'cliente@taba.invalid', payload });
     return jsonResponse(request, result.body, result.status);

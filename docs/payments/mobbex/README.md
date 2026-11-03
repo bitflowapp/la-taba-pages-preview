@@ -71,7 +71,8 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 | Huella de funciones/restricciones preexistentes | Idéntica antes/después de la migración |
 | Rollback | up → down → up PASS; se niega con dinero PASS |
 | `npm run check` | exit 0 (higiene, identidad de release, precache, codificación UTF-8, escaneo de secretos) |
-| `npm test` (suite completa existente) | ver `evidence/` y el cuerpo del PR |
+| `npm test` (suite completa, 3399 pruebas) | **3399/3399 pasan**, exit 0 (dependencias instaladas con `npm ci --ignore-scripts`; una corrida previa sin ellas no es evidencia válida y se descartó) |
+| Contrato SQL desde un clúster nuevo, sobre el commit final | 96/96, huella intacta, drill de rollback y negativa con dinero en PASS |
 
 **Límites honestos.**
 - La base de integración corrió en **PostgreSQL nativo con stubs de `pg_cron`/`pg_net`/`supabase_vault`**, porque Docker no estaba utilizable (ver `INFRA-RECOVERY.md`). Es un fixture **más débil** que la imagen fija de Supabase: la compuerta canónica es el banco Docker de CI. Hay que repetirla allí.

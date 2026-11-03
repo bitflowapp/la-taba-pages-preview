@@ -11,7 +11,7 @@ import {
   requireUuid,
 } from '../_shared/payment-runtime.ts';
 import { mobbexCheckoutStatus } from '../_shared/mobbex/customer-handlers.ts';
-import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.ts';
 
 // The page the customer lands on after Mobbex READS the payment; it never writes "paid" itself. The confirmation is
 // an authenticated server-to-server read of the operation, the same one the worker does.

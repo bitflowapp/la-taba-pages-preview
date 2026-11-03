@@ -22,7 +22,12 @@ test('recovery inventories all existing migrations and function graphs without t
   assert.ok(plan.migrations.some(({ path }) => path.endsWith('_recovery_rpc_hardening.sql')));
   assert.ok(plan.migrations.some(({ version }) => version === '20261021234000'));
   assert.ok(plan.migrations.some(({ version }) => version === '20261021235000'));
-  assert.equal(plan.functions.length, 13);
+  // 13 pre-existing functions + the six Mobbex ones (PR #163). Mobbex ships INERT: without MOBBEX_ENABLED=true every one of
+  // them answers "disabled", so inventorying them in a recovery project enables no payment. Named, not just counted, so a
+  // seventh unreviewed function still fails here.
+  const mobbexFunctions = ['mobbex-availability', 'mobbex-checkout-status', 'mobbex-create-checkout', 'mobbex-refund', 'mobbex-webhook', 'mobbex-worker'];
+  assert.equal(plan.functions.length, 13 + mobbexFunctions.length);
+  assert.deepEqual(plan.functions.map((fn) => fn.name).filter((name) => name.startsWith('mobbex-')).sort(), mobbexFunctions);
   assert.equal(plan.commercialPaymentsEnabled, false);
   assert.equal(plan.applySeedSql, false);
   assert.ok(plan.functions.every(fn => fn.files.every(file => !/\.deno\.ts|\.test\./.test(file.path))));

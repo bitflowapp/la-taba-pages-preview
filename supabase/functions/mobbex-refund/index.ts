@@ -10,7 +10,7 @@ import {
   requirePost,
 } from '../_shared/payment-runtime.ts';
 import { refundMobbexPayment } from '../_shared/mobbex/customer-handlers.ts';
-import { mobbexConfigFromEnv, mobbexOperations } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv, mobbexOperations } from '../_shared/mobbex/runtime.ts';
 
 // Only an owner/admin of the business passes `mobbex_prepare_refund` (it runs with the caller's session).
 Deno.serve(async (request) => {

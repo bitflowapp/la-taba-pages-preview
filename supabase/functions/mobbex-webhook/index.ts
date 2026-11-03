@@ -7,7 +7,7 @@ import {
 } from '../_shared/payment-runtime.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
 import { handleMobbexWebhook } from '../_shared/mobbex/handlers.ts';
-import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations, sha256Hex } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations, sha256Hex } from '../_shared/mobbex/runtime.ts';
 
 // Mobbex documents no webhook signature. The body is an untrusted hint; the URL carries TABA's own capability token
 // (see _shared/mobbex/webhook.ts) and the state only ever changes after an authenticated read of the operation.

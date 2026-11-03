@@ -1,7 +1,7 @@
 import { createServiceClient, sha256Hex } from '../payment-runtime.ts';
 import { MobbexClient } from './client.ts';
 import { resolveMobbexConfig, type MobbexConfig } from './config.ts';
-import { supabaseLedger } from './ledger.deno.ts';
+import { supabaseLedger } from './ledger.ts';
 import type { MobbexOperationsPort } from './handlers.ts';
 
 /** Reads the Edge Function secrets of THIS deployment. Disabled unless MOBBEX_ENABLED is exactly "true". */

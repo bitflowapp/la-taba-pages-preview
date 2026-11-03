@@ -8,7 +8,7 @@ import {
   requirePost,
 } from '../_shared/payment-runtime.ts';
 import { mobbexAvailability } from '../_shared/mobbex/customer-handlers.ts';
-import { mobbexConfigFromEnv } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv } from '../_shared/mobbex/runtime.ts';
 
 // «Mobbex» appears in the storefront checkout only when this says so: deployment switch + credentials + business
 // flag + (in production) an open authorization for THIS customer. Default: not available.

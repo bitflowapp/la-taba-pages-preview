@@ -5,7 +5,7 @@ import {
   requireWorkerAuthorization,
 } from '../_shared/payment-runtime.ts';
 import { runMobbexWorker } from '../_shared/mobbex/handlers.ts';
-import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.ts';
 
 // Scheduled reconciliation: sweeps stale payments back into the queue, then reads each one from Mobbex and hands the
 // confirmed answer to the ledger. Non-JWT only because a scheduler calls it; it requires the shared worker secret.

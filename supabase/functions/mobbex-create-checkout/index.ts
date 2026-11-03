@@ -12,7 +12,7 @@ import {
   requirePost,
 } from '../_shared/payment-runtime.ts';
 import { createMobbexCheckout } from '../_shared/mobbex/handlers.ts';
-import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.deno.ts';
+import { mobbexConfigFromEnv, mobbexLedger, mobbexOperations } from '../_shared/mobbex/runtime.ts';
 
 // Creates the hosted Mobbex checkout for the signed-in customer. Nothing the browser sends can set an amount:
 // the database prices the session (create_mobbex_checkout_session) and this function reads the total back from it.

@@ -34,7 +34,7 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 
 `supabase/config.toml`: `mobbex-webhook` y `mobbex-worker` son `verify_jwt = false` (el primero lo llama Mobbex, el segundo un scheduler y exige firma de worker). El resto exige JWT.
 
-**Scheduler (pendiente, lo hace quien despliega).** `mobbex-worker` debe invocarse cada ~60 s con la firma de worker, igual que el worker de Mercado Pago (`20260803120000_mercadopago_staging_worker_scheduler.sql`). Sin él siguen funcionando el webhook y la lectura al volver, pero no el barrido de vencimientos ni la recuperación de webhooks perdidos: **es requisito para producción**.
+**Scheduler (preparado, NO desplegado; lo activa quien despliega).** `mobbex-worker` debe invocarse cada ~60 s con la firma de worker, igual que el worker de Mercado Pago (`20260803120000_mercadopago_staging_worker_scheduler.sql`). La plantilla lista para usar es `deploy/mobbex/mobbex-worker-cron.template.sql` (fuera de `supabase/migrations`, con la programación comentada); ver [CERTIFICATION.md](CERTIFICATION.md#programar-la-conciliación). Sin él siguen funcionando el webhook y la lectura al volver, pero no el barrido de vencimientos ni la recuperación de webhooks perdidos: **es requisito para producción**.
 
 ## 4. Onboarding seguro del titular (Walter)
 
@@ -54,7 +54,7 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 | Webhooks falsos o repetidos | 401 `INVALID_WEBHOOK` / `duplicate: true` | Esperado; no escriben nada ni duplican pedidos. |
 | Cambiar de proveedor | — | Apagar `MOBBEX_ENABLED`; los pedidos y cobros abiertos se siguen conciliando mientras el flag lo permita; efectivo/MP no se tocan. |
 
-`mobbex_pipeline_health()` es la señal de alerta: sólo marca `needs_attention` cuando una persona debe intervenir. **No está enchufada todavía** al panel de alertas operativas existente (hacerlo exige modificar funciones preexistentes y su propia revisión); hoy se consulta o se programa su lectura.
+`mobbex_pipeline_health()` es la señal de alerta: sólo marca `needs_attention` cuando una persona debe intervenir. Está **integrada al panel de alertas operativas existente y APAGADA**: la migración aditiva `20261103020000_mobbex_operational_alert.sql` agrega tres alertas por comercio (`MOBBEX_PAID_WITHOUT_ORDER`, `MOBBEX_PAYMENT_NEEDS_REVIEW`, `MOBBEX_RECONCILIATION_STUCK`) que sólo aparecen cuando alguien habilita `select public.set_mobbex_health_alert('<comercio>', true)` (rol de servicio). Con el flag en `false` —el default— la reconciliación de alertas se comporta igual que antes. Rollback: `docs/migrations/rollback/20261103020000_mobbex_operational_alert.rollback.sql`. Límite: `attention_reason` sólo se limpia con un reembolso completo (igual que en `mobbex_pipeline_health()`), así que una alerta por «atención» persiste hasta que la persona la resuelva en el panel o se reembolse.
 
 ## 6. Rollback
 
@@ -76,7 +76,7 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 
 **Límites honestos.**
 - La base de integración corrió en **PostgreSQL nativo con stubs de `pg_cron`/`pg_net`/`supabase_vault`**, porque Docker no estaba utilizable (ver `INFRA-RECOVERY.md`). Es un fixture **más débil** que la imagen fija de Supabase: la compuerta canónica es el banco Docker de CI. Hay que repetirla allí.
-- No se ejecutó ninguna función Edge bajo Deno ni contra Supabase real; la lógica se probó como funciones puras con puertos falsos y un Mobbex simulado.
+- Las funciones Edge **pasan `deno check`** (Deno 2.6.1, el fijado por el repo, `npm run check:edge`, 19 entradas), pero **no se ejecutaron bajo Deno ni contra Supabase real**; la lógica se probó como funciones puras con puertos falsos y un Mobbex simulado. `tests/mobbex-edge-sql-contract.test.mjs` cubre lo que esos puertos falsos no pueden: que cada llamada Edge→base use scopes, funciones y argumentos que existen de verdad.
 - **No hubo sandbox auténtico de Mobbex** (no hay cuenta ni credenciales de prueba). Los contratos de API salen de la documentación oficial; `scripts/mobbex/sandbox-*-probe.mjs` ejecutan la certificación en cuanto existan credenciales de prueba. Eso no se afirma como hecho.
 - No se probó dinero real. Nada de lo anterior atribuye pagos reales a mocks.
 - No se probó en navegador (E2E): el flujo de UI se cubrió con pruebas de módulo y revisión de código.
@@ -102,3 +102,18 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 | Mobbex ofrecido sin autorización | Cuatro compuertas, apagado por defecto | Probado local |
 | Divergencia de contrato con Mobbex real | Sandbox auténtico pendiente | **Abierto** |
 | Fixture SQL más débil que producción | Repetir en banco Docker de CI | **Abierto** |
+
+## 8. Revisión de seguridad e idempotencia (2026-11-03) y qué cambió
+
+Revisión del código Edge y de las funciones SQL de dinero. Detalle y comandos en [CERTIFICATION.md](CERTIFICATION.md).
+
+| Hallazgo | Gravedad | Estado |
+|---|---|---|
+| Las cuatro funciones Edge usaban *scopes* de rate limit (`mobbex_checkout`, `mobbex_refund`, `mobbex_status`, `mobbex_webhook`) que `consume_payment_rate_limit` rechaza → 429 permanente: con Mobbex encendido **no se podía crear el checkout** y el webhook se descartaba | Bloqueante | **Corregido** (scopes existentes + sujeto `mobbex:`) y blindado con un test de contrato que falla con el código anterior |
+| `mobbexOperations()` tipada como puerto sin `refundOperation`: `deno check` fallaba | Alta (despliegue con tipos) | **Corregido** |
+| Una referencia con varios intentos (tarjeta rechazada y luego aprobada) podía leerse como «rechazada» si la operación principal no era la aprobada → liberaba el stock de una compra pagada | Alta (condicional a la forma real de la respuesta, sin verificar) | **Mitigado**: el *snapshot* se niega (`conflicting_operations`) y el trabajo termina en la alerta, nunca en una conjetura |
+| Temporizador del camino rápido del webhook sin limpiar | Baja | Corregido |
+| `payment.total` con financiación (cuotas con interés) podría diferir del importe esperado → `amount_mismatch` → revisión manual | Abierto (negocio) | Verificar en el sandbox con una compra en cuotas |
+| El token del webhook va en la URL (puede quedar en logs de acceso de Mobbex/proxies) | Aceptado | Sin firma documentada por Mobbex; replay inofensivo por la confirmación autenticada |
+
+Lo que se revisó y está bien: permisos (todo revocado salvo cinco RPC del navegador, cada una con verificación de dueño/rol en la base), comparación del token en tiempo constante, host de redirección sólo `*.mobbex.com` por HTTPS, `redirect: 'error'`, total sólo del servidor, un único pedido por checkout, snapshots ordenados con el dinero ganando sobre estados viejos, pagos tardíos sin stock a revisión y reembolsables.

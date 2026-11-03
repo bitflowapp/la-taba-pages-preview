@@ -37,6 +37,9 @@ assert.equal(process.env.TABA_LOCAL_PAYMENT_DB, '1', 'TABA_LOCAL_PAYMENT_DB=1 re
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MIGRATION = '20261103010000_mobbex_checkout_foundation.sql';
 const ROLLBACK = 'docs/migrations/rollback/20261103010000_mobbex_checkout_foundation.rollback.sql';
+// Additive follow-up: needs the foundation, so it is applied INSIDE the test transactions, never into the base cluster.
+const ALERT_MIGRATION = '20261103020000_mobbex_operational_alert.sql';
+const ALERT_ROLLBACK = 'docs/migrations/rollback/20261103020000_mobbex_operational_alert.rollback.sql';
 const image = 'public.ecr.aws/supabase/postgres:17.6.1.166';
 const native = process.argv.includes('--native');
 const keep = process.argv.includes('--keep');
@@ -117,7 +120,7 @@ function applyAfterInterlock(migrations) {
   sql(migration(EXPAND[3]));
   sql(`insert into supabase_migrations.schema_migrations(version,name,statements) values('${EXPAND[3].slice(0, 14)}','${EXPAND[3].slice(15, -4)}',array['']) on conflict do nothing`);
   let count = 0;
-  for (const name of migrations.filter((v) => v.slice(0, 14) > '20260909050330' && v !== MIGRATION)) { sql(migration(name)); count += 1; }
+  for (const name of migrations.filter((v) => v.slice(0, 14) > '20260909050330' && v !== MIGRATION && v !== ALERT_MIGRATION)) { sql(migration(name)); count += 1; }
   return count;
 }
 
@@ -209,6 +212,37 @@ try {
   const outputC = spawnPsql(`set search_path=public,extensions;\nbegin;\n${migration(MIGRATION)}\n${contractWithoutEnd}\n${read(ROLLBACK)}\nrollback;`);
   assert.match(`${outputC.stdout}\n${outputC.stderr}`, /ROLLBACK_REFUSED/, 'the rollback must refuse when money was recorded');
   console.log('MOBBEX_ROLLBACK_REFUSES_WITH_MONEY: PASS');
+
+  // Health alert (20261103020000): additive, off by default, wired into the existing alert reconciliation.
+  const reconMd5 = `select 'RECON_MD5=' || md5(pg_get_functiondef('public.reconcile_operational_alerts_for_business(uuid)'::regprocedure));`;
+  const contract = read('supabase/tests/mobbex_ledger.local.sql');
+  const helpers = contract.split('\nselect pg_temp.as_admin();')[0];
+  const originalRecon = /RECON_MD5=(\S+)/.exec(sql(reconMd5))?.[1];
+  assert.ok(originalRecon, 'md5 of the pre-existing alert reconciliation');
+  const outputD = runTransaction('health alert', `${migration(MIGRATION)}
+${migration(ALERT_MIGRATION)}
+${helpers}
+${read('supabase/tests/mobbex_health_alert.local.sql')}`);
+  assert.match(outputD, /MOBBEX_HEALTH_ALERT_ALL_PASS/, 'the health alert contract did not finish');
+  assert.doesNotMatch(outputD, /FAILED:/);
+  console.log(`MOBBEX_HEALTH_ALERT_CONTRACT: ${[...outputD.matchAll(/ok - (.+)/g)].length} assertions passed`);
+  const outputE = runTransaction('health alert rollback drill', `${migration(MIGRATION)}
+    ${reconMd5.replace('RECON_MD5=', 'BEFORE_ALERT_MD5=')}
+    ${migration(ALERT_MIGRATION)}
+    ${reconMd5.replace('RECON_MD5=', 'WIRED_MD5=')}
+    ${read(ALERT_ROLLBACK)}
+    ${reconMd5.replace('RECON_MD5=', 'UNWIRED_MD5=')}
+    select 'ALERT_LEFTOVERS=' || (select count(*) from pg_proc where proname in ('list_mobbex_operational_alerts', 'set_mobbex_health_alert'))
+      || '/' || (select count(*) from information_schema.columns where table_name = 'mobbex_business_settings' and column_name = 'health_alert_enabled');
+    ${migration(ALERT_MIGRATION)}
+    ${reconMd5.replace('RECON_MD5=', 'REWIRED_MD5=')}`);
+  const md5Of = (tag) => new RegExp(`${tag}=(\\S+)`).exec(outputE)?.[1];
+  assert.equal(md5Of('BEFORE_ALERT_MD5'), originalRecon, 'the foundation migration must not change the alert reconciliation');
+  assert.notEqual(md5Of('WIRED_MD5'), originalRecon, 'the alert migration must change the reconciliation');
+  assert.equal(md5Of('UNWIRED_MD5'), originalRecon, 'the alert rollback must restore the reconciliation byte for byte');
+  assert.equal(md5Of('REWIRED_MD5'), md5Of('WIRED_MD5'), 're-applying after rollback differs from the first apply');
+  assert.equal(/ALERT_LEFTOVERS=(\S+)/.exec(outputE)?.[1], '0/0', 'the alert rollback leaves objects behind');
+  console.log('MOBBEX_HEALTH_ALERT_ROLLBACK_DRILL: reconciliation restored byte for byte, nothing left behind, re-apply identical PASS');
   ok = true;
 } finally {
   if (native) {

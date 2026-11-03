@@ -5,7 +5,7 @@ on:
     branches: ['audit/mp-activation-closure-20261030']
     paths: ['scripts/**', 'tests/**', 'supabase/**', 'package*.json', '.github/workflows/payment-certification.yml']
   pull_request:
-    paths: ['scripts/mercadopago/**', 'scripts/recovery/**', 'tests/mercadopago-*.test.mjs', 'tests/recovery-*.test.mjs', 'tests/db/**', 'supabase/**', '.github/workflows/payment-certification.yml']
+    paths: ['scripts/mercadopago/**', 'scripts/recovery/**', 'tests/mercadopago-*.test.mjs', 'tests/recovery-*.test.mjs', 'tests/mobbex-*.test.mjs', 'tests/db/**', 'supabase/**', 'deploy/mobbex/**', '.github/workflows/payment-certification.yml']
   workflow_dispatch:
 
 permissions:
@@ -29,8 +29,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
-      - name: Payment and QA tool regressions (no hosted credentials)
-        run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs
+      - name: Payment, Mobbex and QA tool regressions (no hosted credentials, no money)
+        run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs tests/mobbex-*.test.mjs
 
   financial_sql:
     runs-on: ubuntu-24.04

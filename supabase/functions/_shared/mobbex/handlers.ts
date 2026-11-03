@@ -267,12 +267,13 @@ export async function handleMobbexWebhook(
 
   // Fast path: confirm now so the customer sees the order in seconds. Whatever happens, the durable job already exists.
   let confirmed: ReconcileOutcome | null = null;
+  let budgetTimer: ReturnType<typeof setTimeout> | undefined;
   try {
     confirmed = await Promise.race([
       reconcileMobbexPayment({ ledger: deps.ledger, operations: deps.operations }, { intentId: receipt.intent_id, reference: parsed.webhook.reference }, 'webhook'),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), deps.inlineBudgetMs ?? 8000)),
+      new Promise<null>((resolve) => { budgetTimer = setTimeout(() => resolve(null), deps.inlineBudgetMs ?? 8000); }),
     ]);
-  } catch (_) { confirmed = null; }
+  } catch (_) { confirmed = null; } finally { clearTimeout(budgetTimer); }
   return { status: 200, body: { ok: true, duplicate: receipt.duplicate === true, queued: true, confirmed: confirmed?.outcome === 'done' } };
 }
 

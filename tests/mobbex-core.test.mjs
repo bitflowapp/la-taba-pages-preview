@@ -269,6 +269,23 @@ test('snapshot: a missing currency is ARS (Mobbex only accepts ARS); another cur
   assert.equal(usd.snapshot.currency, 'USD');
 });
 
+test('snapshot refuses to decide when the list shows a paid operation but the headline says it is not paid', () => {
+  const build = (code, codes) => {
+    const body = operation({ id: 'OP-1', reference: REFERENCE, total: 10, status: { code } });
+    body.data.transactions = codes.map((status, index) => ({ uid: `T${index}`, status }));
+    return buildMobbexSnapshot(REFERENCE, body, HASH);
+  };
+  // Declined first attempt as headline, approved retry only in the list: never "rejected" (that releases the stock).
+  for (const headline of ['400', '1', '3', '401', '9999']) {
+    assert.deepEqual(build(headline, ['400', '200']), { ok: false, reason: 'conflicting_operations' }, `headline ${headline}`);
+  }
+  // The legitimate shapes are untouched: approved headline, and a paid operation that was later refunded or cancelled.
+  assert.equal(build('200', ['400', '200']).ok, true);
+  assert.equal(build('602', ['200']).ok, true, 'refunded after being paid');
+  assert.equal(build('605', ['200']).ok, true, 'partially refunded after being paid');
+  assert.equal(build('400', ['400', '400']).ok, true, 'only declined attempts');
+});
+
 test('snapshot counts approved operations of the reference (double payment signal)', () => {
   const body = operation({ id: 'OP-1', reference: REFERENCE, total: 10, status: { code: '200' } });
   body.data.transactions = [{ uid: 'T1', status: '200' }, { uid: 'T2', status: '200' }, { uid: 'T3', status: '400' }];

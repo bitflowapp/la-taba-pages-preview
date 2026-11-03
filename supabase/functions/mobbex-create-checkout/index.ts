@@ -24,7 +24,8 @@ Deno.serve(async (request) => {
     assertAllowedOrigin(request);
     const payload = await readJsonObject(request);
     const { user } = await requireAuthenticatedUser(request);
-    await enforceRateLimit(createServiceClient(), request, 'mobbex_checkout', 12, 600, user.id);
+    // Existing scope + provider-prefixed subject: a scope outside payment_rate_limit_scope_check would always answer 429.
+    await enforceRateLimit(createServiceClient(), request, 'checkout_session', 12, 600, `mobbex:${user.id}`);
     const result = await createMobbexCheckout({
       ledger: mobbexLedger(),
       resolveConfig: mobbexConfigFromEnv,

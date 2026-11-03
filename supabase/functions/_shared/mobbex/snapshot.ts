@@ -30,7 +30,7 @@ export interface MobbexSnapshot {
 
 export type SnapshotResult =
   | { ok: true; snapshot: MobbexSnapshot }
-  | { ok: false; reason: 'shape_unrecognized' | 'reference_mismatch' };
+  | { ok: false; reason: 'shape_unrecognized' | 'reference_mismatch' | 'conflicting_operations' };
 
 function obj(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -72,6 +72,13 @@ export function buildMobbexSnapshot(reference: string, body: Record<string, unkn
   const transactions = Array.isArray(data.transactions) ? data.transactions : [];
   const approvedFromList = transactions.filter((entry) => classifyMobbexStatus(obj(entry).status).statusClass === 'approved').length;
   const entity = obj(data.entity).uid ?? obj(transaction.entity).uid ?? obj(payment.entity).uid;
+
+  // One reference can hold several attempts (a declined card, then an approved one). The headline `payment` is the only
+  // operation this parser reads in detail, and the documentation does not say WHICH attempt it is. If the list shows a
+  // paid operation while the headline says "not paid", reporting the headline would let the ledger release the stock of
+  // a purchase that was paid. Refuse to decide: the job fails, retries, and ends in the operator alert, never in a guess.
+  const headlineIsNotPaid = ['pending', 'authorized', 'rejected', 'expired', 'unknown'].includes(status.statusClass);
+  if (approvedFromList > 0 && headlineIsNotPaid) return { ok: false, reason: 'conflicting_operations' };
 
   return {
     ok: true,

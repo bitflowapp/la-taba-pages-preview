@@ -24,7 +24,8 @@ Deno.serve(async (request) => {
     const body = await readJsonObject(request);
     const sessionId = requireUuid(body.checkout_session_id, 'checkout_session_id');
     const { user, client } = await requireAuthenticatedUser(request);
-    await enforceRateLimit(createServiceClient(), request, 'mobbex_status', 40, 600, user.id);
+    // Same budget as the Mercado Pago status poll: the return page polls every 3 s for up to 20 attempts per load.
+    await enforceRateLimit(createServiceClient(), request, 'checkout_status', 60, 60, `mobbex:${user.id}`);
     const result = await mobbexCheckoutStatus({
       ledger: mobbexLedger(),
       operations: { createCheckout: () => Promise.reject(new Error('unused')), getOperationByReference: (reference) => mobbexOperations(mobbexConfigFromEnv()).getOperationByReference(reference) },

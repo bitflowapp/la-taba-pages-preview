@@ -22,7 +22,7 @@ Deno.serve(async (request) => {
     const body = await readJsonObject(request);
     const { user, client } = await requireAuthenticatedUser(request);
     const service = createServiceClient();
-    await enforceRateLimit(service, request, 'mobbex_refund', 6, 600, user.id);
+    await enforceRateLimit(service, request, 'refund', 6, 600, `mobbex:${user.id}`);
     const result = await refundMobbexPayment({
       resolveConfig: mobbexConfigFromEnv,
       prepareRefund: async ({ intentId, amount, idempotencyKey, reason }) => {

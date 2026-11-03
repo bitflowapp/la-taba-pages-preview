@@ -15,7 +15,9 @@ Deno.serve(async (request) => {
   try {
     requirePost(request);
     const rawBody = await request.clone().text();
-    await enforceRateLimit(createServiceClient(), request, 'mobbex_webhook', 240, 60, 'mobbex-webhook');
+    // `consume_payment_rate_limit` only accepts the scopes of payment_rate_limit_scope_check: any other value raises
+    // and turns into a permanent 429. The `mobbex-` subject keeps the bucket apart from Mercado Pago's.
+    await enforceRateLimit(createServiceClient(), request, 'webhook', 240, 60, 'mobbex-webhook');
     const result = await handleMobbexWebhook({
       ledger: mobbexLedger(),
       operations: { createCheckout: () => Promise.reject(new Error('unused')), getOperationByReference: (reference) => mobbexOperations(mobbexConfigFromEnv()).getOperationByReference(reference) },

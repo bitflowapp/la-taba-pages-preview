@@ -14,7 +14,7 @@ lo que **no** se hizo a propósito. Todo el diagnóstico fue de solo lectura; no
 | G: | ≈ 48,8 GB | no se usó |
 
 Huella de esta tarea en E:: repositorio ≈ 0,6 GB, `node_modules` 82 MB, bases PostgreSQL descartables ≈ 0,23 GB, logs y respaldo < 10 MB.
-`TEMP`, `TMP` y el caché de npm de la sesión ya apuntan a `E:\LUNA-Pagos-Mobbex-Rescate\`. Nada de esta tarea escribe en C:.
+`TEMP`, `TMP` y el caché de npm de la sesión ya apuntan a la carpeta `LUNA-Pagos-Mobbex-Rescate` de la unidad E:. Nada de esta tarea escribe en C:.
 
 ## Estado de Docker (solo lectura)
 
@@ -38,8 +38,8 @@ blob dañado, y un error en cualquiera de esos caminos pierde imágenes/volúmen
 ### Procedimiento para quien tenga la sesión de escritorio
 
 1. Liberar algo de C: **por decisión humana** (Docker necesita unos cientos de MB para reiniciar; hoy hay 0,08 GB). Candidatos medidos: `AppData` 56 GB.
-2. Respaldar los 3 volúmenes si importan: `docker volume ls`, y para cada uno `docker run --rm -v <vol>:/v -v E:\respaldo:/b busybox tar czf /b/<vol>.tgz -C /v .` (cuando el motor responda).
-3. Docker Desktop → Settings → Resources → Advanced → *Disk image location* → elegir `E:\Docker\wsl` (hacen falta ≈ 15 GB; E: quedaría con ≈ 17 GB) → *Apply & restart*. Esperar a que termine; no cerrar a la fuerza.
+2. Respaldar los 3 volúmenes si importan: `docker volume ls`, y para cada uno `docker run --rm -v <vol>:/v -v <carpeta-de-respaldo>:/b busybox tar czf /b/<vol>.tgz -C /v .` (cuando el motor responda), donde `<carpeta-de-respaldo>` es la carpeta `respaldo` en la raíz de la unidad E:.
+3. Docker Desktop → Settings → Resources → Advanced → *Disk image location* → elegir la carpeta `Docker\wsl` en la raíz de la unidad E: (hacen falta ≈ 15 GB; E: quedaría con ≈ 17 GB) → *Apply & restart*. Esperar a que termine; no cerrar a la fuerza.
 4. Verificar: `docker ps -a` (11 contenedores), `docker volume ls` (3), `docker image ls`.
 5. Si el blob dañado persiste, volver a descargar **sólo esa imagen** (`docker pull <imagen>`) o dejar que el CLI de Supabase la baje al arrancar; no limpiar nada más.
 6. Con Docker sano, correr el banco canónico: `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs` (sin `--native`).
@@ -47,6 +47,6 @@ blob dañado, y un error en cualquiera de esos caminos pierde imágenes/volúmen
 ## Qué queda limpio
 
 Se detuvo el PostgreSQL descartable propio de esta sesión (puerto 54329); no hay procesos `postgres.exe` activos.
-No se mató ningún proceso ajeno. **Pendiente para una persona:** borrar `E:\mbx-work` (≈ 225 MB de clústeres de prueba
+No se mató ningún proceso ajeno. **Pendiente para una persona:** borrar la carpeta `mbx-work` de la raíz de la unidad E: (≈ 225 MB de clústeres de prueba
 descartables de esta tarea: `pg3`, `pg4`, `pg5`, `pgdata`); la herramienta de seguridad del entorno bloqueó el borrado
 automático y no se sorteó. Los logs de esas corridas se conservan en `evidence\`.

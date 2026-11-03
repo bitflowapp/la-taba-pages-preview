@@ -461,6 +461,16 @@ verify_jwt = false
 [functions.mercadopago-payment-worker]
 verify_jwt = false
 
+# Mobbex documents NO webhook signature, so its webhook is not authenticated by a provider secret: the URL registered
+# at checkout creation carries TABA's own capability token, the body is only a hint and every state change is
+# confirmed by an authenticated read of the operation (supabase/functions/_shared/mobbex/webhook.ts).
+# The worker is non-JWT only because a scheduler invokes it; it requires the shared worker secret.
+[functions.mobbex-webhook]
+verify_jwt = false
+
+[functions.mobbex-worker]
+verify_jwt = false
+
 # El agente local de impresión no tiene sesión de usuario: presenta su
 # credencial de dispositivo y la función la verifica contra la base.
 [functions.print-agent-gateway]

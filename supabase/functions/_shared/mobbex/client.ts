@@ -24,6 +24,7 @@
  */
 
 export const MOBBEX_API_BASE = 'https://api.mobbex.com';
+export const MOBBEX_OPERATION_ID_PATTERN = /^[A-Za-z0-9_-]{6,80}$/;
 export const MOBBEX_REFERENCE_PATTERN = /^taba2-mbx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export class MobbexApiError extends Error {
@@ -200,7 +201,7 @@ export class MobbexClient {
    * Partial refunds cannot be made on the day of the payment (official docs): Mobbex answers an error.
    */
   async refundOperation(operationId: string, amountCents: number | null): Promise<{ approved: boolean; responseHash: string }> {
-    if (!/^[A-Za-z0-9_-]{6,80}$/.test(operationId)) throw new RangeError('invalid Mobbex operation id');
+    if (!MOBBEX_OPERATION_ID_PATTERN.test(operationId)) throw new RangeError('invalid Mobbex operation id');
     const path = `/p/operations/${encodeURIComponent(operationId)}/refund`;
     const { status, json, hash } = amountCents === null
       ? await this.request('GET', path)

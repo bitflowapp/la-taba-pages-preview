@@ -309,7 +309,7 @@ const refundDeps = (overrides = {}) => {
   return {
     events,
     resolveConfig: config,
-    prepareRefund: async (input) => { events.push('prepare'); return { refund_id: 'r1', idempotent: false, reconciliation_required: false, full: input.amount === null, amount: input.amount, provider_payment_id: 'OP-1234' }; },
+    prepareRefund: async (input) => { events.push('prepare'); return { refund_id: 'r1', idempotent: false, reconciliation_required: false, full: input.amount === null, amount: input.amount, provider_payment_id: 'OP-1234', environment: 'test' }; },
     markRefundSent: async () => { events.push('mark_sent'); },
     recordRefundResult: async (id, outcome) => { events.push(`result:${outcome}`); },
     refundOperation: async () => { events.push('provider'); return { approved: true, responseHash: 'f'.repeat(64) }; },
@@ -389,6 +389,55 @@ test('environment: the worker and the return page never read a payment of anothe
     readStatus: async () => ({ status: 'pending' }) }, SESSION);
   assert.equal(back.status, 200);
   assert.ok(!statusLedger.calls.some((c) => c.name === 'recordSnapshot'));
+});
+
+test('refund audit (session 5): environment, operation id, final states, concurrent same key, and the race with the worker', async () => {
+  // A payment from the other environment is never refunded with this configuration's credentials (same rule as reconcile).
+  const otherEnv = refundDeps({ prepareRefund: async (input) => ({ refund_id: 'r1', idempotent: false, reconciliation_required: false, full: false, amount: input.amount, provider_payment_id: 'OP-1234', environment: 'production' }) });
+  const e = await refundMobbexPayment(otherEnv, refundBody({ amount: '10.00' }));
+  assert.deepEqual([e.status, e.body.code], [409, 'REFUND_ENVIRONMENT_MISMATCH']);
+  assert.deepEqual(otherEnv.events, [], 'nothing marked, nothing sent');
+  const noEnv = refundDeps({ prepareRefund: async () => ({ refund_id: 'r1', idempotent: false, reconciliation_required: false, full: true, provider_payment_id: 'OP-1234' }) });
+  assert.equal((await refundMobbexPayment(noEnv, refundBody())).body.code, 'REFUND_ENVIRONMENT_MISMATCH', 'an unlabelled payment is a mismatch too');
+  // An operation id Mobbex could never accept is refused BEFORE marking (otherwise it is left 'ambiguous' with nothing sent).
+  const badOp = refundDeps({ prepareRefund: async () => ({ refund_id: 'r1', idempotent: false, reconciliation_required: false, full: true, provider_payment_id: 'x/../y', environment: 'test' }) });
+  assert.equal((await refundMobbexPayment(badOp, refundBody())).body.code, 'REFUND_NOT_AVAILABLE');
+  assert.deepEqual(badOp.events, [], 'nothing marked, nothing sent');
+  // A retry after a lost answer reports the settled state instead of «reconciling» forever.
+  const settled = (status) => refundDeps({ prepareRefund: async () => ({ refund_id: 'r1', idempotent: true, reconciliation_required: false, status }) });
+  for (const [status, http, code] of [['approved', 200, undefined], ['rejected', 409, 'REFUND_REJECTED'], ['failed', 409, 'REFUND_NOT_AVAILABLE']]) {
+    const d = settled(status);
+    const r = await refundMobbexPayment(d, refundBody());
+    assert.deepEqual([r.status, r.body.code], [http, code], status);
+    assert.deepEqual(d.events, [], `${status}: nothing marked, nothing sent`);
+  }
+  // Two simultaneous requests with the SAME key: both see 'requested' (resend), only one wins the atomic mark; one provider call.
+  let marked = false; let calls = 0;
+  const shared = refundDeps({
+    markRefundSent: async () => { if (marked) throw new Error('reembolso no enviable'); marked = true; },
+    refundOperation: async () => { calls += 1; await new Promise((resolve) => setTimeout(resolve, 5)); return { approved: true, responseHash: 'f'.repeat(64) }; },
+  });
+  const both = await Promise.all([refundMobbexPayment(shared, refundBody()), refundMobbexPayment(shared, refundBody())]);
+  assert.equal(calls, 1, 'Mobbex is asked once');
+  assert.deepEqual(both.map((r) => r.status).sort(), [200, 503]);
+  // The worker settled the refund (602) before our answer was stored: the stored state wins over Mobbex's late «false».
+  const raced = refundDeps({ refundOperation: async () => ({ approved: false, responseHash: 'f'.repeat(64) }), recordRefundResult: async () => 'approved' });
+  assert.equal((await refundMobbexPayment(raced, refundBody())).status, 200);
+  // HTTP failures: auth/timeout/throttle/5xx are uncertain (reconciled, never resent); a 4xx refusal is final.
+  for (const [kind, status] of [['auth', 401], ['auth', 403], ['server', 408], ['server', 429], ['server', 500], ['network', 0], ['malformed', 200]]) {
+    const d = refundDeps({ refundOperation: async () => { throw new MobbexApiError(kind, status, 'x'); } });
+    const r = await refundMobbexPayment(d, refundBody());
+    assert.deepEqual([r.status, r.body.code, d.events.at(-1)], [202, 'REFUND_RECONCILING', 'result:ambiguous'], `${kind}:${status}`);
+  }
+  const refused = refundDeps({ refundOperation: async () => { throw new MobbexApiError('rejected', 400, 'x'); } });
+  assert.deepEqual([(await refundMobbexPayment(refused, refundBody())).body.code, refused.events.at(-1)], ['REFUND_REJECTED', 'result:rejected']);
+  // Amounts are sent in exact cents.
+  let sentCents;
+  const exact = refundDeps({ refundOperation: async (_id, cents) => { sentCents = cents; return { approved: true, responseHash: 'f'.repeat(64) }; } });
+  for (const [amount, cents] of [['0.29', 29], ['1299.90', 129990], ['12345678.99', 1234567899], ['100.1', 10010]]) {
+    await refundMobbexPayment(exact, refundBody({ amount }));
+    assert.equal(sentCents, cents, amount);
+  }
 });
 
 test('refund: a ledger failure never sends blind and never answers 500 after Mobbex already refunded', async () => {

@@ -38,8 +38,10 @@ Deno.serve(async (request) => {
         if (error) throw new Error('refund could not be marked as sent');
       },
       recordRefundResult: async (refundId, outcome, hash) => {
-        const { error } = await service.rpc('mobbex_record_refund_result', { p_refund_id: refundId, p_outcome: outcome, p_response_hash: hash });
+        const { data, error } = await service.rpc('mobbex_record_refund_result', { p_refund_id: refundId, p_outcome: outcome, p_response_hash: hash });
         if (error) throw new Error('refund result could not be recorded');
+        const status = (data as Record<string, unknown> | null)?.status;
+        return typeof status === 'string' ? status : undefined;
       },
       refundOperation: (operationId, cents) => mobbexOperations(mobbexConfigFromEnv()).refundOperation(operationId, cents),
     }, body);

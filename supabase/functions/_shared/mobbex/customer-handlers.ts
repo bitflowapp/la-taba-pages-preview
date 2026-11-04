@@ -5,7 +5,7 @@
  * None of them can mark a payment as paid. The return page only reads; the refund only asks Mobbex to give money back.
  */
 
-import { MobbexApiError } from './client.ts';
+import { MOBBEX_OPERATION_ID_PATTERN, MobbexApiError } from './client.ts';
 import { MobbexConfigError, type MobbexConfig } from './config.ts';
 import {
   reconcileMobbexPayment,
@@ -81,7 +81,8 @@ export interface RefundDeps {
   /** User-scoped RPC `mobbex_prepare_refund`: only an owner/admin of the business passes. */
   prepareRefund: (input: { intentId: string; amount: number | null; idempotencyKey: string; reason: string }) => Promise<Record<string, unknown>>;
   markRefundSent: (refundId: string) => Promise<void>;
-  recordRefundResult: (refundId: string, outcome: 'approved' | 'rejected' | 'ambiguous', responseHash: string) => Promise<void>;
+  /** Resolves to the status the ledger ended with (the worker may have settled it first), when it reports one. */
+  recordRefundResult: (refundId: string, outcome: 'approved' | 'rejected' | 'ambiguous', responseHash: string) => Promise<string | void>;
   refundOperation: (operationId: string, amountCents: number | null) => Promise<{ approved: boolean; responseHash: string }>;
 }
 
@@ -101,7 +102,8 @@ export async function refundMobbexPayment(
     if (!/^\d{1,8}(\.\d{1,2})?$/.test(text) || Number(text) <= 0) return { status: 400, body: { ok: false, code: 'INVALID_AMOUNT', message: 'Importe inválido.' } };
     amount = Number(text);
   }
-  try { deps.resolveConfig(); } catch (error) {
+  let config: MobbexConfig;
+  try { config = deps.resolveConfig(); } catch (error) {
     if (error instanceof MobbexConfigError) return { status: 409, body: { ok: false, code: 'PAYMENTS_NOT_ENABLED', message: 'Mobbex no está habilitado en este entorno.' } };
     throw error;
   }
@@ -110,6 +112,12 @@ export async function refundMobbexPayment(
     prepared = await deps.prepareRefund({ intentId, amount, idempotencyKey, reason: String(body.reason ?? '').trim().slice(0, 300) });
   } catch (_) {
     return { status: 409, body: { ok: false, code: 'REFUND_NOT_AVAILABLE', message: 'No podemos reembolsar este pago en su estado actual.' } };
+  }
+  if (prepared.idempotent === true && prepared.reconciliation_required !== true) {
+    // Already settled (e.g. a retry after a lost answer): report the stored outcome, send nothing.
+    if (prepared.status === 'approved') return { status: 200, body: { ok: true, status: 'approved' } };
+    if (prepared.status === 'rejected') return { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso.' } };
+    if (prepared.status === 'failed') return { status: 409, body: { ok: false, code: 'REFUND_NOT_AVAILABLE', message: 'Este pedido de reembolso nunca salió hacia Mobbex y quedó cerrado. Revisá el saldo del pago y, si corresponde, hacé un pedido nuevo.' } };
   }
   if (prepared.reconciliation_required === true || prepared.idempotent === true) {
     // A request that already left TABA is NEVER sent twice: the next reconciliation reads Mobbex's own state.
@@ -121,6 +129,15 @@ export async function refundMobbexPayment(
     ? null
     : Math.round(Number(prepared.amount) * 100);
   const reconciling: HttpResult = { status: 202, body: { ok: false, code: 'REFUND_RECONCILING', status: 'reconciling', message: 'Estamos verificando el reembolso con Mobbex. No lo repitas.' } };
+  // A payment from the other environment is never refunded with this configuration's credentials (a sandbox operation id sent
+  // with production keys, or the reverse). Nothing is marked: the unsent row expires by itself.
+  if (String(prepared.environment ?? '') !== config.environment) {
+    return { status: 409, body: { ok: false, code: 'REFUND_ENVIRONMENT_MISMATCH', message: 'Este pago es de otro entorno de Mobbex; no se envió nada.' } };
+  }
+  // Checked BEFORE marking: an id the client would refuse locally would otherwise leave the refund 'ambiguous' with nothing sent.
+  if (!MOBBEX_OPERATION_ID_PATTERN.test(operationId)) {
+    return { status: 409, body: { ok: false, code: 'REFUND_NOT_AVAILABLE', message: 'No podemos reembolsar este pago en su estado actual.' } };
+  }
   // Marked as sent BEFORE the request (and a provider re-read is queued): a crash after sending leaves `processing`, which is
   // reconciled and never resent. If it cannot be marked, nothing is sent.
   try { await deps.markRefundSent(refundId); } catch (_) {
@@ -135,8 +152,11 @@ export async function refundMobbexPayment(
     return outcome === 'rejected' ? { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso.' } } : reconciling;
   }
   // Mobbex answered but the answer could not be stored: the queued re-read of the operation (601/602/605) settles it.
-  try { await deps.recordRefundResult(refundId, result.approved ? 'approved' : 'rejected', result.responseHash); } catch (_) { return reconciling; }
-  return result.approved
+  let settled: string | void;
+  try { settled = await deps.recordRefundResult(refundId, result.approved ? 'approved' : 'rejected', result.responseHash); } catch (_) { return reconciling; }
+  // The ledger keeps the first final outcome (e.g. the worker already saw 602): answer with what is recorded, not the late reply.
+  const approved = settled === 'approved' || settled === 'rejected' ? settled === 'approved' : result.approved;
+  return approved
     ? { status: 200, body: { ok: true, status: 'approved' } }
     : { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso (por ejemplo, un parcial el mismo día del pago).' } };
 }

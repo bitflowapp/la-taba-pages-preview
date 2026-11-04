@@ -273,7 +273,12 @@ test('snapshot is fail-closed on anything unexpected', () => {
   assert.equal(odd.snapshot.test, false, 'no test flag -> not a test operation');
   const testCard = failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: true }));
   assert.equal(testCard.snapshot.test, true, 'the provider test flag reaches the ledger (refused as money in production)');
-  assert.equal(failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: 'true' })).snapshot.test, false, 'only a boolean counts');
+  for (const flag of ['true', 1, 'yes']) {
+    assert.equal(failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: flag })).snapshot.test, true, `fail closed on ${flag}`);
+  }
+  for (const flag of [false, 'false', 0, null]) {
+    assert.equal(failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: flag })).snapshot.test, false, `explicit not-test ${flag}`);
+  }
 });
 
 test('snapshot: a missing currency is ARS (Mobbex only accepts ARS); another currency passes through for the ledger to refuse', () => {

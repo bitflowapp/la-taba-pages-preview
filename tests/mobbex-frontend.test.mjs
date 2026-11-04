@@ -75,3 +75,20 @@ test('the return page maps server states and a browser-side success never clears
   assert.equal(mobbexStatusPresentation({ status: 'payment_pending', payment_status: 'rejected' }).state, 'rejected');
   assert.equal(mobbexStatusPresentation({ payment_status: 'security_review_required' }).state, 'manual_review');
 });
+
+test('retry after a lost return: resume the same checkout or block; never open a second paid session (auditoría 2026-11-04)', async () => {
+  const { mobbexRetryDecision } = await import('../js/payments/mobbex-checkout.js');
+  const BUSINESS = '11111111-1111-4111-8111-111111111111';
+  const record = { businessId: BUSINESS, checkoutSessionId: SESSION, items: [{ productId: 'p1', quantity: 2 }] };
+  const same = [{ product_id: 'p1', quantity: 2 }];
+  assert.deepEqual(mobbexRetryDecision(null, { businessId: BUSINESS, items: same }), { action: 'new' });
+  assert.deepEqual(mobbexRetryDecision(record, { businessId: 'otro', items: same }), { action: 'new' }, 'another store: unrelated');
+  for (const status of ['payment_pending', 'in_process', 'payment_approved', 'finalizing_order', 'manual_review_required']) {
+    assert.deepEqual(mobbexRetryDecision(record, { businessId: BUSINESS, items: same, checkout: { status } }), { action: 'resume', checkoutSessionId: SESSION }, status);
+    assert.equal(mobbexRetryDecision(record, { businessId: BUSINESS, items: [{ product_id: 'p1', quantity: 3 }], checkout: { status } }).code, 'PREVIOUS_PAYMENT_IN_PROGRESS', `${status}: other cart waits`);
+  }
+  assert.equal(mobbexRetryDecision(record, { businessId: BUSINESS, items: same, checkout: { status: 'completed', order_public_code: 'LT-1' } }).code, 'PREVIOUS_PAYMENT_COMPLETED');
+  assert.equal(mobbexRetryDecision(record, { businessId: BUSINESS, items: same, checkout: null }).code, 'PREVIOUS_PAYMENT_UNVERIFIED', 'cannot read it: do not pay again yet');
+  for (const status of ['expired', 'cancelled', 'failed']) assert.deepEqual(mobbexRetryDecision(record, { businessId: BUSINESS, items: same, checkout: { status } }), { action: 'new' }, status);
+  assert.deepEqual(mobbexRetryDecision(record, { businessId: BUSINESS, items: same, notFound: true }), { action: 'new' });
+});

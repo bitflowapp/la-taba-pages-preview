@@ -54,6 +54,7 @@ import {
   MOBBEX_PAYMENT_METHOD,
   buildMobbexCheckoutPayload,
   clearMobbexCheckoutRecord,
+  mobbexRetryDecision,
   readMobbexCheckoutRecord,
   trustedMobbexCheckoutUrl,
   writeMobbexCheckoutRecord,
@@ -1343,21 +1344,44 @@ export function createSupabaseOrderRepository({
     if (!availability.ok || !availability.available) {
       return repositoryResult(false, { message: 'Mobbex todavía no está habilitado para este comercio.' });
     }
-    let clientRequestId;
-    try {
-      clientRequestId = createCheckoutClientRequestId(cryptoImpl);
-    } catch (_) {
-      return repositoryResult(false, { message: 'Este dispositivo no puede generar una solicitud de pago segura.' });
+    // Un pago anterior de este navegador que todavía puede cobrar se retoma (mismo checkout, misma referencia) o frena el
+    // segundo intento: nunca se abre otra sesión que termine en un segundo cobro.
+    const recordItems = items.map((item) => ({ productId: item.product_id, quantity: item.quantity }));
+    const previous = readMobbexCheckoutRecord(mercadoPagoStorage);
+    let decision = { action: 'new' };
+    if (previous && previous.businessId === businessId) {
+      const prior = await getMobbexCheckoutStatus(previous.checkoutSessionId);
+      decision = mobbexRetryDecision(previous, { businessId, items: recordItems, checkout: prior.ok ? prior.checkout : null, notFound: prior.notFound === true });
+      if (decision.action === 'block') {
+        if (decision.code === 'PREVIOUS_PAYMENT_COMPLETED') clearMobbexCheckoutRecord(mercadoPagoStorage);
+        return repositoryResult(false, { code: decision.code, checkoutSessionId: previous.checkoutSessionId, message: decision.message });
+      }
+      if (decision.action === 'new') clearMobbexCheckoutRecord(mercadoPagoStorage);
     }
-    // Sin importes: el servidor precia la sesión y devuelve la URL de Mobbex.
-    const payload = buildMobbexCheckoutPayload({
-      businessId,
-      clientRequestId,
-      values: { ...values, customerName: nameValidation.name, customerPhone },
-      items,
-    });
+    let payload;
+    if (decision.action === 'resume') {
+      payload = { business_id: businessId, checkout_session_id: decision.checkoutSessionId };
+    } else {
+      let clientRequestId;
+      try {
+        clientRequestId = createCheckoutClientRequestId(cryptoImpl);
+      } catch (_) {
+        return repositoryResult(false, { message: 'Este dispositivo no puede generar una solicitud de pago segura.' });
+      }
+      // Sin importes: el servidor precia la sesión y devuelve la URL de Mobbex.
+      payload = buildMobbexCheckoutPayload({
+        businessId,
+        clientRequestId,
+        values: { ...values, customerName: nameValidation.name, customerPhone },
+        items,
+      });
+    }
     const created = await invokePaymentFunction('mobbex-create-checkout', payload);
     const checkoutSessionId = String(created.data?.checkout_session_id || '').trim();
+    // «Estamos verificando»: la sesión existe y quizá ya tiene checkout; se recuerda para que el próximo intento la retome.
+    if (created.data?.code === 'CHECKOUT_RECONCILING' && isUuid(checkoutSessionId)) {
+      writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, { items: recordItems });
+    }
     if (!created.ok || !created.data?.redirect_url) {
       return repositoryResult(false, {
         code: created.data?.code || 'CHECKOUT_NOT_AVAILABLE',
@@ -1370,9 +1394,7 @@ export function createSupabaseOrderRepository({
     if (!redirectUrl || !isUuid(checkoutSessionId)) {
       return repositoryResult(false, { message: 'No recibimos una URL de pago segura.' });
     }
-    writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, {
-      items: items.map((item) => ({ productId: item.product_id, quantity: item.quantity })),
-    });
+    writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, { items: recordItems });
     return repositoryResult(true, { checkoutSessionId, redirectUrl, expiresAt: String(created.data.expires_at || '') });
   }
 
@@ -1382,7 +1404,7 @@ export function createSupabaseOrderRepository({
     if (!session.ok) return repositoryResult(false, { message: session.message });
     const result = await invokePaymentFunction('mobbex-checkout-status', { checkout_session_id: checkoutSessionId });
     if (!result.ok || !result.data?.checkout) {
-      return repositoryResult(false, { message: result.data?.message || 'No pudimos verificar el pago todavía.' });
+      return repositoryResult(false, { notFound: result.data?.code === 'CHECKOUT_NOT_FOUND', message: result.data?.message || 'No pudimos verificar el pago todavía.' });
     }
     return repositoryResult(true, { checkout: result.data.checkout });
   }

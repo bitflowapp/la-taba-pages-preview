@@ -71,3 +71,32 @@ export function readMobbexCheckoutRecord(storage, { now = Date.now() } = {}) {
 export function clearMobbexCheckoutRecord(storage) {
   try { storage?.removeItem(MOBBEX_RECORD_KEY); } catch (_) { /* nothing to clear */ }
 }
+
+// Estados de la sesión (servidor) en los que se puede abrir un checkout NUEVO: el anterior ya no puede cobrar.
+const REOPENABLE = new Set(['expired', 'cancelled', 'failed']);
+const sameItems = (a = [], b = []) => {
+  const key = (list) => list.map((i) => `${i.productId}:${i.quantity}`).sort().join('|');
+  return key(a) === key(b);
+};
+
+/**
+ * Antes de abrir un checkout nuevo: ¿hay un pago de Mobbex anterior de ESTE navegador que todavía puede estar cobrándose?
+ * (la vuelta se perdió, el aviso tarda, la persona cerró la pestaña). Sin esto, «Pagar» otra vez creaba otra sesión, otra
+ * referencia y un segundo cobro. `checkout` es lo que devolvió el servidor para la sesión anterior; null = no se pudo leer.
+ * @returns {{ action: 'new' } | { action: 'resume', checkoutSessionId: string } | { action: 'block', code: string, message: string }}
+ */
+export function mobbexRetryDecision(record, { businessId, items = [], checkout = null, notFound = false } = {}) {
+  if (!record || record.businessId !== String(businessId || '')) return { action: 'new' };
+  if (notFound) return { action: 'new' };
+  if (!checkout) {
+    return { action: 'block', code: 'PREVIOUS_PAYMENT_UNVERIFIED', message: 'No pudimos verificar tu pago anterior con Mobbex. Esperá unos segundos y volvé a intentar: no pagues de nuevo todavía.' };
+  }
+  const state = String(checkout.status || '');
+  if (REOPENABLE.has(state)) return { action: 'new' };
+  if (state === 'completed') {
+    return { action: 'block', code: 'PREVIOUS_PAYMENT_COMPLETED', message: `Tu pago anterior con Mobbex ya se acreditó${checkout.order_public_code ? ` (pedido ${checkout.order_public_code})` : ''}. Revisá tus pedidos antes de volver a pagar.` };
+  }
+  const current = items.map((i) => ({ productId: String(i.productId || i.product_id || ''), quantity: Math.floor(Number(i.quantity) || 0) }));
+  if (sameItems(record.items, current)) return { action: 'resume', checkoutSessionId: record.checkoutSessionId };
+  return { action: 'block', code: 'PREVIOUS_PAYMENT_IN_PROGRESS', message: 'Tenés un pago con Mobbex en curso por otro carrito. Esperá a que se confirme o venza (unos 15 minutos) antes de pagar de nuevo.' };
+}

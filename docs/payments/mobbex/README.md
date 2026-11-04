@@ -85,7 +85,7 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 
 | Alcance | Decisión |
 |---|---|
-| Mergear el PR borrador a `main` con Mobbex **apagado** (default) | **GO condicionado**: tras revisión humana, repetir contrato SQL en el banco Docker de CI y E2E de navegador. Con la opción apagada el cambio de comportamiento para clientes es nulo. |
+| Mergear el PR borrador a `main` con Mobbex **apagado** (default) | **GO condicionado**: tras revisión humana y E2E de navegador. El contrato SQL ya corre en el CI (job `financial_sql`, PostgreSQL 16 con stubs de las extensiones de Supabase; la imagen fija en Docker sigue sin ejecutarse). Con la opción apagada el cambio de comportamiento para clientes es nulo. |
 | Staging con credenciales de **prueba** | **GO** cuando exista cuenta/credenciales de prueba y se programe el worker. Correr `scripts/mobbex/sandbox-contract-probe.mjs`. |
 | **Cobro real** | **NO-GO** hasta: (1) KYC y credenciales del titular, (2) sandbox auténtico aprobado, (3) worker programado, (4) costos y acreditación confirmados por contrato, (5) alerta `mobbex_pipeline_health` conectada, (6) autorización expresa por compra. |
 

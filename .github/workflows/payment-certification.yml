@@ -31,6 +31,8 @@ jobs:
       - run: npm run check
       - name: Payment, Mobbex and QA tool regressions (no hosted credentials, no money)
         run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs tests/mobbex-*.test.mjs
+      - name: Mobbex core and flows under the Deno runtime (pinned 2.6.1, frozen lock, no network permission)
+        run: npm run test:mobbex:deno
 
   financial_sql:
     runs-on: ubuntu-24.04

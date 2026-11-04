@@ -10,15 +10,17 @@ despliega. Para el veredicto GO/NO-GO ver [README.md](README.md#go--no-go).
 | Lógica Edge pura | `node --import ./tests/test-bootstrap.mjs --test tests/mobbex-*.test.mjs` | webhook falso/duplicado/tardío, snapshots, cliente HTTP, flujos con puertos falsos, plantilla del cron | nada contra Mobbex ni Supabase reales |
 | Contrato Edge ↔ base | `tests/mobbex-edge-sql-contract.test.mjs` (incluido arriba) | cada `enforceRateLimit` usa un scope aceptado por la base; cada `rpc()` nombra una función y argumentos que existen; las RPC del navegador son exactamente las concedidas a `authenticated` | el comportamiento de esas funciones (lo cubre el banco SQL) |
 | Tipos bajo Deno | `npm run check:edge` | `deno check` (Deno 2.6.1 fijado, `deno.lock` congelado) de las 19 entradas Edge: **pasa** | ejecución bajo Deno |
-| SQL en PostgreSQL real | `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (o sin `--native` con Docker sano) | libro (96 aserciones), huella de funciones preexistentes idéntica, rollback, alerta de salud (22 aserciones) con rollback byte a byte | un Supabase real: el banco nativo usa **stubs** de `pg_cron`/`pg_net`/`supabase_vault` (fixture más débil que la imagen fija) |
+| Lógica Edge bajo Deno | `npm run test:mobbex:deno` | las 37 pruebas de `mobbex-core` y `mobbex-flows` ejecutadas **bajo Deno 2.6.1** (versión fijada, lock congelado, sin permiso de red), sin cambiar una línea de las pruebas | `supabase functions serve` ni los `index.ts`; sólo Deno como runtime de la lógica |
+| SQL en PostgreSQL real | `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (o sin `--native` con Docker sano). **En CI:** job `financial_sql` (PostgreSQL 16 del runner) | libro (96 aserciones), huella de funciones preexistentes idéntica, rollback, alerta de salud (22 aserciones) con rollback byte a byte | un Supabase real: el banco nativo usa **stubs** de `pg_cron`/`pg_net`/`supabase_vault` (fixture más débil que la imagen fija); la imagen fija en Docker no se ejecuta en ningún lado |
 
 ### Deno en esta máquina
 
 - La unidad C: no tiene espacio. `deno` descarga dependencias a `DENO_DIR`; **definirlo fuera de C:** antes de correr
   `npm run check:edge` (por ejemplo una carpeta `deno-cache` junto al repositorio). Sin eso Deno escribe en `%LOCALAPPDATA%`.
 - `npm run check:edge` baja Deno con `npx deno@2.6.1` y los paquetes del lockfile; no modifica `deno.lock` (`--frozen`).
-- **Pendiente (no hecho):** correr las funciones bajo el runtime de Deno (`deno test`/`supabase functions serve`). Hoy se
-  prueban en Node con puertos falsos y se tipan con Deno. Requiere una pila Supabase local sana (Docker dañado, ver `INFRA-RECOVERY.md`).
+- **Hecho:** la lógica de las funciones (núcleo y flujos, 37 pruebas) también corre bajo el runtime de Deno: `npm run test:mobbex:deno`,
+  en el CI. **Pendiente (no hecho):** `supabase functions serve` con los `index.ts` reales y una pila Supabase local sana
+  (Docker dañado, ver `INFRA-RECOVERY.md`).
 
 ## 2. E2E sin dinero real (preparado, NO ejecutado)
 

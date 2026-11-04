@@ -25,6 +25,8 @@ export interface MobbexSnapshot {
   entity_uid: string | null;
   /** Operations of this reference the provider shows as paid: more than one means a double payment. */
   approved_operation_count: number;
+  /** The provider marked the operation as a TEST operation (test cards). In production the ledger never counts it as money. */
+  test: boolean;
   raw_response_hash: string;
 }
 
@@ -92,6 +94,8 @@ export function buildMobbexSnapshot(reference: string, body: Record<string, unkn
       provider_occurred_at: isoOrNull(payment.updated) ?? isoOrNull(payment.created),
       entity_uid: text(entity, 80) || null,
       approved_operation_count: Math.max(approvedFromList, status.statusClass === 'approved' ? 1 : 0),
+      // Only an explicit boolean `true` counts; the ledger refuses it as money in production (test_operation_in_production).
+      test: payment.test === true || transaction.test === true || data.test === true,
       raw_response_hash: responseHash,
     },
   };

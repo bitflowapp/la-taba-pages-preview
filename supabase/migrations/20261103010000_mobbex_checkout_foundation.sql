@@ -981,6 +981,9 @@ begin
   elsif v_money and v_pid is null then v_reason := 'payment_id_missing';
   elsif v_money and (v_currency <> 'ARS' or v_currency <> v_intent.currency) then v_reason := 'currency_mismatch';
   elsif v_money and (v_amount is null or v_amount <> v_intent.expected_amount) then v_reason := 'amount_mismatch';
+  elsif v_money and v_intent.environment = 'production' and p_snapshot -> 'test' = 'true'::jsonb then
+    -- A test-mode operation (test card) is never money, whatever its status code says.
+    v_reason := 'test_operation_in_production';
   elsif v_money and v_settings.entity_uid is not null and nullif(p_snapshot ->> 'entity_uid', '') is not null
         and p_snapshot ->> 'entity_uid' is distinct from v_settings.entity_uid then v_reason := 'entity_mismatch';
   elsif v_money and exists (select 1 from public.mobbex_payment_intents x

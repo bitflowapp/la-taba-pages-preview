@@ -156,6 +156,12 @@ test('webhook: a request without the capability token writes NOTHING and answers
   }
   const insecure = await handleMobbexWebhook(webhookDeps(fakeLedger(), fakeOperations()), await webhookInput({ https: false }));
   assert.equal(insecure.status, 400);
+  // A form-urlencoded delivery with a valid token is accepted (as a hint) and queues the authenticated read.
+  const formLedger = fakeLedger();
+  const formResult = await handleMobbexWebhook(webhookDeps(formLedger, fakeOperations()),
+    await webhookInput({ body: `type=checkout&data%5Bpayment%5D%5Bstatus%5D%5Bcode%5D=200&data%5Bpayment%5D%5Breference%5D=${REFERENCE}` }));
+  assert.equal(formResult.status, 200);
+  assert.ok(formLedger.calls.length > 0, 'the form delivery reaches the ledger');
   const huge = await handleMobbexWebhook(webhookDeps(fakeLedger(), fakeOperations()), await webhookInput({ body: JSON.stringify({ pad: 'x'.repeat(70_000) }) }));
   assert.equal(huge.status, 413);
 });

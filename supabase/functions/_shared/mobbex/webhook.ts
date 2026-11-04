@@ -3,6 +3,8 @@
  *
  * WHAT MOBBEX DOCUMENTS (https://mobbex.dev/webhooks, read 2026-11-03):
  *   an HTTP POST with `Content-Type: application/json`, `{ type, data }`, sent to the
+ *   (mobbex.dev/suscriptores, read 2026-11-04, contradicts it: "Los webhooks siempre serán enviados en formato
+ *   application/x-www-form-urlencoded". Both encodings are accepted below; either way the body is only a hint.)
  *   `webhook` URL given when the checkout was created, over TLS >= 1.2.
  *   The documentation describes NO signature, HMAC, secret header or any other
  *   authenticity mechanism, and no retry policy. TABA does not invent one.
@@ -88,6 +90,35 @@ function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+/**
+ * `application/x-www-form-urlencoded` body (`type=checkout&data[payment][status][code]=200…`) → the same nested object a
+ * JSON delivery would carry. Only plain bracket paths are expanded; anything else stays a flat key. Null when the text
+ * is not a form body at all.
+ */
+export function formBodyToObject(rawBody: string): Record<string, unknown> | null {
+  const textBody = rawBody.trim();
+  if (!textBody || !/^[A-Za-z0-9_%.+\-\[\]]+=/.test(textBody) || /\s/.test(textBody)) return null;
+  const root: Record<string, unknown> = {};
+  for (const [key, value] of new URLSearchParams(textBody)) {
+    const path = /^([A-Za-z0-9_]+)((?:\[[A-Za-z0-9_]*\])*)$/.exec(key);
+    if (!path) { root[key] = value; continue; }
+    const parts = [path[1], ...Array.from(path[2].matchAll(/\[([A-Za-z0-9_]*)\]/g), (m) => m[1])];
+    // Never walk into the prototype chain: `data[__proto__][x]=1` must not touch Object.prototype.
+    if (parts.some((part) => part === '__proto__' || part === 'constructor' || part === 'prototype' || part === '')) continue;
+    let node = root;
+    for (let index = 0; index < parts.length - 1; index += 1) {
+      const next = node[parts[index]];
+      node = (node[parts[index]] = next && typeof next === 'object' && Object.hasOwn(node, parts[index]) ? next : {}) as Record<string, unknown>;
+    }
+    node[parts[parts.length - 1]] = value;
+  }
+  // Some senders put the whole JSON document in a single `data` field.
+  if (typeof root.data === 'string') {
+    try { const inner = JSON.parse(root.data); if (inner && typeof inner === 'object' && !Array.isArray(inner)) root.data = inner; } catch (_) { /* stays a string */ }
+  }
+  return root;
+}
+
 export function parseMobbexWebhook(url: URL, rawBody: string): WebhookParseResult {
   const reference = url.searchParams.get('ref')?.trim() ?? '';
   const presentedToken = url.searchParams.get('t')?.trim() ?? '';
@@ -98,7 +129,9 @@ export function parseMobbexWebhook(url: URL, rawBody: string): WebhookParseResul
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false, code: 'INVALID_BODY' };
     body = parsed as Record<string, unknown>;
   } catch (_) {
-    return { ok: false, code: 'INVALID_BODY' };
+    const form = formBodyToObject(rawBody);
+    if (!form) return { ok: false, code: 'INVALID_BODY' };
+    body = form;
   }
   const data = asObject(body.data);
   const payment = asObject(data.payment);

@@ -110,6 +110,16 @@ test('webhook parsing: the body is a hint; a body naming another reference is no
   assert.equal(parseMobbexWebhook(url(REFERENCE), 'not json').code, 'INVALID_BODY');
   assert.equal(parseMobbexWebhook(url(REFERENCE), '[1,2]').code, 'INVALID_BODY');
   assert.equal(parseMobbexWebhook(url(REFERENCE), '{}').ok, true, 'an empty object is accepted as a hint: the read decides');
+  // mobbex.dev/suscriptores (2026-11-04): webhooks "siempre" form-urlencoded. Same hints, same reference rule.
+  const form = (fields) => new URLSearchParams(fields).toString();
+  const formOk = parseMobbexWebhook(url(REFERENCE), form({ type: 'checkout', 'data[payment][id]': 'OP-9', 'data[payment][reference]': REFERENCE, 'data[payment][status][code]': '200' }));
+  assert.equal(formOk.ok, true);
+  assert.deepEqual([formOk.webhook.hintType, formOk.webhook.hintStatusCode, formOk.webhook.hintPaymentId], ['checkout', '200', 'OP-9']);
+  assert.equal(parseMobbexWebhook(url(REFERENCE), form({ 'data[payment][reference]': 'taba2-mbx-other' })).code, 'REFERENCE_MISMATCH');
+  const nested = parseMobbexWebhook(url(REFERENCE), form({ type: 'checkout', data: JSON.stringify({ payment: { id: 'OP-7', status: { code: '2' } } }) }));
+  assert.equal(nested.webhook.hintStatusCode, '2');
+  assert.equal(parseMobbexWebhook(url(REFERENCE), 'type=checkout&data[__proto__][x]=1').ok, true, 'no prototype pollution path is special');
+  assert.equal(({}).x, undefined);
 });
 
 // ── amounts ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -246,7 +256,7 @@ test('snapshot of an approved operation (documented shape) carries only what the
   assert.equal(built.ok, true);
   assert.deepEqual(built.snapshot, {
     reference: REFERENCE, status_code: '200', status_class: 'approved', provider_payment_id: 'OP-1', amount: '2500.00', currency: 'ARS',
-    provider_occurred_at: '2026-11-03T12:00:05.000Z', entity_uid: 'ENT-1', approved_operation_count: 1, raw_response_hash: HASH,
+    provider_occurred_at: '2026-11-03T12:00:05.000Z', entity_uid: 'ENT-1', approved_operation_count: 1, test: false, raw_response_hash: HASH,
   });
 });
 
@@ -260,6 +270,10 @@ test('snapshot is fail-closed on anything unexpected', () => {
   assert.equal(odd.ok, true);
   assert.equal(odd.snapshot.status_class, 'unknown', 'an undocumented status is unknown, never approved');
   assert.equal(odd.snapshot.amount, null, 'a non-exact amount is null, never rounded');
+  assert.equal(odd.snapshot.test, false, 'no test flag -> not a test operation');
+  const testCard = failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: true }));
+  assert.equal(testCard.snapshot.test, true, 'the provider test flag reaches the ledger (refused as money in production)');
+  assert.equal(failure(operation({ id: 'OP', reference: REFERENCE, total: 10, status: { code: '200' }, test: 'true' })).snapshot.test, false, 'only a boolean counts');
 });
 
 test('snapshot: a missing currency is ARS (Mobbex only accepts ARS); another currency passes through for the ledger to refuse', () => {

@@ -11,7 +11,7 @@ despliega. Para el veredicto GO/NO-GO ver [README.md](README.md#go--no-go).
 | Contrato Edge ↔ base | `tests/mobbex-edge-sql-contract.test.mjs` (incluido arriba) | cada `enforceRateLimit` usa un scope aceptado por la base; cada `rpc()` nombra una función y argumentos que existen; las RPC del navegador son exactamente las concedidas a `authenticated` | el comportamiento de esas funciones (lo cubre el banco SQL) |
 | Tipos bajo Deno | `npm run check:edge` | `deno check` (Deno 2.6.1 fijado, `deno.lock` congelado) de las 19 entradas Edge: **pasa** | ejecución bajo Deno |
 | Lógica Edge bajo Deno | `npm run test:mobbex:deno` | las 37 pruebas de `mobbex-core` y `mobbex-flows` ejecutadas **bajo Deno 2.6.1** (versión fijada, lock congelado, sin permiso de red), sin cambiar una línea de las pruebas | `supabase functions serve` ni los `index.ts`; sólo Deno como runtime de la lógica |
-| SQL en PostgreSQL real | `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (o sin `--native` con Docker sano). **En CI:** job `financial_sql` (PostgreSQL 16 del runner) | libro (96 aserciones), huella de funciones preexistentes idéntica, rollback, alerta de salud (22 aserciones) con rollback byte a byte | un Supabase real: el banco nativo usa **stubs** de `pg_cron`/`pg_net`/`supabase_vault` (fixture más débil que la imagen fija); la imagen fija en Docker no se ejecuta en ningún lado |
+| SQL en PostgreSQL real | `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (o sin `--native` con Docker sano). **En CI:** job `financial_sql` (PostgreSQL 16 del runner) | libro (97 aserciones), huella de funciones preexistentes idéntica, rollback, alerta de salud (22 aserciones) con rollback byte a byte | un Supabase real: el banco nativo usa **stubs** de `pg_cron`/`pg_net`/`supabase_vault` (fixture más débil que la imagen fija); la imagen fija en Docker no se ejecuta en ningún lado |
 
 ### Deno en esta máquina
 
@@ -64,3 +64,21 @@ select public.set_mobbex_health_alert('<id del comercio>', false);  -- apagarla
 Por defecto está apagada y la reconciliación de alertas del panel se comporta igual que sin la migración. Con ella encendida el panel
 muestra `MOBBEX_PAID_WITHOUT_ORDER` (crítica), `MOBBEX_PAYMENT_NEEDS_REVIEW` y `MOBBEX_RECONCILIATION_STUCK`, con el ciclo
 reconocida → resuelta y auto-resolución cuando la condición desaparece. La evidencia es sólo un conteo y códigos de motivo.
+
+## 5. Revisión contra la documentación oficial (2026-11-04, sesión 3)
+
+Re-lectura de mobbex.dev (`/webhooks`, `/suscriptores`, `/codigos-de-estado`, `/medios-de-pago-para-pruebas`, `/primeros-pasos`):
+
+- **Formato del webhook contradictorio en la propia documentación.** `/webhooks` dice `Content-Type: application/json`;
+  `/suscriptores` dice «Los webhooks siempre serán enviados en formato `application/x-www-form-urlencoded`», y la lectura real
+  de una entidad del sandbox expone `settings.webhookFormat` (el formato es configurable por cuenta). Antes, un aviso
+  form-urlencoded con token válido se rechazaba con 401 (sólo quedaba la conciliación). **Ahora se aceptan ambos** como
+  *pista* (`formBodyToObject` en `webhook.ts`, sin recorrer `__proto__`/`constructor`/`prototype`); el estado sigue saliendo
+  sólo de la lectura autenticada. Pruebas: `webhook parsing…` (core) y `webhook: a request without the capability token…` (flows).
+- **Operación de prueba en producción.** El snapshot ahora lleva `test` (sólo un booleano `true` explícito del proveedor) y el
+  libro la rechaza como dinero en producción: `test_operation_in_production` → revisión, sin pedido. Aserción nueva en
+  `supabase/tests/mobbex_ledger.local.sql` §11 (97 en total).
+- **Tabla de estados:** la de `status.ts` coincide código por código con `/codigos-de-estado` (0-4, 100, 200-303, 400-419, 500,
+  600-610, 800). Sin cambios.
+- **Credenciales DEMO públicas** (`/primeros-pasos`): existen y sirven para el contrato de API sin cuenta propia; el pago
+  aprobado/rechazado/pendiente sigue necesitando a una persona en el checkout alojado (Turnstile). **No se evade.**

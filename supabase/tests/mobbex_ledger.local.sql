@@ -96,7 +96,7 @@ select pg_temp.as_admin();
 
 do $$
 declare
-  t jsonb; t2 jsonb; c jsonb; s uuid; i uuid; r jsonb; ref text; v_stock integer; v_orders integer;
+  t jsonb; t2 jsonb; c jsonb; s uuid; i uuid; r jsonb; ref text; v_stock integer; v_orders integer; v_live jsonb;
 begin
   -- ═══ 0. Nothing that already existed has changed (function/constraint fingerprint: checked by the runner) ═══
   perform pg_temp.check(not exists (select 1 from pg_trigger where tgname like 'mobbex%' and tgrelid::regclass::text in
@@ -356,6 +356,12 @@ begin
   perform pg_temp.raises(format($q$select pg_temp.new_checkout(jsonb_set(%L::jsonb, '{buyer}', to_jsonb(%L::text)), 1, 'mbxlive00000002')$q$, t, t2 ->> 'buyer'), 'MOBBEX_LIVE_CUSTOMER_NOT_AUTHORIZED', 'a different customer cannot use the authorization');
   c := pg_temp.new_checkout(t, 1, 'mbxlive00000003');
   perform pg_temp.check((select status from public.mobbex_live_authorizations where id = (r ->> 'authorization_id')::uuid) = 'consumed', 'the authorization is consumed by the checkout it allows');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s);
+  v_live := public.mobbex_record_provider_snapshot(i, jsonb_set(pg_temp.snap(c ->> 'reference', 'approved', '200', 'OP-LIVE-TESTCARD', '1250.00', 0, 'e'), '{test}', 'true'), 'webhook');
+  perform pg_temp.check(v_live ->> 'reason' = 'test_operation_in_production' and (v_live ->> 'manual_review_required')::boolean
+    and (select paid_amount from public.mobbex_payment_intents where id = i) is null
+    and not exists (select 1 from public.orders where business_id = (t ->> 'business')::uuid),
+    'in production a test-mode operation (test card) is never money and never an order');
   perform pg_temp.raises(format($q$select pg_temp.new_checkout(%L::jsonb, 1, 'mbxlive00000004')$q$, t), 'MOBBEX_LIVE_NOT_AUTHORIZED', 'a second purchase needs a new signature');
   perform pg_temp.raises(format($q$update public.mobbex_live_authorizations set amount = 5 where id = %L$q$, r ->> 'authorization_id'), 'cannot change', 'the terms of an authorization are immutable');
 

@@ -1356,9 +1356,12 @@ declare
   v_amount numeric(12, 2);
 begin
   if p_outcome not in ('approved', 'rejected', 'ambiguous') then raise exception 'resultado de reembolso invalido' using errcode = '22023'; end if;
+  -- Mismo orden de bloqueo que mobbex_record_provider_snapshot (pago -> reembolso): la respuesta del edge y la relectura del
+  -- worker sobre el mismo pago no pueden bloquearse mutuamente.
+  select * into v_intent from public.mobbex_payment_intents
+   where id = (select r.payment_intent_id from public.mobbex_refunds r where r.id = p_refund_id) for update;
   select * into v_refund from public.mobbex_refunds where id = p_refund_id for update;
   if not found then raise exception 'reembolso inexistente' using errcode = 'P0002'; end if;
-  select * into v_intent from public.mobbex_payment_intents where id = v_refund.payment_intent_id for update;
   if v_refund.status in ('approved', 'rejected') then return jsonb_build_object('ok', true, 'idempotent', true, 'status', v_refund.status); end if;
   -- Sólo un reembolso marcado como enviado tiene respuesta de Mobbex: 'requested'/'failed' nunca salieron de TABA.
   if v_refund.status not in ('processing', 'ambiguous') then

@@ -138,3 +138,21 @@ test('browser-callable Mobbex RPCs are exactly the ones the migration grants to 
   assert.ok(userSession.size >= 3);
   for (const name of userSession) assert.ok(granted.has(name), `${name} is called with the caller's session but is not granted to authenticated`);
 });
+
+// Audit session 5: the worker's mobbex_record_provider_snapshot locks the payment and THEN updates its refunds. Every refund
+// function that touches both must take the payment lock first, or the edge's answer and the worker's read can deadlock.
+test('refund functions lock the payment before the refund row (same order as the provider snapshot)', () => {
+  const sql = read(MOBBEX_MIGRATION);
+  const body = (name) => {
+    const start = sql.indexOf(`create function public.${name}(`);
+    assert.ok(start >= 0, name);
+    return sql.slice(start, sql.indexOf('end $$;', start));
+  };
+  for (const name of ['mobbex_record_provider_snapshot', 'mobbex_prepare_refund', 'mobbex_record_refund_result']) {
+    const text = body(name);
+    const intentLock = text.search(/from public\.mobbex_payment_intents\b[^;]*for update/);
+    const refundLock = text.search(/from public\.mobbex_refunds\b[^;]*for update/);
+    assert.ok(intentLock >= 0, `${name} locks the payment`);
+    if (refundLock >= 0) assert.ok(intentLock < refundLock, `${name}: payment lock must come before the refund lock`);
+  }
+});

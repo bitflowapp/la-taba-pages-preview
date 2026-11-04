@@ -128,9 +128,12 @@ const admin = (text) => docker(['exec', '-i', container, 'psql', '-h', '/tmp', '
 
 async function buildNative() {
   if (fs.existsSync(path.join(NATIVE_DIR, 'PG_VERSION'))) throw new Error(`${NATIVE_DIR} already holds a cluster: remove it or pass --container=x to reuse it`);
-  execFileSync('initdb', ['-D', NATIVE_DIR, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8', '--locale=C'], { stdio: 'ignore' });
+  // stderr se deja pasar: en CI un arranque fallido tiene que explicarse solo.
+  execFileSync('initdb', ['-D', NATIVE_DIR, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8', '--locale=C'], { stdio: ['ignore', 'ignore', 'inherit'] });
   fs.appendFileSync(path.join(NATIVE_DIR, 'postgresql.conf'), "\nfsync=off\nsynchronous_commit=off\nfull_page_writes=off\n");
-  execFileSync('pg_ctl', ['start', '-w', '-D', NATIVE_DIR, '-o', `-p ${NATIVE_PORT} -c listen_addresses=127.0.0.1`, '-l', path.join(NATIVE_DIR, 'server.log')], { stdio: 'ignore' });
+  // En Linux el socket Unix por defecto (/var/run/postgresql) no es escribible para un usuario común: va dentro del clúster descartable.
+  const socketDir = process.platform === 'win32' ? '' : ` -c unix_socket_directories=${NATIVE_DIR}`;
+  execFileSync('pg_ctl', ['start', '-w', '-D', NATIVE_DIR, '-o', `-p ${NATIVE_PORT} -c listen_addresses=127.0.0.1${socketDir}`, '-l', path.join(NATIVE_DIR, 'server.log')], { stdio: ['ignore', 'ignore', 'inherit'] });
   sql(NATIVE_STUBS);
   sql(read('supabase/tests/fixtures/a1-platform-auth.sql'));
   sql(STORAGE_FIXTURE);

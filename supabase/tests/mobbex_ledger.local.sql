@@ -96,7 +96,7 @@ select pg_temp.as_admin();
 
 do $$
 declare
-  t jsonb; t2 jsonb; c jsonb; s uuid; i uuid; r jsonb; ref text; v_stock integer; v_orders integer; v_live jsonb;
+  t jsonb; t2 jsonb; c jsonb; s uuid; i uuid; r jsonb; r2 jsonb; ref text; v_stock integer; v_orders integer; v_live jsonb;
 begin
   -- ═══ 0. Nothing that already existed has changed (function/constraint fingerprint: checked by the runner) ═══
   perform pg_temp.check(not exists (select 1 from pg_trigger where tgname like 'mobbex%' and tgrelid::regclass::text in
@@ -256,6 +256,7 @@ begin
   r := public.mobbex_prepare_refund(i, null, '00000000-0000-4000-8000-0000000000aa', 'sin stock');
   perform pg_temp.check((r ->> 'full')::boolean and (r ->> 'idempotent')::boolean is false, 'the owner can refund money taken without an order');
   perform pg_temp.as_admin();
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
   perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'approved', repeat('9', 64));
   perform pg_temp.check((select internal_status from public.mobbex_payment_intents where id = i) = 'refunded', 'the refund closes the intent');
 
@@ -312,6 +313,78 @@ begin
     and not exists (select 1 from public.orders where client_request_id = 'mbx_' || replace(s::text, '-', '')), 'a refund seen before the approval creates no order');
   r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-OOO', '1250.00', -5, '5'), 'reconciliation');
   perform pg_temp.check(not exists (select 1 from public.orders where client_request_id = 'mbx_' || replace(s::text, '-', '')), 'the approval that arrives after the refund still creates no order');
+
+  -- ═══ 8b. Auditoría de reembolsos (sesión 5, 2026-11-04) ═══════════════════════════════════════════════
+  c := pg_temp.new_checkout(t, 2, 'mbxcheckout00030');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s); ref := c ->> 'reference';
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-AUD-1', '2500.00', 0, '1'), 'webhook');
+  perform pg_temp.check((r ->> 'finalized')::boolean, 'order for the refund audit scenarios');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000d1', 'parcial que nunca salio');
+  -- Corte antes de marcar enviado y la UI recargada (clave nueva): una fila 'requested' vieja nunca salió de TABA; no bloquea para siempre.
+  perform pg_temp.as_admin();
+  update public.mobbex_refunds set requested_at = clock_timestamp() - interval '10 minutes' where id = (r ->> 'refund_id')::uuid;
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r2 := public.mobbex_prepare_refund(i, 300, '00000000-0000-4000-8000-0000000000d2', 'parcial nuevo');
+  perform pg_temp.as_admin();
+  perform pg_temp.check((r2 ->> 'amount')::numeric = 300 and (select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'failed',
+    'a stale refund that never left TABA is closed as failed and does not block a new request');
+  perform pg_temp.raises(format($q$select public.mobbex_mark_refund_sent(%L)$q$, r ->> 'refund_id'), 'no enviable', 'a superseded refund can never be sent afterwards');
+  perform pg_temp.raises(format($q$select public.mobbex_record_refund_result(%L, 'approved', %L)$q$, r ->> 'refund_id', repeat('7', 64)), 'no registrable',
+    'a result cannot be recorded on a refund that never left TABA (failed)');
+  perform pg_temp.raises(format($q$select public.mobbex_record_refund_result(%L, 'approved', %L)$q$, r2 ->> 'refund_id', repeat('7', 64)), 'no registrable',
+    'a result cannot be recorded on a refund that was never marked as sent (requested)');
+  perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 0, 'no money was counted for unsent refunds');
+  -- El comercio devolvió desde el panel de Mobbex mientras la fila seguía 'requested': el reenvío con la misma clave se revalida.
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'refunded', '602', 'OP-AUD-1', '2500.00', 5, '2'), 'reconciliation');
+  perform pg_temp.check((select internal_status from public.mobbex_payment_intents where id = i) = 'refunded', 'refund made in the Mobbex panel closes the payment');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 300, '00000000-0000-4000-8000-0000000000d2', 'parcial nuevo');
+  perform pg_temp.check(not coalesce((r ->> 'resend')::boolean, false) and r ->> 'status' = 'failed' and not (r ->> 'reconciliation_required')::boolean,
+    'a never-sent refund is NOT resent once the payment is no longer refundable');
+  perform pg_temp.as_admin();
+  perform pg_temp.check((select status from public.mobbex_refunds where idempotency_key = '00000000-0000-4000-8000-0000000000d2') = 'failed', 'and it is closed as failed');
+  -- Reenvío de un parcial por encima de lo que queda (otro parcial externo entre medio): se cierra, no se envía.
+  c := pg_temp.new_checkout(t, 2, 'mbxcheckout00031');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s); ref := c ->> 'reference';
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-AUD-2', '2500.00', 0, '1'), 'webhook');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 2000, '00000000-0000-4000-8000-0000000000d3', 'parcial grande');
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set refunded_amount = 1000, internal_status = 'partially_refunded' where id = i;
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 2000, '00000000-0000-4000-8000-0000000000d3', 'parcial grande');
+  perform pg_temp.check(r ->> 'status' = 'failed' and not coalesce((r ->> 'resend')::boolean, false), 'a never-sent partial larger than what remains is not resent');
+  -- Parciales consecutivos: cada pedido y cada resultado queda en la auditoría (no se deduplican entre reembolsos distintos).
+  r := public.mobbex_prepare_refund(i, 100, '00000000-0000-4000-8000-0000000000d4', 'parcial 1');
+  perform pg_temp.as_admin();
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'ambiguous', repeat('0', 64));
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'approved', repeat('6', 64));
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 100.10, '00000000-0000-4000-8000-0000000000d5', 'parcial 2');
+  perform pg_temp.as_admin();
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'ambiguous', repeat('0', 64));
+  perform pg_temp.check((select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'ambiguous', 'second partial left ambiguous');
+  perform pg_temp.check((select count(*) from public.mobbex_payment_events where payment_intent_id = i and event_type = 'refund.requested') = 3
+    and (select count(*) from public.mobbex_payment_events where payment_intent_id = i and event_type = 'refund.ambiguous') = 2,
+    'every refund request and every ambiguous answer is audited, also for consecutive partials');
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'approved', repeat('5', 64));
+  perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 1200.10, 'consecutive partials add up to the cent');
+  -- Saldo pendiente exacto: 2500 - 1200.10 = 1299.90; un centavo más se rechaza.
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  perform pg_temp.raises(format($q$select public.mobbex_prepare_refund(%L, 1299.91, gen_random_uuid(), 'x')$q$, i), 'importe de reembolso invalido', 'one cent above the remainder is refused');
+  r := public.mobbex_prepare_refund(i, null, '00000000-0000-4000-8000-0000000000d6', 'saldo');
+  perform pg_temp.check((r ->> 'amount')::numeric = 1299.90 and not (r ->> 'full')::boolean, 'the remainder is requested with its exact amount');
+  -- Barrido: un 'requested' que nunca salió y quedó viejo se cierra solo (no queda como «reembolso sin resolver» para siempre).
+  perform pg_temp.as_admin();
+  update public.mobbex_refunds set requested_at = clock_timestamp() - interval '2 hours' where id = (r ->> 'refund_id')::uuid;
+  perform public.mobbex_sweep();
+  perform pg_temp.check((select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'failed'
+    and exists (select 1 from public.mobbex_payment_events where payment_intent_id = i and event_type = 'refund.expired_unsent'),
+    'the sweep closes a stale never-sent refund and audits it');
+  perform pg_temp.raises(format($q$select public.mobbex_mark_refund_sent(%L)$q$, r ->> 'refund_id'), 'no enviable', 'an expired never-sent refund can never be sent afterwards');
 
   -- ═══ 9. Webhook receipts and the job queue ═════════════════════════════════════════════════════════════
   c := pg_temp.new_checkout(t, 1, 'mbxcheckout00013');

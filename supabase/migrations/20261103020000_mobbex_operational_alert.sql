@@ -2,12 +2,13 @@
 --
 -- Qué hace: cuando un comercio tiene `health_alert_enabled = true`, el panel de alertas operativas existente
 -- (`refresh_operational_alerts` → `reconcile_operational_alerts_for_business`, y su evaluación autónoma cada minuto)
--- muestra tres alertas de Mobbex, con el mismo ciclo de vida que las demás (abierta → reconocida → resuelta, y se resuelve
+-- muestra cuatro alertas de Mobbex, con el mismo ciclo de vida que las demás (abierta → reconocida → resuelta, y se resuelve
 -- sola cuando la condición desaparece):
 --
 --   MOBBEX_PAID_WITHOUT_ORDER       CRITICAL         cobro aprobado, sin pedido, hace más de 10 minutos
 --   MOBBEX_PAYMENT_NEEDS_REVIEW     ACTION_REQUIRED  cobro en revisión de seguridad o con motivo de atención
 --   MOBBEX_RECONCILIATION_STUCK     ACTION_REQUIRED  trabajos de conciliación agotados (dead_letter)
+--   MOBBEX_REFUND_UNRESOLVED        ACTION_REQUIRED  devolución enviada sin confirmar hace más de una hora
 --
 -- Misma definición de «hay que intervenir» que `mobbex_pipeline_health()`, pero acotada al comercio.
 --
@@ -92,6 +93,21 @@ language sql stable security definer set search_path = pg_catalog, public, exten
     join public.mobbex_payment_intents pi on pi.id = j.payment_intent_id
     where pi.business_id = p_business_id
       and j.status = 'dead_letter'
+    having count(*) > 0
+
+    union all
+
+    select
+      'ACTION_REQUIRED', 'MOBBEX_REFUND_UNRESOLVED', 'service_health',
+      md5('mobbex_refund_unresolved:' || p_business_id::text)::uuid, null::uuid,
+      'Hay una devolución de Mobbex sin confirmar hace más de una hora.',
+      'No la repitas: buscá la operación en el panel de Mobbex y registrá el resultado que muestre (devuelta o no).',
+      jsonb_build_object('count', count(*), 'oldest_minutes', round(extract(epoch from (clock_timestamp() - min(r.requested_at))) / 60)::integer)
+    from public.mobbex_refunds r
+    join public.mobbex_payment_intents pi on pi.id = r.payment_intent_id
+    where pi.business_id = p_business_id
+      and r.status in ('requested', 'processing', 'ambiguous')
+      and r.requested_at < clock_timestamp() - interval '1 hour'
     having count(*) > 0
   ) findings
   where exists (

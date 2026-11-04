@@ -86,6 +86,17 @@ begin
   insert into public.mobbex_jobs (payment_intent_id, reason, status, failures, last_error) values (i, 'webhook', 'dead_letter', 12, 'auth:401');
   perform pg_temp.check((select count(*) from public.list_mobbex_operational_alerts(v_biz) where alert_code = 'MOBBEX_RECONCILIATION_STUCK') = 1,
     'an exhausted reconciliation job raises MOBBEX_RECONCILIATION_STUCK');
+  -- Auditoría sesión 5: una devolución enviada sin confirmar hace más de una hora también llega al panel del comercio
+  -- (antes sólo la veía mobbex_pipeline_health, global).
+  insert into public.mobbex_refunds (payment_intent_id, idempotency_key, amount, status, requested_at)
+  values (i, gen_random_uuid(), 100, 'ambiguous', clock_timestamp() - interval '2 hours');
+  perform pg_temp.check((select (evidence ->> 'count')::integer from public.list_mobbex_operational_alerts(v_biz) where alert_code = 'MOBBEX_REFUND_UNRESOLVED') = 1,
+    'a refund unconfirmed for over an hour raises MOBBEX_REFUND_UNRESOLVED for that business');
+  perform pg_temp.check(not exists (select 1 from public.list_mobbex_operational_alerts(v_biz2) where alert_code = 'MOBBEX_REFUND_UNRESOLVED'),
+    'another business does not see it');
+  update public.mobbex_refunds set status = 'approved', completed_at = clock_timestamp() where payment_intent_id = i;
+  perform pg_temp.check(not exists (select 1 from public.list_mobbex_operational_alerts(v_biz) where alert_code = 'MOBBEX_REFUND_UNRESOLVED'),
+    'a settled refund raises nothing');
 
   -- ═══ 6. It resolves by itself when the condition is gone, and switching it off silences it ═══
   delete from public.mobbex_jobs where payment_intent_id = i;

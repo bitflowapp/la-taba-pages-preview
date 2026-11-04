@@ -140,7 +140,9 @@ create table public.mobbex_payment_events (
   constraint mobbex_events_hash_check check (raw_response_hash is null or raw_response_hash ~ '^[a-f0-9]{64}$')
 );
 create unique index mobbex_events_dedupe_key on public.mobbex_payment_events (
-  payment_intent_id, event_type, coalesce(provider_status_code, ''), coalesce(provider_payment_id, ''), coalesce(raw_response_hash, ''));
+  payment_intent_id, event_type, coalesce(provider_status_code, ''), coalesce(provider_payment_id, ''), coalesce(raw_response_hash, ''),
+  -- Cada reembolso es un hecho distinto: dos parciales del mismo pago no se deduplican entre sí.
+  coalesce(details ->> 'refund_id', ''));
 create index mobbex_events_intent_sequence_idx on public.mobbex_payment_events (payment_intent_id, sequence desc);
 
 -- Avisos de Mobbex ya autenticados con el token de URL de TABA. Sólo hay fila para referencias que existen:
@@ -1213,6 +1215,24 @@ end $$;
 -- 11. Reembolsos
 -- ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+-- Reembolsos que nunca salieron de TABA ('requested': se marcan 'processing' ANTES de enviar) y quedaron viejos: se cierran.
+create function private.mobbex_expire_unsent_refunds(p_intent uuid, p_older_than interval) returns integer
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_row record; v_count integer := 0;
+begin
+  for v_row in
+    update public.mobbex_refunds r set status = 'failed', completed_at = clock_timestamp()
+     where r.status = 'requested' and r.requested_at < clock_timestamp() - p_older_than
+       and (p_intent is null or r.payment_intent_id = p_intent)
+    returning r.id, r.payment_intent_id, r.amount
+  loop
+    perform private.mobbex_event(v_row.payment_intent_id, 'refund.expired_unsent', null, null, null, null,
+      jsonb_build_object('refund_id', v_row.id, 'amount', v_row.amount, 'why', 'never_sent'));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end $$;
+
 -- Se ejecuta con la sesión de la PERSONA (auth.uid()): sólo owner/admin del comercio. Registra la intención
 -- ANTES de hablar con Mobbex; la clave de idempotencia hace que un reintento nunca dispare un segundo reintegro.
 create function public.mobbex_prepare_refund(p_payment_intent_id uuid, p_amount numeric, p_idempotency_key uuid, p_reason text)
@@ -1224,37 +1244,51 @@ declare
   v_inflight numeric(12, 2);
   v_remaining numeric(12, 2);
   v_amount numeric(12, 2);
+  v_refundable boolean;
 begin
   if v_actor is null then raise exception 'autenticacion requerida' using errcode = '42501'; end if;
   select * into v_intent from public.mobbex_payment_intents pi where pi.id = p_payment_intent_id for update;
   if not found or not public.has_business_role(v_intent.business_id, array['owner', 'admin']) then
     raise exception 'reembolso no autorizado' using errcode = '42501';
   end if;
+  -- Money taken but no order (stock ran out before the payment landed) is refundable too: that is the whole point.
+  v_refundable := v_intent.provider_payment_id is not null and v_intent.paid_amount is not null and (
+       v_intent.internal_status in ('completed', 'partially_refunded')
+       or (v_intent.order_id is null and v_intent.internal_status = 'security_review_required'
+           and v_intent.review_reason in ('approved_after_reservation_expired', 'finalization_without_active_reservation')));
+  v_remaining := coalesce(v_intent.paid_amount, 0) - v_intent.refunded_amount;
   select * into v_refund from public.mobbex_refunds r where r.idempotency_key = p_idempotency_key;
   if found then
     if v_refund.payment_intent_id <> v_intent.id then raise exception 'clave de idempotencia reutilizada' using errcode = '23505'; end if;
     -- 'requested' = nunca salió de TABA (se marca 'processing' ANTES de enviar): la misma clave puede reenviarlo. Dos reintentos
     -- simultáneos no envían dos veces: sólo uno logra mobbex_mark_refund_sent (requested -> processing).
     if v_refund.status = 'requested' then
+      -- Se revalida contra el estado ACTUAL: entre medio pudo devolverse dinero desde el panel de Mobbex (602/605). Si ya no
+      -- corresponde, la fila se cierra como 'failed' (nunca se envió) y no se reenvía nada.
+      if not v_refundable or (v_refund.amount is null and v_intent.refunded_amount > 0)
+         or (v_refund.amount is not null and v_refund.amount > v_remaining) then
+        update public.mobbex_refunds set status = 'failed', completed_at = clock_timestamp() where id = v_refund.id and status = 'requested';
+        perform private.mobbex_event(v_intent.id, 'refund.expired_unsent', null, v_intent.provider_payment_id, null, null,
+          jsonb_build_object('refund_id', v_refund.id, 'amount', v_refund.amount, 'why', 'no_longer_refundable'));
+        return jsonb_build_object('refund_id', v_refund.id, 'idempotent', true, 'reconciliation_required', false, 'status', 'failed');
+      end if;
       return jsonb_build_object('refund_id', v_refund.id, 'idempotent', false, 'reconciliation_required', false, 'resend', true,
         'amount', v_refund.amount, 'full', v_refund.amount is null, 'provider_payment_id', v_intent.provider_payment_id,
         'reference', v_intent.reference, 'environment', v_intent.environment);
     end if;
     -- A repeated durable request is NEVER sent again: it is reconciled by its stored identity.
-    return jsonb_build_object('refund_id', v_refund.id, 'idempotent', true, 'reconciliation_required', v_refund.status in ('processing', 'ambiguous', 'requested'),
+    return jsonb_build_object('refund_id', v_refund.id, 'idempotent', true, 'reconciliation_required', v_refund.status in ('processing', 'ambiguous'),
       'status', v_refund.status);
   end if;
-  -- Money taken but no order (stock ran out before the payment landed) is refundable too: that is the whole point.
-  if v_intent.provider_payment_id is null or v_intent.paid_amount is null or not (
-       v_intent.internal_status in ('completed', 'partially_refunded')
-       or (v_intent.order_id is null and v_intent.internal_status = 'security_review_required'
-           and v_intent.review_reason in ('approved_after_reservation_expired', 'finalization_without_active_reservation'))) then
+  if not v_refundable then
     raise exception 'pago no reembolsable en su estado actual' using errcode = '55000';
   end if;
+  -- Una fila 'requested' vieja nunca salió de TABA (la función murió antes de marcarla, o la marca falló) y la UI ya usa otra
+  -- clave: se cierra como 'failed'. Seguro aunque esa función siguiera viva: su marca (requested -> processing) ya no puede ganar.
+  perform private.mobbex_expire_unsent_refunds(v_intent.id, interval '2 minutes');
   if exists (select 1 from public.mobbex_refunds r where r.payment_intent_id = v_intent.id and r.status in ('requested', 'processing', 'ambiguous')) then
     raise exception 'ya hay un reembolso en curso para este pago' using errcode = '55000';
   end if;
-  v_remaining := v_intent.paid_amount - v_intent.refunded_amount;
   if p_amount is not null then
     v_amount := round(p_amount, 2);
     if v_amount <= 0 or v_amount > v_remaining then raise exception 'importe de reembolso invalido' using errcode = '22023'; end if;
@@ -1322,6 +1356,10 @@ begin
   if not found then raise exception 'reembolso inexistente' using errcode = 'P0002'; end if;
   select * into v_intent from public.mobbex_payment_intents where id = v_refund.payment_intent_id for update;
   if v_refund.status in ('approved', 'rejected') then return jsonb_build_object('ok', true, 'idempotent', true, 'status', v_refund.status); end if;
+  -- Sólo un reembolso marcado como enviado tiene respuesta de Mobbex: 'requested'/'failed' nunca salieron de TABA.
+  if v_refund.status not in ('processing', 'ambiguous') then
+    raise exception 'reembolso no registrable en su estado actual' using errcode = '55000';
+  end if;
   update public.mobbex_refunds
      set status = p_outcome, provider_response_hash = p_response_hash, completed_at = case when p_outcome <> 'ambiguous' then clock_timestamp() end
    where id = v_refund.id;
@@ -1374,6 +1412,8 @@ begin
     perform private.mobbex_enqueue_job(v_intent, 'refund_check', 0);
     v_enqueued := v_enqueued + 1;
   end loop;
+  -- Reembolsos que nunca salieron de TABA y quedaron viejos: se cierran (no bloquean el pago ni quedan «sin resolver»).
+  perform private.mobbex_expire_unsent_refunds(null, interval '15 minutes');
   -- Retención: los avisos y los trabajos terminados no se guardan para siempre.
   delete from public.mobbex_webhook_receipts where id in (select id from public.mobbex_webhook_receipts where received_at < clock_timestamp() - interval '90 days' limit 500);
   get diagnostics v_purged = row_count;
@@ -1426,6 +1466,7 @@ grant execute on function public.mobbex_prepare_refund(uuid, numeric, uuid, text
 grant execute on function public.mobbex_recover_paid_checkout(uuid) to authenticated;
 revoke all on function private.mobbex_event(uuid, text, text, text, timestamptz, text, jsonb) from public, anon, authenticated;
 revoke all on function private.mobbex_enqueue_job(uuid, text, integer) from public, anon, authenticated;
+revoke all on function private.mobbex_expire_unsent_refunds(uuid, interval) from public, anon, authenticated;
 
 comment on table public.mobbex_payment_intents is
   'Cobros Mobbex Checkout (cuenta propia del comercio). Ledger paralelo a payment_intents: ningún proceso de Mercado Pago lo ve.';

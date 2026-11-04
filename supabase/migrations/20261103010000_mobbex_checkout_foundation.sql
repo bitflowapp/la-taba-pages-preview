@@ -1103,6 +1103,8 @@ begin
          set provider_status_code = v_code, provider_status = 'refunded', provider_event_at = v_time, raw_response_hash = v_hash,
              refunded_amount = paid_amount, internal_status = 'refunded', attention_reason = null
        where id = v_intent.id;
+      update public.mobbex_refunds set status = 'approved', completed_at = clock_timestamp()
+       where payment_intent_id = v_intent.id and status in ('processing', 'ambiguous');
     else
       update public.mobbex_payment_intents set attention_reason = left('paid_operation_regressed:' || v_code, 120) where id = v_intent.id;
     end if;
@@ -1231,6 +1233,13 @@ begin
   select * into v_refund from public.mobbex_refunds r where r.idempotency_key = p_idempotency_key;
   if found then
     if v_refund.payment_intent_id <> v_intent.id then raise exception 'clave de idempotencia reutilizada' using errcode = '23505'; end if;
+    -- 'requested' = nunca salió de TABA (se marca 'processing' ANTES de enviar): la misma clave puede reenviarlo. Dos reintentos
+    -- simultáneos no envían dos veces: sólo uno logra mobbex_mark_refund_sent (requested -> processing).
+    if v_refund.status = 'requested' then
+      return jsonb_build_object('refund_id', v_refund.id, 'idempotent', false, 'reconciliation_required', false, 'resend', true,
+        'amount', v_refund.amount, 'full', v_refund.amount is null, 'provider_payment_id', v_intent.provider_payment_id,
+        'reference', v_intent.reference, 'environment', v_intent.environment);
+    end if;
     -- A repeated durable request is NEVER sent again: it is reconciled by its stored identity.
     return jsonb_build_object('refund_id', v_refund.id, 'idempotent', true, 'reconciliation_required', v_refund.status in ('processing', 'ambiguous', 'requested'),
       'status', v_refund.status);
@@ -1352,6 +1361,17 @@ begin
      limit greatest(1, least(coalesce(p_limit, 100), 500))
   loop
     perform private.mobbex_enqueue_job(v_intent, 'sweep', 0);
+    v_enqueued := v_enqueued + 1;
+  end loop;
+  -- Reembolsos enviados sin respuesta confirmada: la operación puede seguir «aprobada» (terminal) un rato; se vuelve a leer
+  -- hasta que Mobbex muestre la devolución (601/602/605) y la fila se cierre.
+  for v_intent in
+    select distinct r.payment_intent_id from public.mobbex_refunds r
+     where r.status in ('processing', 'ambiguous') and r.requested_at < clock_timestamp() - interval '5 minutes'
+       and not exists (select 1 from public.mobbex_jobs j where j.payment_intent_id = r.payment_intent_id and j.status in ('pending', 'claimed', 'retry_wait'))
+     limit greatest(1, least(coalesce(p_limit, 100), 500))
+  loop
+    perform private.mobbex_enqueue_job(v_intent, 'refund_check', 0);
     v_enqueued := v_enqueued + 1;
   end loop;
   -- Retención: los avisos y los trabajos terminados no se guardan para siempre.

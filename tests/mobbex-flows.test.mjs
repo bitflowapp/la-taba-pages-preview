@@ -129,6 +129,7 @@ test('checkout: a lost response is UNCERTAIN (202), a provable refusal is final 
   const inFlight = fakeLedger({ prepareCheckout: async () => ({ claimed: false, in_flight: true, checkout_session_id: SESSION }) });
   const wait = await createMobbexCheckout(createDeps(inFlight, fakeOperations()), request({ checkout_session_id: SESSION }));
   assert.equal(wait.status, 202, 'a concurrent request does not dispatch a second POST');
+  assert.equal(wait.body.checkout_session_id, SESSION, 'the browser remembers the session on 202 so a retry resumes it instead of opening another');
 });
 
 // ── webhook ─────────────────────────────────────────────────────────────────────────────────────────────────

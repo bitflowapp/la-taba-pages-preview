@@ -37,6 +37,8 @@ Deno.serve(async (request) => {
       },
       readStatus: async (id) => {
         const { data, error } = await client.rpc('get_mobbex_checkout_status', { p_checkout_session_id: id });
+        // A transient failure is NOT «not found»: the browser would take it as permission to open a second checkout.
+        if (error && !/42501|P0002/.test(String(error.code || ''))) throw new Error('status not available');
         return error || !data ? null : data as Record<string, unknown>;
       },
     }, sessionId);

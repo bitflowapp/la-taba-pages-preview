@@ -148,7 +148,7 @@ export async function createMobbexCheckout(
     return { status: 200, body: { ok: true, redirect_url: prepared.checkout_url, checkout_session_id: sessionId, expires_at: prepared.expires_at ?? null, status: 'redirect_ready' } };
   }
   if (!prepared.claimed || !prepared.intent_id || !prepared.reference) {
-    return { status: 202, body: { ok: false, code: 'CHECKOUT_RECONCILING', status: 'reconciling', message: 'Estamos preparando tu pago. No vuelvas a pagar todavía.' } };
+    return { status: 202, body: { ok: false, code: 'CHECKOUT_RECONCILING', status: 'reconciling', checkout_session_id: sessionId, message: 'Estamos preparando tu pago. No vuelvas a pagar todavía.' } };
   }
   // A session prepared under another environment (e.g. a test session resumed after switching to production) must never get a
   // checkout from this configuration: it would be a real charge outside the live gate, or a test charge treated as real.
@@ -190,7 +190,7 @@ export async function createMobbexCheckout(
     }
     // Anything that may have reached Mobbex is uncertain, never "failed": nobody saw a URL, so nobody can pay it.
     await deps.ledger.recordCheckoutUncertain(prepared.intent_id, error instanceof MobbexApiError ? `${error.kind}:${error.status}` : 'unexpected').catch(() => undefined);
-    return { status: 202, body: { ok: false, code: 'CHECKOUT_RECONCILING', status: 'reconciling', message: 'Estamos verificando la preparación de tu pago. No vuelvas a pagar todavía.' } };
+    return { status: 202, body: { ok: false, code: 'CHECKOUT_RECONCILING', status: 'reconciling', checkout_session_id: sessionId, message: 'Estamos verificando la preparación de tu pago. No vuelvas a pagar todavía.' } };
   }
 }
 

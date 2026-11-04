@@ -272,11 +272,15 @@ begin
   perform pg_temp.raises(format($q$select public.mobbex_prepare_refund(%L, 99999, gen_random_uuid(), 'x')$q$, i), 'importe de reembolso invalido', 'a refund above what remains is refused');
   r := public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000bb', 'devolucion parcial');
   perform pg_temp.check((r ->> 'amount')::numeric = 500 and not (r ->> 'idempotent')::boolean, 'a partial refund is recorded before anything is sent');
-  perform pg_temp.check((public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000bb', 'devolucion parcial') ->> 'reconciliation_required')::boolean,
-    'the same request is never sent twice: it is reconciled');
+  -- Todavía 'requested' (nunca salió de TABA, p. ej. falló la marca): la misma clave lo reenvía; la marca atómica evita el doble envío.
+  perform pg_temp.check((public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000bb', 'devolucion parcial') ->> 'resend')::boolean
+    and not (public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000bb', 'devolucion parcial') ->> 'reconciliation_required')::boolean,
+    'a refund that never left TABA can be resent with the same key (it is not stuck forever)');
   perform pg_temp.raises(format($q$select public.mobbex_prepare_refund(%L, 100, gen_random_uuid(), 'otra')$q$, i), 'ya hay un reembolso en curso', 'two refunds cannot be in flight');
   perform pg_temp.as_admin();
   perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform pg_temp.check((public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000bb', 'devolucion parcial') ->> 'reconciliation_required')::boolean,
+    'once sent, the same request is never sent twice: it is reconciled');
   perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'approved', repeat('8', 64));
   perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 500 and (select internal_status from public.mobbex_payment_intents where id = i) = 'partially_refunded', 'partial refund tracked');
   r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'partially_refunded', '605', 'OP-REF-1', '2500.00', 5, '2'), 'reconciliation');
@@ -291,6 +295,10 @@ begin
   perform pg_temp.raises(format($q$select public.mobbex_mark_refund_sent(%L)$q$, r ->> 'refund_id'), 'no enviable', 'a refund cannot be marked as sent twice');
   update public.mobbex_refunds set requested_at = clock_timestamp() - interval '2 hours' where id = (r ->> 'refund_id')::uuid;
   perform pg_temp.check((public.mobbex_pipeline_health() ->> 'refunds_unresolved')::int >= 1 and (public.mobbex_pipeline_health() ->> 'needs_attention')::boolean, 'a refund stuck for an hour asks for a person');
+  update public.mobbex_jobs set status = 'completed' where payment_intent_id = i and status in ('pending', 'retry_wait');
+  perform public.mobbex_sweep();
+  perform pg_temp.check(exists (select 1 from public.mobbex_jobs where payment_intent_id = i and reason = 'refund_check' and status in ('pending', 'retry_wait')),
+    'the sweep keeps re-reading a payment while a sent refund is unconfirmed (a still-approved read is terminal)');
   r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'refunded', '602', 'OP-REF-1', '2500.00', 10, '3'), 'reconciliation');
   perform pg_temp.check((select internal_status from public.mobbex_payment_intents where id = i) = 'refunded' and (select refunded_amount from public.mobbex_payment_intents where id = i) = 2500, 'a full refund observed at the provider closes the payment');
   perform pg_temp.check((select status from public.mobbex_refunds where idempotency_key = '00000000-0000-4000-8000-0000000000cc') = 'approved'

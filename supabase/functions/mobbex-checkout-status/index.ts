@@ -33,7 +33,7 @@ Deno.serve(async (request) => {
       requestReconcile: async (id) => {
         const { data, error } = await client.rpc('mobbex_request_reconcile', { p_checkout_session_id: id });
         if (error) throw new Error('not available');
-        return (data ?? {}) as { queued?: boolean; intent_id?: string; reference?: string };
+        return (data ?? {}) as { queued?: boolean; intent_id?: string; reference?: string; environment?: string };
       },
       readStatus: async (id) => {
         const { data, error } = await client.rpc('get_mobbex_checkout_status', { p_checkout_session_id: id });

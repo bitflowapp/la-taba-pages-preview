@@ -601,7 +601,7 @@ begin
     return jsonb_build_object('queued', false, 'internal_status', v_intent.internal_status);
   end if;
   perform private.mobbex_enqueue_job(v_intent.id, 'browser_return', 0);
-  return jsonb_build_object('queued', true, 'intent_id', v_intent.id, 'reference', v_intent.reference);
+  return jsonb_build_object('queued', true, 'intent_id', v_intent.id, 'reference', v_intent.reference, 'environment', v_intent.environment);
 end $$;
 
 -- ───────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -1121,6 +1121,9 @@ begin
              refunded_amount = paid_amount, internal_status = 'refunded',
              attention_reason = case when attention_reason = 'refund_in_progress' then null else attention_reason end
        where id = v_intent.id;
+      -- El dinero volvió entero: un reembolso enviado cuya respuesta se perdió queda resuelto (si no, bloquea para siempre).
+      update public.mobbex_refunds set status = 'approved', completed_at = clock_timestamp()
+       where payment_intent_id = v_intent.id and status in ('processing', 'ambiguous');
     else
       -- The refund was seen before the approval (out of order / lost notice): the money is already back; no order is born.
       update public.mobbex_payment_intents
@@ -1151,6 +1154,10 @@ begin
              internal_status = case when least(paid_amount, v_refunded) >= paid_amount then 'refunded' else 'partially_refunded' end,
              attention_reason = case when attention_reason in ('refund_in_progress', 'partial_refund_amount_unknown') then null else attention_reason end
        where id = v_intent.id;
+      -- Mobbex muestra más devuelto que lo registrado: el reembolso enviado más antiguo que entra en esa diferencia queda aprobado.
+      update public.mobbex_refunds set status = 'approved', completed_at = clock_timestamp()
+       where id = (select r.id from public.mobbex_refunds r where r.payment_intent_id = v_intent.id and r.status in ('processing', 'ambiguous')
+                     and r.amount is not null and r.amount <= v_refunded - v_intent.refunded_amount order by r.requested_at limit 1);
     end if;
     perform private.mobbex_event(v_intent.id, 'payment.partially_refunded', v_code, v_pid, v_time, v_hash, jsonb_build_object('source', p_source, 'refunded', v_refunded));
     return jsonb_build_object('ok', true, 'internal_status', (select internal_status from public.mobbex_payment_intents where id = v_intent.id));
@@ -1244,7 +1251,11 @@ begin
     if v_amount <= 0 or v_amount > v_remaining then raise exception 'importe de reembolso invalido' using errcode = '22023'; end if;
   end if;
   insert into public.mobbex_refunds (payment_intent_id, idempotency_key, amount, requested_by, reason)
-  values (v_intent.id, p_idempotency_key, case when v_amount is not null and v_amount < v_remaining then v_amount else null end, v_actor, left(btrim(coalesce(p_reason, '')), 300))
+  -- null (= reintegro total de la operación) sólo si todavía no se devolvió nada: después de un parcial, el saldo se pide con
+  -- su importe explícito (pedir el «total» de una operación ya parcialmente devuelta no está garantizado por Mobbex).
+  values (v_intent.id, p_idempotency_key,
+          case when v_intent.refunded_amount = 0 and (v_amount is null or v_amount >= v_remaining) then null else coalesce(v_amount, v_remaining) end,
+          v_actor, left(btrim(coalesce(p_reason, '')), 300))
   returning * into v_refund;
   perform private.mobbex_event(v_intent.id, 'refund.requested', null, v_intent.provider_payment_id, null, null,
     jsonb_build_object('refund_id', v_refund.id, 'amount', v_refund.amount, 'actor', v_actor));
@@ -1281,8 +1292,14 @@ begin
 end $$;
 
 create function public.mobbex_mark_refund_sent(p_refund_id uuid) returns void
-language sql security definer set search_path = pg_catalog, public, pg_temp as $$
-  update public.mobbex_refunds set status = 'processing' where id = p_refund_id and status = 'requested'; $$;
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_intent uuid;
+begin
+  update public.mobbex_refunds set status = 'processing' where id = p_refund_id and status = 'requested' returning payment_intent_id into v_intent;
+  if not found then raise exception 'reembolso no enviable en su estado actual' using errcode = '55000'; end if;
+  -- Si la función muere después de enviar (o no puede guardar la respuesta), la relectura de la operación lo resuelve.
+  perform private.mobbex_enqueue_job(v_intent, 'refund_check', 120);
+end $$;
 
 create function public.mobbex_record_refund_result(p_refund_id uuid, p_outcome text, p_response_hash text) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
@@ -1355,9 +1372,11 @@ language sql stable security definer set search_path = pg_catalog, public, pg_te
     'intents_with_attention', (select count(*) from public.mobbex_payment_intents where attention_reason is not null),
     'paid_without_order', (select count(*) from public.mobbex_payment_intents where internal_status = 'approved_order_pending' and updated_at < clock_timestamp() - interval '10 minutes'),
     'open_intents', (select count(*) from public.mobbex_payment_intents where internal_status in ('checkout_created', 'pending', 'in_process', 'ambiguous', 'approved_order_pending')),
+    'refunds_unresolved', (select count(*) from public.mobbex_refunds where status in ('requested', 'processing', 'ambiguous') and requested_at < clock_timestamp() - interval '1 hour'),
     'needs_attention', exists (select 1 from public.mobbex_jobs where status = 'dead_letter')
         or exists (select 1 from public.mobbex_payment_intents where internal_status = 'security_review_required' or attention_reason is not null)
-        or exists (select 1 from public.mobbex_payment_intents where internal_status = 'approved_order_pending' and updated_at < clock_timestamp() - interval '10 minutes'));
+        or exists (select 1 from public.mobbex_payment_intents where internal_status = 'approved_order_pending' and updated_at < clock_timestamp() - interval '10 minutes')
+        or exists (select 1 from public.mobbex_refunds where status in ('requested', 'processing', 'ambiguous') and requested_at < clock_timestamp() - interval '1 hour'));
 $$;
 
 -- ───────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -252,7 +252,7 @@ test('worker: sweeps, claims, reconciles and finishes each job with the right ou
   let calls = 0;
   const finished = [];
   ledger.finishJob = async (id, owner, outcome, delay, error) => { finished.push({ id, outcome, delay, error }); return outcome === 'done' ? 'completed' : 'retry_wait'; };
-  const result = await runMobbexWorker({ ledger, operations: fakeOperations(), now: Date.now }, { owner: 'w1', budgetMs: 5000 });
+  const result = await runMobbexWorker({ ledger, operations: fakeOperations(), now: Date.now, environment: 'test' }, { owner: 'w1', budgetMs: 5000 });
   assert.equal(result.claimed, 3);
   assert.deepEqual(finished.map((f) => f.outcome), ['done', 'failed', 'done']);
   assert.equal(finished[1].error, 'ledger_error', 'a database error becomes a retry with backoff, not a crashed worker');
@@ -265,13 +265,13 @@ test('worker: stops at its time budget and reports lost leases and dead letters'
     finishJob: async () => 'dead_letter',
   });
   const operations = fakeOperations({ getOperationByReference: async () => { clock += 3000; throw new MobbexApiError('server', 500, 'x'); } });
-  const result = await runMobbexWorker({ ledger, operations, now: () => clock }, { owner: 'w', budgetMs: 5000 });
+  const result = await runMobbexWorker({ ledger, operations, now: () => clock, environment: 'test' }, { owner: 'w', budgetMs: 5000 });
   assert.equal(result.dead_letter >= 1, true);
   assert.ok(result.claimed <= 3, 'bounded by the time budget');
   const lost = fakeLedger({ claimJobs: async () => [{ job_id: 'j', payment_intent_id: INTENT, reference: REFERENCE, environment: 'test', reason: 'sweep', failures: 0 }], finishJob: async () => 'lost_lease' });
   let once = 0;
   lost.claimJobs = async () => (once++ ? [] : [{ job_id: 'j', payment_intent_id: INTENT, reference: REFERENCE, environment: 'test', reason: 'sweep', failures: 0 }]);
-  assert.equal((await runMobbexWorker({ ledger: lost, operations: fakeOperations(), now: Date.now }, { owner: 'w', budgetMs: 5000 })).lost_lease, 1);
+  assert.equal((await runMobbexWorker({ ledger: lost, operations: fakeOperations(), now: Date.now, environment: 'test' }, { owner: 'w', budgetMs: 5000 })).lost_lease, 1);
 });
 
 // ── return page, availability, refund ───────────────────────────────────────────────────────────────────────
@@ -280,7 +280,7 @@ test('return page: it requests a confirmation and READS; a disabled provider or 
   const ledger = fakeLedger();
   const statusDeps = (overrides = {}) => ({
     ledger, operations: fakeOperations(), resolveConfig: config, inlineBudgetMs: 200,
-    requestReconcile: async () => ({ queued: true, intent_id: INTENT, reference: REFERENCE }),
+    requestReconcile: async () => ({ queued: true, intent_id: INTENT, reference: REFERENCE, environment: 'test' }),
     readStatus: async () => ({ status: 'completed', order_id: 'o1' }), ...overrides,
   });
   const ok = await mobbexCheckoutStatus(statusDeps(), SESSION);
@@ -352,4 +352,50 @@ test('PaymentProvider: Mobbex is native, Mercado Pago stays delegated to its own
   assert.equal(registry.get('mobbex').describe().split, false, 'no split, no OAuth: single merchant');
   const provider = new MobbexCheckoutProvider(config(), fakeOperations({ getOperationByReference: async () => ({ found: false, code: 'X', responseHash: 'a'.repeat(64) }) }));
   assert.deepEqual(await provider.fetchPaymentState(REFERENCE), { confirmed: false, snapshot: null, statusClass: null, reason: 'X' }, '"no confirmation" is not "unpaid"');
+});
+
+// ── sandbox / production never cross (auditoría 2026-11-04) ─────────────────────────────────────────────────
+
+test('environment: a session prepared in test never gets a checkout from the production configuration (resume path too)', async () => {
+  const prodValues = { ...envValues, MOBBEX_ENVIRONMENT: 'production', MOBBEX_PRODUCTION_REVIEW_STATUS: 'approved', MOBBEX_REAL_PAYMENT_CONFIRMATION: 'I_AUTHORIZE_REAL_MOBBEX_PAYMENT' };
+  const prodConfig = () => resolveMobbexConfig((name) => prodValues[name]);
+  const ledger = fakeLedger(); // prepareCheckout answers environment: 'test'
+  const operations = fakeOperations();
+  const result = await createMobbexCheckout(createDeps(ledger, operations, prodConfig),
+    { userId: USER, userEmail: 'a@b.c', payload: { checkout_session_id: SESSION } });
+  assert.equal(result.body.code, 'PAYMENTS_NOT_ENABLED');
+  assert.equal(operations.calls.filter((c) => c.name === 'createCheckout').length, 0, 'antes: se creaba un checkout real (test:false) sin pasar por el gate de producción');
+  assert.ok(ledger.calls.some((c) => c.name === 'recordCheckoutFailed' && c.args[1] === 'env_mismatch'));
+});
+
+test('environment: the worker and the return page never read a payment of another environment (no order from a sandbox payment)', async () => {
+  const finished = [];
+  let once = 0;
+  const ledger = fakeLedger({
+    claimJobs: async () => (once++ ? [] : [{ job_id: 'j', payment_intent_id: INTENT, reference: REFERENCE, environment: 'test', reason: 'sweep', failures: 0 }]),
+    finishJob: async (id, owner, outcome, delay, error) => { finished.push({ outcome, error }); return 'retry_wait'; },
+  });
+  const operations = fakeOperations();
+  await runMobbexWorker({ ledger, operations, now: Date.now, environment: 'production' }, { owner: 'w', budgetMs: 5000 });
+  assert.deepEqual(finished, [{ outcome: 'failed', error: 'environment_mismatch' }]);
+  assert.equal(operations.calls.length, 0, 'ni siquiera se consulta a Mobbex con las credenciales del otro entorno');
+  assert.ok(!ledger.calls.some((c) => c.name === 'recordSnapshot' || c.name === 'recordNoOperation'), 'no aprueba ni vence nada');
+  // Si sólo un lado declara su entorno, también es discrepancia (falla cerrado).
+  assert.deepEqual(await reconcileMobbexPayment({ ledger, operations }, { intentId: INTENT, reference: REFERENCE, environment: 'test' }, 'reconciliation'), { outcome: 'failed', error: 'environment_mismatch' });
+  const statusLedger = fakeLedger();
+  const back = await mobbexCheckoutStatus({ ledger: statusLedger, operations, resolveConfig: config, inlineBudgetMs: 200,
+    requestReconcile: async () => ({ queued: true, intent_id: INTENT, reference: REFERENCE, environment: 'production' }),
+    readStatus: async () => ({ status: 'pending' }) }, SESSION);
+  assert.equal(back.status, 200);
+  assert.ok(!statusLedger.calls.some((c) => c.name === 'recordSnapshot'));
+});
+
+test('refund: a ledger failure never sends blind and never answers 500 after Mobbex already refunded', async () => {
+  const unmarked = refundDeps({ markRefundSent: async () => { throw new Error('db down'); } });
+  const r1 = await refundMobbexPayment(unmarked, refundBody());
+  assert.equal(r1.body.code, 'REFUND_NOT_SENT');
+  assert.equal(unmarked.events.includes('provider'), false, 'antes: el error de la base se ignoraba y el reembolso salía igual');
+  const unrecorded = refundDeps({ recordRefundResult: async () => { throw new Error('db down'); } });
+  const r2 = await refundMobbexPayment(unrecorded, refundBody());
+  assert.deepEqual([r2.status, r2.body.code], [202, 'REFUND_RECONCILING'], 'Mobbex devolvió: se concilia (relectura encolada al marcar), no se repite');
 });

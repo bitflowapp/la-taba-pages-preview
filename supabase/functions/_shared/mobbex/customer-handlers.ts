@@ -46,7 +46,7 @@ export interface StatusDeps {
   operations: MobbexOperationsPort;
   resolveConfig: () => MobbexConfig;
   /** User-scoped: only the owner of the checkout gets a row. */
-  requestReconcile: (sessionId: string) => Promise<{ queued?: boolean; intent_id?: string; reference?: string }>;
+  requestReconcile: (sessionId: string) => Promise<{ queued?: boolean; intent_id?: string; reference?: string; environment?: string }>;
   readStatus: (sessionId: string) => Promise<Record<string, unknown> | null>;
   inlineBudgetMs?: number;
 }
@@ -57,9 +57,10 @@ export async function mobbexCheckoutStatus(deps: StatusDeps, sessionId: string):
     const queued = await deps.requestReconcile(sessionId);
     if (queued.queued && queued.intent_id && queued.reference) {
       try {
-        deps.resolveConfig();
+        const config = deps.resolveConfig();
         await Promise.race([
-          reconcileMobbexPayment({ ledger: deps.ledger, operations: deps.operations }, { intentId: queued.intent_id, reference: queued.reference }, 'browser_return'),
+          reconcileMobbexPayment({ ledger: deps.ledger, operations: deps.operations, environment: config.environment },
+            { intentId: queued.intent_id, reference: queued.reference, environment: queued.environment }, 'browser_return'),
           new Promise((resolve) => setTimeout(resolve, deps.inlineBudgetMs ?? 6000)),
         ]);
       } catch (error) {
@@ -119,20 +120,23 @@ export async function refundMobbexPayment(
   const cents = prepared.full === true || prepared.amount === null || prepared.amount === undefined
     ? null
     : Math.round(Number(prepared.amount) * 100);
-  // Marked as sent BEFORE the request: a crash after sending leaves `processing`, which is reconciled and never resent.
-  await deps.markRefundSent(refundId);
-  try {
-    const result = await deps.refundOperation(operationId, cents);
-    await deps.recordRefundResult(refundId, result.approved ? 'approved' : 'rejected', result.responseHash);
-    return result.approved
-      ? { status: 200, body: { ok: true, status: 'approved' } }
-      : { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso (por ejemplo, un parcial el mismo día del pago).' } };
-  } catch (error) {
-    if (error instanceof MobbexApiError && error.kind === 'rejected') {
-      await deps.recordRefundResult(refundId, 'rejected', '0'.repeat(64));
-      return { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso.' } };
-    }
-    await deps.recordRefundResult(refundId, 'ambiguous', '0'.repeat(64));
-    return { status: 202, body: { ok: false, code: 'REFUND_RECONCILING', status: 'reconciling', message: 'Estamos verificando el reembolso con Mobbex. No lo repitas.' } };
+  const reconciling: HttpResult = { status: 202, body: { ok: false, code: 'REFUND_RECONCILING', status: 'reconciling', message: 'Estamos verificando el reembolso con Mobbex. No lo repitas.' } };
+  // Marked as sent BEFORE the request (and a provider re-read is queued): a crash after sending leaves `processing`, which is
+  // reconciled and never resent. If it cannot be marked, nothing is sent.
+  try { await deps.markRefundSent(refundId); } catch (_) {
+    return { status: 503, body: { ok: false, code: 'REFUND_NOT_SENT', message: 'No pudimos registrar el reembolso; no se envió nada a Mobbex. Probá de nuevo en unos minutos.' } };
   }
+  let result: { approved: boolean; responseHash: string };
+  try {
+    result = await deps.refundOperation(operationId, cents);
+  } catch (error) {
+    const outcome = error instanceof MobbexApiError && error.kind === 'rejected' ? 'rejected' : 'ambiguous';
+    try { await deps.recordRefundResult(refundId, outcome, '0'.repeat(64)); } catch (_) { return reconciling; }
+    return outcome === 'rejected' ? { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso.' } } : reconciling;
+  }
+  // Mobbex answered but the answer could not be stored: the queued re-read of the operation (601/602/605) settles it.
+  try { await deps.recordRefundResult(refundId, result.approved ? 'approved' : 'rejected', result.responseHash); } catch (_) { return reconciling; }
+  return result.approved
+    ? { status: 200, body: { ok: true, status: 'approved' } }
+    : { status: 409, body: { ok: false, code: 'REFUND_REJECTED', message: 'Mobbex rechazó el reembolso (por ejemplo, un parcial el mismo día del pago).' } };
 }

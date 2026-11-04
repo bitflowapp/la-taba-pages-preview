@@ -21,6 +21,7 @@ Deno.serve(async (request) => {
       ledger: mobbexLedger(),
       operations: mobbexOperations(config),
       now: Date.now,
+      environment: config.environment,
     }, { owner: `mobbex-worker:${crypto.randomUUID()}`, budgetMs: 40_000 });
     return jsonResponse(request, result);
   } catch (error) {

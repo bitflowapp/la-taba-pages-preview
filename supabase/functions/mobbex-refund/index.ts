@@ -32,9 +32,14 @@ Deno.serve(async (request) => {
         if (error || !data) throw new Error('refund not available');
         return data as Record<string, unknown>;
       },
-      markRefundSent: async (refundId) => { await service.rpc('mobbex_mark_refund_sent', { p_refund_id: refundId }); },
+      // supabase-js does not throw: an unchecked `{ error }` would send the refund without marking it, or lose Mobbex's answer.
+      markRefundSent: async (refundId) => {
+        const { error } = await service.rpc('mobbex_mark_refund_sent', { p_refund_id: refundId });
+        if (error) throw new Error('refund could not be marked as sent');
+      },
       recordRefundResult: async (refundId, outcome, hash) => {
-        await service.rpc('mobbex_record_refund_result', { p_refund_id: refundId, p_outcome: outcome, p_response_hash: hash });
+        const { error } = await service.rpc('mobbex_record_refund_result', { p_refund_id: refundId, p_outcome: outcome, p_response_hash: hash });
+        if (error) throw new Error('refund result could not be recorded');
       },
       refundOperation: (operationId, cents) => mobbexOperations(mobbexConfigFromEnv()).refundOperation(operationId, cents),
     }, body);

@@ -150,6 +150,12 @@ export async function createMobbexCheckout(
   if (!prepared.claimed || !prepared.intent_id || !prepared.reference) {
     return { status: 202, body: { ok: false, code: 'CHECKOUT_RECONCILING', status: 'reconciling', message: 'Estamos preparando tu pago. No vuelvas a pagar todavía.' } };
   }
+  // A session prepared under another environment (e.g. a test session resumed after switching to production) must never get a
+  // checkout from this configuration: it would be a real charge outside the live gate, or a test charge treated as real.
+  if (prepared.environment !== config.environment) {
+    await deps.ledger.recordCheckoutFailed(prepared.intent_id, 'env_mismatch', '0'.repeat(64)).catch(() => undefined);
+    return notEnabled;
+  }
 
   // The amount is the one the database stored for this session. Nothing in `payload` can reach it.
   const totalCents = decimalToCents(String(prepared.expected_amount));
@@ -200,10 +206,16 @@ export type ReconcileOutcome =
 const TERMINAL = new Set(['completed', 'refunded', 'expired', 'cancelled', 'failed', 'security_review_required']);
 
 export async function reconcileMobbexPayment(
-  deps: { ledger: LedgerPort; operations: MobbexOperationsPort },
-  target: { intentId: string; reference: string },
+  deps: { ledger: LedgerPort; operations: MobbexOperationsPort; environment?: string },
+  target: { intentId: string; reference: string; environment?: string },
   source: string,
 ): Promise<ReconcileOutcome> {
+  // A payment from another environment is never read with this configuration's credentials: a sandbox operation read after
+  // switching to production would look like a real approval (and the reverse would expire a live payment). If only one side
+  // says which environment it is, that also counts as a mismatch. It stays queued until it dead-letters: a person decides.
+  if ((deps.environment !== undefined || target.environment !== undefined) && deps.environment !== target.environment) {
+    return { outcome: 'failed', error: 'environment_mismatch' };
+  }
   let lookup: OperationLookup;
   try {
     lookup = await deps.operations.getOperationByReference(target.reference);
@@ -270,7 +282,8 @@ export async function handleMobbexWebhook(
   let budgetTimer: ReturnType<typeof setTimeout> | undefined;
   try {
     confirmed = await Promise.race([
-      reconcileMobbexPayment({ ledger: deps.ledger, operations: deps.operations }, { intentId: receipt.intent_id, reference: parsed.webhook.reference }, 'webhook'),
+      // The receipt was matched by (environment, reference), so this intent belongs to the configured environment.
+      reconcileMobbexPayment({ ledger: deps.ledger, operations: deps.operations, environment: config.environment }, { intentId: receipt.intent_id, reference: parsed.webhook.reference, environment: config.environment }, 'webhook'),
       new Promise<null>((resolve) => { budgetTimer = setTimeout(() => resolve(null), deps.inlineBudgetMs ?? 8000); }),
     ]);
   } catch (_) { confirmed = null; } finally { clearTimeout(budgetTimer); }
@@ -282,7 +295,7 @@ export async function handleMobbexWebhook(
 // ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export async function runMobbexWorker(
-  deps: { ledger: LedgerPort; operations: MobbexOperationsPort; now: () => number },
+  deps: { ledger: LedgerPort; operations: MobbexOperationsPort; now: () => number; environment: string },
   options: { owner: string; budgetMs: number; batch?: number },
 ): Promise<Record<string, unknown>> {
   const started = deps.now();
@@ -295,7 +308,7 @@ export async function runMobbexWorker(
       stats.claimed += 1;
       let outcome: ReconcileOutcome;
       try {
-        outcome = await reconcileMobbexPayment(deps, { intentId: job.payment_intent_id, reference: job.reference }, 'reconciliation');
+        outcome = await reconcileMobbexPayment(deps, { intentId: job.payment_intent_id, reference: job.reference, environment: job.environment }, 'reconciliation');
       } catch (error) {
         outcome = { outcome: 'failed', error: error instanceof LedgerError ? 'ledger_error' : 'unexpected' };
       }

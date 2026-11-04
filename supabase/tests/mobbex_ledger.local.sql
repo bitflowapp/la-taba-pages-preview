@@ -281,8 +281,20 @@ begin
   perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 500 and (select internal_status from public.mobbex_payment_intents where id = i) = 'partially_refunded', 'partial refund tracked');
   r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'partially_refunded', '605', 'OP-REF-1', '2500.00', 5, '2'), 'reconciliation');
   perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 500 and (select internal_status from public.mobbex_payment_intents where id = i) = 'partially_refunded', 'the provider''s partial-refund status does not double count');
+  -- Auditoría 2026-11-04: tras un parcial, el saldo se pide con importe explícito; marcarlo enviado encola una relectura; si la
+  -- respuesta de Mobbex se pierde, la operación devuelta entera (602) resuelve la fila (antes quedaba 'processing' para siempre).
+  r := public.mobbex_prepare_refund(i, null, '00000000-0000-4000-8000-0000000000cc', 'saldo');
+  perform pg_temp.check((r ->> 'amount')::numeric = 2000 and not (r ->> 'full')::boolean, 'after a partial refund the remainder is requested with its explicit amount, never a blind total');
+  update public.mobbex_jobs set status = 'completed' where payment_intent_id = i and status in ('pending', 'retry_wait');
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform pg_temp.check(exists (select 1 from public.mobbex_jobs where payment_intent_id = i and status in ('pending', 'retry_wait')), 'marking a refund as sent queues a provider re-read');
+  perform pg_temp.raises(format($q$select public.mobbex_mark_refund_sent(%L)$q$, r ->> 'refund_id'), 'no enviable', 'a refund cannot be marked as sent twice');
+  update public.mobbex_refunds set requested_at = clock_timestamp() - interval '2 hours' where id = (r ->> 'refund_id')::uuid;
+  perform pg_temp.check((public.mobbex_pipeline_health() ->> 'refunds_unresolved')::int >= 1 and (public.mobbex_pipeline_health() ->> 'needs_attention')::boolean, 'a refund stuck for an hour asks for a person');
   r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'refunded', '602', 'OP-REF-1', '2500.00', 10, '3'), 'reconciliation');
   perform pg_temp.check((select internal_status from public.mobbex_payment_intents where id = i) = 'refunded' and (select refunded_amount from public.mobbex_payment_intents where id = i) = 2500, 'a full refund observed at the provider closes the payment');
+  perform pg_temp.check((select status from public.mobbex_refunds where idempotency_key = '00000000-0000-4000-8000-0000000000cc') = 'approved'
+    and (public.mobbex_pipeline_health() ->> 'refunds_unresolved')::int = 0, 'a sent refund whose answer was lost is settled by the provider read (602)');
   update public.orders set status = 'cancelled' where id = (select order_id from public.mobbex_payment_intents where id = i);
   perform pg_temp.check((select status from public.orders where id = (select order_id from public.mobbex_payment_intents where id = i)) = 'cancelled', 'once the money is back the order can be cancelled');
   c := pg_temp.new_checkout(t, 1, 'mbxcheckout00012');

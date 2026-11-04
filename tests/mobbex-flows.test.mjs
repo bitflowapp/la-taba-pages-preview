@@ -203,7 +203,7 @@ test('webhook: unknown reference and duplicate are acknowledged without work; pr
 
 test('reconcile: "no operation" asks to look again; a closed intent is done; a bad shape or provider error is a failure to retry', async () => {
   const ledger = fakeLedger();
-  const none = fakeOperations({ getOperationByReference: async () => ({ found: false, code: 'GENERIC:EFCS', responseHash: 'd'.repeat(64) }) });
+  const none = fakeOperations({ getOperationByReference: async () => ({ found: false, code: 'NDFE', responseHash: 'd'.repeat(64) }) });
   assert.deepEqual(await reconcileMobbexPayment({ ledger, operations: none }, { intentId: INTENT, reference: REFERENCE }, 'reconciliation'), { outcome: 'again', delaySeconds: 30 });
   const closed = fakeLedger({ recordNoOperation: async () => ({ closed: true, retry_after_seconds: 0 }) });
   assert.equal((await reconcileMobbexPayment({ ledger: closed, operations: none }, { intentId: INTENT, reference: REFERENCE }, 'reconciliation')).outcome, 'done');

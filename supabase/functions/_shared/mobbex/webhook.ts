@@ -17,7 +17,7 @@
  *      unsolicited traffic away from the database; anyone who learns a URL can
  *      replay it, which is harmless because of (3).
  *   3. The ledger always confirms with an authenticated server-to-server read
- *      (`GET /p/operations/{reference}`, merchant credentials) before changing
+ *      (`GET /p/operations/REF:{reference}`, merchant credentials) before changing
  *      any financial state. The browser return never marks anything paid either.
  *   4. A scheduled reconciliation reads the same endpoint, so a lost, delayed or
  *      forged webhook cannot change the outcome.

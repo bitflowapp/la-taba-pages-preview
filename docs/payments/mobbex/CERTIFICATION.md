@@ -82,3 +82,44 @@ Re-lectura de mobbex.dev (`/webhooks`, `/suscriptores`, `/codigos-de-estado`, `/
   600-610, 800). Sin cambios.
 - **Credenciales DEMO públicas** (`/primeros-pasos`): existen y sirven para el contrato de API sin cuenta propia; el pago
   aprobado/rechazado/pendiente sigue necesitando a una persona en el checkout alojado (Turnstile). **No se evade.**
+
+## 6. Contrato REAL de la consulta de operaciones (2026-11-04, sesión 6)
+
+Medido con las credenciales DEMO públicas, **sólo lectura**, sobre operaciones de prueba que ya existían en la cuenta DEMO
+compartida (no se creó ningún checkout ni se movió dinero; se imprimieron sólo formas, códigos y booleanos, nunca datos de
+personas). Documentación: `/consulta-de-operaciones-y-childs` (el segmento es el UID; una referencia va con prefijo `REF:`).
+
+| Consulta | Operación aprobada existente | Referencia creada y no pagada | Referencia nunca usada |
+|---|---|---|---|
+| `GET /p/operations/{referencia}` (lo que usaba el adaptador) | `result:false`, `GENERIC:EFCS` | `GENERIC:EFCS` | `GENERIC:EFCS` |
+| `GET /p/operations/REF:{referencia}` | **encontrada** (`data.transaction.payment`) | `result:false`, `NDFE` | `NDFE` |
+| `GET /p/operations/{uid}` | encontrada | — | — |
+| `GET /p/entity/operations?reference=…` | 0 resultados **sin** `test=true`; 1 con `test=true` | 0 | 0 |
+
+Otros hechos medidos:
+
+- **DEFECTO CRÍTICO corregido:** con la ruta vieja ningún pago se habría confirmado nunca. El cliente habría pagado, el
+  libro habría contado "sin operación" y, tras vencer la sesión + 3 h + 5 lecturas, habría cerrado el intent y liberado
+  el stock (`reconcile.closed_without_payment`). La sesión 2 interpretó `GENERIC:EFCS` como "no hay operación": era la ruta
+  equivocada. Ahora: `REF:` y **sólo `NDFE`** cuenta como ausencia; `EFCS`, otro `result:false` o un 404 son fallas
+  reintentables (nunca alimentan el cierre).
+- Una operación de prueba trae `payment.currency.code = "TEST"` ("Test Money") y **ningún booleano `test`**. El snapshot
+  la marca `test:true` y la lee como ARS: el sandbox la puede confirmar y producción la rechaza (`test_operation_in_production`).
+- `REF:` devuelve sólo el **intento más reciente** (medido en 3 referencias con 2-6 intentos) y `data.transactions` vino
+  **vacío** en todas las respuestas reales: la defensa "intento aprobado anterior + titular rechazado" no tenía datos. Ahora
+  el cliente lee los intentos con `/p/entity/operations` (`test=true` en sandbox); si esa lista falla decide el titular,
+  como antes.
+- Estado `501` (no documentado) con texto real "Error, Entidad Inválida / Pago declinado. Comercio inválido": todos los
+  checkouts web recientes de la cuenta DEMO terminan así. Queda `unknown` (revisión). **Para el pago con persona usar las
+  credenciales sandbox propias del comercio**: con las DEMO el pago probablemente se rechace con 501.
+- En la respuesta real `payment.total` puede superar `requestedTotal` (recargo de financiación: visto 972615 vs 926300 en
+  un 501). El libro compara contra `total` → un pago en cuotas con recargo iría a `amount_mismatch` (revisión, falla
+  cerrado). **A confirmar con Mobbex** qué importe acredita el comercio antes de habilitar cuotas con interés.
+- Adaptador real (`client.ts` + `snapshot.ts`) ejecutado contra la API DEMO: operación aprobada existente → `approved`,
+  ARS, `test:true`, importe e id coinciden, 1 intento listado; referencia no pagada → `found:false`, `NDFE`.
+- El checkout `CHK:SJ6VC9OUJ6B13C5LU4` (referencia `taba2-mbx-de30fefb-…`): **ninguna operación** (`NDFE`, 0 en la lista con
+  `test=true`). Nadie lo pagó; la sonda vieja tampoco lo habría detectado si alguien pagaba.
+- No hay mecanismo oficial para aprobar un pago sin checkout alojado salvo la **integración transparente**
+  (`POST /p/operations/{intent_token}` con datos de tarjeta), que según `/integracion-transparente` "no podrá utilizarse si no
+  se contacta previamente" a Mobbex y exige PCI DSS. **No se usó.** Tampoco hay simulador de webhooks documentado.
+- Sondas: `scripts/mobbex/sandbox-pay-probe.mjs --reference taba2-mbx-<uuid>` relee un checkout existente sin crear otro.

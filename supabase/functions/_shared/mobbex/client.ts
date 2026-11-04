@@ -6,15 +6,18 @@
  * sandbox with scripts/mobbex/sandbox-contract-probe.mjs on 2026-11-03):
  *
  *   POST https://api.mobbex.com/p/checkout                 create a hosted checkout
- *   GET  https://api.mobbex.com/p/operations/{reference}   read operation(s) by OUR reference
+ *   GET  https://api.mobbex.com/p/operations/REF:{reference}   read the operation by OUR reference
  *   GET  https://api.mobbex.com/p/operations/{id}/refund   full refund / same-day cancellation
  *   POST https://api.mobbex.com/p/operations/{id}/refund   partial refund `{ total }`
  *
  * Facts measured on the real sandbox that shaped this file:
- *   - Looking up a reference with no operation answers HTTP 200 with
- *     `{ result: false, code: "GENERIC:EFCS", error: "Execution failed..." }`,
- *     NOT a 404. "No operation" and "Mobbex failed" are indistinguishable, so
- *     `found: false` here means only "no confirmation available": callers must
+ *   - The path segment is the operation UID; a reference needs the `REF:` prefix
+ *     (doc /consulta-de-operaciones-y-childs). Measured 2026-11-04 on existing
+ *     DEMO operations: `/p/operations/{plain reference}` answers
+ *     `{ result: false, code: "GENERIC:EFCS" }` EVEN FOR AN APPROVED payment
+ *     (an earlier probe mistook that for "no operation"); `REF:{reference}`
+ *     finds it, and a reference nobody paid answers `{ result: false, code: "NDFE" }`.
+ *     `found: false` still means only "no confirmation available": callers must
  *     never read it as paid and never as a final rejection.
  *   - A reference containing characters outside [A-Za-z0-9-] reaches a WAF and
  *     answers 403, hence the strict reference pattern below.
@@ -47,7 +50,15 @@ export interface MobbexClientOptions {
   timeoutMs?: number;
   /** Tests only. Production code never overrides it; non-https bases are refused outside loopback. */
   baseUrl?: string;
+  /**
+   * Which operation list holds this environment's attempts: Mobbex lists test operations ONLY with `test=true`
+   * (measured 2026-11-04: without it a test operation is not listed). True for the sandbox.
+   */
+  testOperations?: boolean;
 }
+
+/** One attempt (operation) listed under a reference. */
+export interface OperationAttempt { uid: string; status: string }
 
 export interface CreateCheckoutInput {
   /** Final amount decided by the server, in cents. The client sends it formatted as XXX.xx. */
@@ -72,7 +83,14 @@ export interface CreatedCheckout {
 
 export type OperationLookup =
   | { found: false; code: string; responseHash: string }
-  | { found: true; body: Record<string, unknown>; responseHash: string };
+  | {
+    found: true; body: Record<string, unknown>; responseHash: string;
+    /**
+     * Every attempt Mobbex lists under the reference, or null when the list could not be read. Needed because the
+     * lookup answers only the NEWEST attempt and its `data.transactions` came back empty in every real answer.
+     */
+    attempts?: OperationAttempt[] | null;
+  };
 
 export function centsToDecimalString(cents: number): string {
   if (!Number.isSafeInteger(cents) || cents < 0) throw new RangeError('amount must be a non-negative integer number of cents');
@@ -100,6 +118,7 @@ export class MobbexClient {
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly baseUrl: string;
+  private readonly testOperations: boolean;
 
   constructor(options: MobbexClientOptions) {
     if (!options.apiKey || !options.accessToken) throw new Error('Mobbex credentials are required');
@@ -114,6 +133,7 @@ export class MobbexClient {
       throw new Error('Mobbex base URL may only be overridden with a loopback address (tests)');
     }
     this.baseUrl = base;
+    this.testOperations = options.testOperations === true;
   }
 
   private async request(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ status: number; json: Record<string, unknown> | null; hash: string }> {
@@ -184,16 +204,45 @@ export class MobbexClient {
 
   async getOperationByReference(reference: string): Promise<OperationLookup> {
     if (!MOBBEX_REFERENCE_PATTERN.test(reference)) throw new RangeError('invalid Mobbex reference');
-    const { status, json, hash } = await this.request('GET', `/p/operations/${encodeURIComponent(reference)}`);
+    const { status, json, hash } = await this.request('GET', `/p/operations/REF:${encodeURIComponent(reference)}`);
     if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
     if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
-    if (status === 404) return { found: false, code: 'HTTP_404', responseHash: hash };
+    // A bare 404 is a routing answer, not Mobbex's documented "not found" (NDFE): it falls into the retryable branch below.
     if (status >= 400) throw new MobbexApiError('malformed', status, 'Unexpected Mobbex response');
     if (!json) throw new MobbexApiError('malformed', status, 'Mobbex operation response is not JSON');
     if (json.result !== true) {
-      return { found: false, code: typeof json.code === 'string' ? json.code.slice(0, 64) : 'RESULT_FALSE', responseHash: hash };
+      const code = typeof json.code === 'string' ? json.code.slice(0, 64) : 'RESULT_FALSE';
+      // Only Mobbex's explicit "not found" counts as "no operation" (it feeds the miss counter that eventually closes the
+      // checkout and releases its stock). Anything else (GENERIC:EFCS "Execution failed", unknown codes) taught nothing:
+      // retry with backoff and, if it persists, dead-letter to a person. Never close a possibly paid purchase on an error.
+      if (code !== 'NDFE') throw new MobbexApiError('server', status, 'Mobbex could not answer the operation lookup');
+      return { found: false, code, responseHash: hash };
     }
-    return { found: true, body: json, responseHash: hash };
+    return { found: true, body: json, responseHash: hash, attempts: await this.listAttempts(reference) };
+  }
+
+  /**
+   * GET /p/entity/operations?reference=... (doc /consulta-de-operaciones-y-childs). Best effort: any failure is null and
+   * the caller falls back to the headline operation, exactly as before this list existed.
+   */
+  private async listAttempts(reference: string): Promise<OperationAttempt[] | null> {
+    try {
+      const query = `page=0&limit=50&reference=${encodeURIComponent(reference)}${this.testOperations ? '&test=true' : ''}`;
+      const { status, json } = await this.request('GET', `/p/entity/operations?${query}`);
+      const docs = (json?.data as Record<string, unknown> | undefined)?.docs;
+      if (status !== 200 || json?.result !== true || !Array.isArray(docs)) return null;
+      const attempts: OperationAttempt[] = [];
+      for (const doc of docs) {
+        const entry = doc && typeof doc === 'object' ? doc as Record<string, unknown> : {};
+        // The list also filters by text: only an exact reference match is one of OUR attempts.
+        if (entry.reference !== reference) continue;
+        const code = typeof entry.status === 'string' || typeof entry.status === 'number' ? String(entry.status) : '';
+        attempts.push({ uid: typeof entry.uid === 'string' ? entry.uid : '', status: code });
+      }
+      return attempts;
+    } catch (_) {
+      return null;
+    }
   }
 
   /**

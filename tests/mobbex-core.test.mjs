@@ -198,16 +198,21 @@ test('createCheckout errors: only a provable refusal is final; everything else i
   await assert.rejects(() => incomplete.createCheckout(checkoutInput()), (error) => error.kind === 'malformed');
 });
 
-test('operation lookup: "no operation" (HTTP 200 + result:false, as measured on the real sandbox) is NOT an error and NOT a payment', async () => {
+test('operation lookup: only NDFE is "no operation"; GENERIC:EFCS or any other result:false is a retryable failure', async () => {
   const generic = { result: false, code: 'GENERIC:EFCS', error: 'Execution failed. Please contact support with the case ID.  ID: 7ea3b770' };
-  const { client: c, calls } = client(() => json(200, generic));
+  const { client: failing } = client(() => json(200, generic));
+  await assert.rejects(() => failing.getOperationByReference(REFERENCE), (error) => error.kind === 'server' && error.retryable === true,
+    'an execution failure must never feed the miss counter that closes the checkout and releases the stock');
+  const { client: noCode } = client(() => json(200, { result: false }));
+  await assert.rejects(() => noCode.getOperationByReference(REFERENCE), (error) => error.retryable === true);
+  const { client: c, calls } = client(() => json(200, { result: false, code: 'NDFE', error: 'No se encontraron los datos solicitados' }));
   const lookup = await c.getOperationByReference(REFERENCE);
   assert.equal(lookup.found, false);
-  assert.equal(lookup.code, 'GENERIC:EFCS');
+  assert.equal(lookup.code, 'NDFE');
   assert.equal(calls[0].init.method, 'GET');
-  assert.equal(calls[0].url, `https://api.mobbex.com/p/operations/${encodeURIComponent(REFERENCE)}`);
+  assert.equal(calls[0].url, `https://api.mobbex.com/p/operations/REF:${encodeURIComponent(REFERENCE)}`);
   const { client: c404 } = client(() => json(404, { result: false }));
-  assert.equal((await c404.getOperationByReference(REFERENCE)).found, false);
+  await assert.rejects(() => c404.getOperationByReference(REFERENCE), (error) => error.retryable === true, 'a bare 404 is not NDFE');
   const { client: found } = client(() => json(200, { result: true, data: { transaction: { payment: { id: 'OP' } } } }));
   assert.equal((await found.getOperationByReference(REFERENCE)).found, true);
 });
@@ -311,4 +316,102 @@ test('snapshot counts approved operations of the reference (double payment signa
   assert.equal(buildMobbexSnapshot(REFERENCE, body, HASH).snapshot.approved_operation_count, 2);
   const rejected = operation({ id: 'OP-2', reference: REFERENCE, total: 10, status: { code: '400' } });
   assert.equal(buildMobbexSnapshot(REFERENCE, rejected, HASH).snapshot.approved_operation_count, 0);
+});
+
+// ── real sandbox contract (session 6, 2026-11-04) ─────────────────────────────────────────────────────────────
+// Measured with the public DEMO credentials against operations that already exist in the shared DEMO account
+// (read-only; logs/diag-pathform-s6.txt, logs/diag-detail-s6.txt in the campaign folder):
+//   GET /p/operations/{plain reference}  -> 200 {result:false, code:'GENERIC:EFCS'} EVEN FOR AN APPROVED OPERATION
+//   GET /p/operations/REF:{reference}    -> 200 {result:true, data.transaction.payment...}  (found)
+//   GET /p/operations/REF:{never used}   -> 200 {result:false, code:'NDFE'}                  (clean "not found")
+//   test operations: payment.currency.code === 'TEST' ("Test Money"), NO boolean `test` anywhere, data.transactions = [].
+
+/** Shape copied from a real approved TEST operation (values anonymized, keys and types as Mobbex sent them). */
+const realApprovedTestOperation = () => ({
+  result: true,
+  data: {
+    transactions: [],
+    transaction: {
+      result: true,
+      view: { type: 'card' },
+      payment: {
+        id: 'aBcDeFgHiJkLmNoPqRsTuV', reference: REFERENCE, description: 'Item', operation: { type: 'payment.split' },
+        status: { code: '200', text: 'Aprobado', message: 'Transacción Aprobada', data: {}, view: '', resultCode: '00' },
+        total: 2500, requestedTotal: 2500,
+        currency: { code: 'TEST', text: 'Test Money', symbol: 'T$', locale: 'es', exponent: 2 },
+        requestedCurrency: { code: 'TEST', text: 'Test Money', symbol: 'T$', locale: 'es', exponent: 2 },
+        riskAnalysis: {}, created: '2026-11-04T12:00:00.000Z', updated: '2026-11-04T12:00:01.000Z',
+        source: { name: 'Mastercard', type: 'card', reference: 'mastercard', installment: { count: 1 } },
+      },
+      source: { name: 'Mastercard', type: 'card', reference: 'mastercard' },
+      split: [],
+    },
+    transaction_details: [{ key: 'authorizationCode', label: 'Código de Autorización', value: '000000' }],
+  },
+});
+
+test('operation lookup uses the REF: form (the plain reference answers GENERIC:EFCS even for a paid operation)', async () => {
+  const { client: c, calls } = client(() => json(200, realApprovedTestOperation()));
+  const lookup = await c.getOperationByReference(REFERENCE);
+  assert.equal(calls[0].url, `https://api.mobbex.com/p/operations/REF:${encodeURIComponent(REFERENCE)}`);
+  assert.equal(lookup.found, true);
+  const { client: none } = client(() => json(200, { result: false, code: 'NDFE', error: 'No se encontraron los datos solicitados' }));
+  const missing = await none.getOperationByReference(REFERENCE);
+  assert.deepEqual([missing.found, missing.code], [false, 'NDFE']);
+});
+
+test('snapshot of a REAL approved test operation: currency TEST is the test marker, amount ARS', () => {
+  const built = buildMobbexSnapshot(REFERENCE, realApprovedTestOperation(), HASH);
+  assert.equal(built.ok, true);
+  assert.equal(built.snapshot.status_class, 'approved');
+  assert.equal(built.snapshot.amount, '2500.00');
+  assert.equal(built.snapshot.provider_payment_id, 'aBcDeFgHiJkLmNoPqRsTuV');
+  assert.equal(built.snapshot.test, true, 'Test Money is never money in production (ledger: test_operation_in_production)');
+  assert.equal(built.snapshot.currency, 'ARS', 'Test Money denominates the ARS total that TABA requested; otherwise sandbox never confirms');
+  assert.equal(built.snapshot.approved_operation_count, 1);
+  // Any OTHER foreign currency still reaches the ledger as-is and is refused there.
+  const usd = realApprovedTestOperation(); usd.data.transaction.payment.currency = { code: 'USD' };
+  assert.deepEqual([buildMobbexSnapshot(REFERENCE, usd, HASH).snapshot.currency, buildMobbexSnapshot(REFERENCE, usd, HASH).snapshot.test], ['USD', false]);
+  // A plain string currency 'TEST' is treated the same.
+  const str = realApprovedTestOperation(); str.data.transaction.payment.currency = 'test';
+  assert.deepEqual([buildMobbexSnapshot(REFERENCE, str, HASH).snapshot.currency, buildMobbexSnapshot(REFERENCE, str, HASH).snapshot.test], ['ARS', true]);
+});
+
+test('status 501 (real DEMO answer "Pago declinado. Comercio inválido", undocumented) never approves and never auto-rejects', () => {
+  assert.equal(classifyMobbexStatus('501').statusClass, 'unknown');
+  assert.equal(classifyMobbexStatus('501').moneyMoved, false);
+});
+
+test('operation lookup also lists every attempt of the reference (REF: answers only the newest; transactions came empty)', async () => {
+  const listBody = { result: true, data: { docs: [
+    { uid: 'OLD-APPROVED', status: '200', reference: REFERENCE },
+    { uid: 'NEW-DECLINED', status: '400', reference: REFERENCE },
+    { uid: 'OTHER', status: '200', reference: `${REFERENCE}-not-ours` },
+  ] } };
+  const recorded = [];
+  const fetchImpl = async (url) => { recorded.push(String(url)); return String(url).includes('/p/entity/operations') ? json(200, listBody) : json(200, realApprovedTestOperation()); };
+  const sandbox = new MobbexClient({ apiKey: 'K', accessToken: 'T', fetchImpl, testOperations: true });
+  const lookup = await sandbox.getOperationByReference(REFERENCE);
+  assert.equal(recorded[1], `https://api.mobbex.com/p/entity/operations?page=0&limit=50&reference=${encodeURIComponent(REFERENCE)}&test=true`);
+  assert.deepEqual(lookup.attempts, [{ uid: 'OLD-APPROVED', status: '200' }, { uid: 'NEW-DECLINED', status: '400' }], 'only exact reference matches');
+  recorded.length = 0;
+  await new MobbexClient({ apiKey: 'K', accessToken: 'T', fetchImpl }).getOperationByReference(REFERENCE);
+  assert.equal(recorded[1].includes('test=true'), false, 'production lists production operations');
+  // The list failing never fails the lookup: attempts null, the headline decides as before.
+  let n = 0;
+  const flaky = new MobbexClient({ apiKey: 'K', accessToken: 'T', testOperations: true, fetchImpl: async () => { n += 1; if (n === 1) return json(200, realApprovedTestOperation()); throw new Error('reset'); } });
+  const fallback = await flaky.getOperationByReference(REFERENCE);
+  assert.deepEqual([fallback.found, fallback.attempts], [true, null]);
+  const { client: odd } = client((url) => String(url).includes('/p/entity/') ? json(500, 'down') : json(200, realApprovedTestOperation()));
+  assert.equal((await odd.getOperationByReference(REFERENCE)).attempts, null);
+});
+
+test('snapshot uses the listed attempts: newest declined over an older approved never releases the stock; two paid = double payment', () => {
+  const declinedNewest = realApprovedTestOperation(); declinedNewest.data.transaction.payment.status = { code: '400', text: 'Rechazado' };
+  assert.deepEqual(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, [{ uid: 'A', status: '200' }, { uid: 'B', status: '400' }]), { ok: false, reason: 'conflicting_operations' });
+  assert.equal(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, null).snapshot.status_class, 'rejected', 'no list: headline, as before');
+  assert.equal(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, [{ uid: 'B', status: '400' }]).snapshot.status_class, 'rejected');
+  const twice = buildMobbexSnapshot(REFERENCE, realApprovedTestOperation(), HASH, [{ uid: 'A', status: '200' }, { uid: 'B', status: '200' }]);
+  assert.equal(twice.snapshot.approved_operation_count, 2);
+  assert.equal(buildMobbexSnapshot(REFERENCE, realApprovedTestOperation(), HASH, []).snapshot.approved_operation_count, 1, 'an empty list cannot un-pay the headline');
 });

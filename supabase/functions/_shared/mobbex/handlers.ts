@@ -227,7 +227,7 @@ export async function reconcileMobbexPayment(
     const miss = await deps.ledger.recordNoOperation(target.intentId, lookup.code);
     return miss.closed ? { outcome: 'done', internalStatus: 'expired' } : { outcome: 'again', delaySeconds: miss.retry_after_seconds };
   }
-  const built = buildMobbexSnapshot(target.reference, lookup.body, lookup.responseHash);
+  const built = buildMobbexSnapshot(target.reference, lookup.body, lookup.responseHash, lookup.attempts);
   if (!built.ok) return { outcome: 'failed', error: built.reason };
   const result = await deps.ledger.recordSnapshot(target.intentId, built.snapshot as unknown as Record<string, unknown>, source);
   const status = typeof result.internal_status === 'string' ? result.internal_status : undefined;

@@ -10,7 +10,7 @@ export function mobbexConfigFromEnv(): MobbexConfig {
 
 /** The concrete client: it satisfies `MobbexOperationsPort` and also exposes `refundOperation`, which only the refund function needs. */
 export function mobbexOperations(config: MobbexConfig): MobbexClient {
-  return new MobbexClient({ apiKey: config.apiKey, accessToken: config.accessToken });
+  return new MobbexClient({ apiKey: config.apiKey, accessToken: config.accessToken, testOperations: config.environment === 'test' });
 }
 
 export function mobbexLedger() {

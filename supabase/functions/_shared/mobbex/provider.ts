@@ -20,7 +20,7 @@ export class MobbexCheckoutProvider implements PaymentProvider {
 
   constructor(config: MobbexConfig, client?: MobbexClient) {
     this.config = config;
-    this.client = client ?? new MobbexClient({ apiKey: config.apiKey, accessToken: config.accessToken });
+    this.client = client ?? new MobbexClient({ apiKey: config.apiKey, accessToken: config.accessToken, testOperations: config.environment === 'test' });
   }
 
   describe(): Record<string, unknown> {
@@ -46,7 +46,7 @@ export class MobbexCheckoutProvider implements PaymentProvider {
   async fetchPaymentState(reference: string): Promise<ProviderPaymentState> {
     const lookup = await this.client.getOperationByReference(reference);
     if (!lookup.found) return { confirmed: false, snapshot: null, statusClass: null, reason: lookup.code };
-    const built = buildMobbexSnapshot(reference, lookup.body, lookup.responseHash);
+    const built = buildMobbexSnapshot(reference, lookup.body, lookup.responseHash, lookup.attempts);
     if (!built.ok) return { confirmed: false, snapshot: null, statusClass: null, reason: built.reason };
     return { confirmed: true, snapshot: built.snapshot as unknown as Record<string, unknown>, statusClass: built.snapshot.status_class };
   }

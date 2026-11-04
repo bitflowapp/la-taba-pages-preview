@@ -1,5 +1,5 @@
 /**
- * Turns Mobbex's operation lookup (`GET /p/operations/{reference}`) into the provider-neutral snapshot that the
+ * Turns Mobbex's operation lookup (`GET /p/operations/REF:{reference}`) into the provider-neutral snapshot that the
  * ledger (`mobbex_record_provider_snapshot`) validates and applies.
  *
  * The documentation of the lookup contradicts itself (it shows `data.transaction.payment` but its code examples call
@@ -10,7 +10,7 @@
  * tests/mobbex-core.test.mjs; until then the shape of an APPROVED answer is documented-only evidence.
  */
 
-import { centsToDecimalString, decimalToCents } from './client.ts';
+import { centsToDecimalString, decimalToCents, type OperationAttempt } from './client.ts';
 import { classifyMobbexStatus, type MobbexStatusClass } from './status.ts';
 
 export interface MobbexSnapshot {
@@ -52,7 +52,12 @@ function isoOrNull(value: unknown): string | null {
   return null;
 }
 
-export function buildMobbexSnapshot(reference: string, body: Record<string, unknown>, responseHash: string): SnapshotResult {
+export function buildMobbexSnapshot(
+  reference: string,
+  body: Record<string, unknown>,
+  responseHash: string,
+  attempts?: OperationAttempt[] | null,
+): SnapshotResult {
   const data = obj(body.data);
   const transaction = obj(data.transaction);
   const payment = Object.keys(obj(transaction.payment)).length ? obj(transaction.payment) : obj(data.payment);
@@ -68,10 +73,17 @@ export function buildMobbexSnapshot(reference: string, body: Record<string, unkn
   const status = classifyMobbexStatus(code);
   const cents = decimalToCents(payment.total);
   const currencyNode = payment.currency;
-  const currency = (typeof currencyNode === 'object' ? text(obj(currencyNode).code, 8) : text(currencyNode, 8)).toUpperCase()
-    // Mobbex only accepts ARS (documentation, field `currency`); an answer that omits it is an ARS answer.
-    || 'ARS';
-  const transactions = Array.isArray(data.transactions) ? data.transactions : [];
+  const reportedCurrency = (typeof currencyNode === 'object' ? text(obj(currencyNode).code, 8) : text(currencyNode, 8)).toUpperCase();
+  // Measured on the real sandbox (2026-11-04): a test-mode operation reports `currency.code: "TEST"` ("Test Money") and
+  // carries NO boolean `test`. It denominates the ARS total TABA requested, so it is read as ARS AND marked as a test
+  // operation: the sandbox can confirm it, production refuses it (test_operation_in_production).
+  const testMoney = reportedCurrency === 'TEST';
+  // Mobbex only accepts ARS (documentation, field `currency`); an answer that omits it is an ARS answer.
+  const currency = testMoney ? 'ARS' : reportedCurrency || 'ARS';
+  // The lookup answers only the NEWEST attempt and, in every real answer, an empty `data.transactions`; the listed attempts
+  // (client `listAttempts`) are the evidence of earlier ones. Neither available -> headline only, as before.
+  const embedded = Array.isArray(data.transactions) ? data.transactions : [];
+  const transactions: unknown[] = embedded.length ? embedded : Array.isArray(attempts) ? attempts : [];
   const approvedFromList = transactions.filter((entry) => classifyMobbexStatus(obj(entry).status).statusClass === 'approved').length;
   const entity = obj(data.entity).uid ?? obj(transaction.entity).uid ?? obj(payment.entity).uid;
 
@@ -96,7 +108,7 @@ export function buildMobbexSnapshot(reference: string, body: Record<string, unkn
       approved_operation_count: Math.max(approvedFromList, status.statusClass === 'approved' ? 1 : 0),
       // Fail closed: any test marker other than absent / false / "false" / 0 counts as a test operation; the ledger refuses
       // it as money in production (test_operation_in_production).
-      test: [payment.test, transaction.test, data.test].some((flag) => flag !== undefined && flag !== null && flag !== false && flag !== 'false' && flag !== 0 && flag !== '0'),
+      test: testMoney || [payment.test, transaction.test, data.test].some((flag) => flag !== undefined && flag !== null && flag !== false && flag !== 'false' && flag !== 0 && flag !== '0'),
       raw_response_hash: responseHash,
     },
   };

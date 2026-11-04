@@ -52,9 +52,14 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 | Trabajos en `dead_letter` | `needs_attention = true` | Revisar `mobbex_jobs.last_error`; corregir causa (credenciales, caída del proveedor); `select public.mobbex_requeue_dead_letter()`. |
 | Caída de Mobbex | `oldest_open_job_seconds` crece | Nada que hacer: backoff con reintentos; el checkout vencido libera el stock. Si dura, apagar con el flag. |
 | Webhooks falsos o repetidos | 401 `INVALID_WEBHOOK` / `duplicate: true` | Esperado; no escriben nada ni duplican pedidos. |
+| Job en `dead_letter` con `last_error = environment_mismatch` | El intent es de otro entorno (p. ej. checkout de prueba abierto al pasar a producción) | Nunca se lee con las credenciales del entorno actual ni crea pedido. Verificar en el panel de Mobbex del entorno del intent; si hubo cobro de prueba, no es dinero; si fue real, reembolsar desde ese entorno. |
+| `refunds_unresolved` > 0 | Reembolso enviado sin respuesta guardada (> 1 h) | Al marcarlo enviado se encola una relectura; un 602/605 lo cierra solo. Si persiste: revisar el panel de Mobbex y `mobbex_refunds`. |
+| Cliente reintenta tras perder la vuelta | — | El navegador retoma el mismo checkout (misma referencia) o frena con aviso; no abre una segunda sesión mientras la anterior pueda cobrar. |
 | Cambiar de proveedor | — | Apagar `MOBBEX_ENABLED`; los pedidos y cobros abiertos se siguen conciliando mientras el flag lo permita; efectivo/MP no se tocan. |
 
 `mobbex_pipeline_health()` es la señal de alerta: sólo marca `needs_attention` cuando una persona debe intervenir. Está **integrada al panel de alertas operativas existente y APAGADA**: la migración aditiva `20261103020000_mobbex_operational_alert.sql` agrega tres alertas por comercio (`MOBBEX_PAID_WITHOUT_ORDER`, `MOBBEX_PAYMENT_NEEDS_REVIEW`, `MOBBEX_RECONCILIATION_STUCK`) que sólo aparecen cuando alguien habilita `select public.set_mobbex_health_alert('<comercio>', true)` (rol de servicio). Con el flag en `false` —el default— la reconciliación de alertas se comporta igual que antes. Rollback: `docs/migrations/rollback/20261103020000_mobbex_operational_alert.rollback.sql`. Límite: `attention_reason` sólo se limpia con un reembolso completo (igual que en `mobbex_pipeline_health()`), así que una alerta por «atención» persiste hasta que la persona la resuelva en el panel o se reembolse.
+
+Checklist de producción verificable: [PRODUCTION-CHECKLIST.md](PRODUCTION-CHECKLIST.md).
 
 ## 6. Rollback
 

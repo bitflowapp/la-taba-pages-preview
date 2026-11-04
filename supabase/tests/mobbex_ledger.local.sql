@@ -385,6 +385,51 @@ begin
     and exists (select 1 from public.mobbex_payment_events where payment_intent_id = i and event_type = 'refund.expired_unsent'),
     'the sweep closes a stale never-sent refund and audits it');
   perform pg_temp.raises(format($q$select public.mobbex_mark_refund_sent(%L)$q$, r ->> 'refund_id'), 'no enviable', 'an expired never-sent refund can never be sent afterwards');
+  -- 600 (cancelación en proceso) y 601 (cancelada) sobre un cobro con devolución total ambigua.
+  update public.products set stock = 20, available = true where id = (t ->> 'product')::uuid;
+  c := pg_temp.new_checkout(t, 2, 'mbxcheckout00032');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s); ref := c ->> 'reference';
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-AUD-3', '2500.00', 0, '1'), 'webhook');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, null, '00000000-0000-4000-8000-0000000000d7', 'total');
+  perform pg_temp.as_admin();
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'ambiguous', repeat('0', 64));
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'cancelled', '601', 'OP-OTRA', '2500.00', 3, '5'), 'reconciliation');
+  perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 0
+    and (select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'ambiguous', 'a cancellation of ANOTHER operation never counts as this payment''s refund');
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'cancelled', '601', 'OP-AUD-3', '2500.00', -60, '6'), 'reconciliation');
+  perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 0, 'a cancellation older than the payment is stale');
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'reversing', '600', 'OP-AUD-3', '2500.00', 5, '2'), 'reconciliation');
+  perform pg_temp.check((select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'ambiguous'
+    and (select refunded_amount from public.mobbex_payment_intents where id = i) = 0
+    and (select attention_reason from public.mobbex_payment_intents where id = i) = 'refund_in_progress', '600 (in progress) counts no money, keeps the refund open and is visible');
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'cancelled', '601', 'OP-AUD-3', '2500.00', 10, '3'), 'reconciliation');
+  perform pg_temp.check((select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'approved'
+    and (select refunded_amount from public.mobbex_payment_intents where id = i) = 2500
+    and (select attention_reason from public.mobbex_payment_intents where id = i) is null, '601 on a paid operation settles the ambiguous total refund');
+  -- Parcial con respuesta perdida y Mobbex en 605 sin importe: NO se adivina; queda abierto y avisa; una persona registra el resultado.
+  c := pg_temp.new_checkout(t, 2, 'mbxcheckout00033');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s); ref := c ->> 'reference';
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-AUD-4', '2500.00', 0, '1'), 'webhook');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  r := public.mobbex_prepare_refund(i, 500, '00000000-0000-4000-8000-0000000000d8', 'parcial perdido');
+  perform pg_temp.as_admin();
+  perform public.mobbex_mark_refund_sent((r ->> 'refund_id')::uuid);
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'partially_refunded', '605', 'OP-AUD-4', '2500.00', 5, '2'), 'reconciliation');
+  perform pg_temp.check((select status from public.mobbex_refunds where id = (r ->> 'refund_id')::uuid) = 'processing'
+    and (select refunded_amount from public.mobbex_payment_intents where id = i) = 0
+    and (select attention_reason from public.mobbex_payment_intents where id = i) = 'partial_refund_amount_unknown',
+    '605 without an amount does not guess which refund it was: the row stays open and asks for a person');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  perform pg_temp.raises(format($q$select public.mobbex_prepare_refund(%L, 100, gen_random_uuid(), 'x')$q$, i), 'ya hay un reembolso en curso', 'no new refund while one is unconfirmed');
+  perform pg_temp.as_admin();
+  perform public.mobbex_record_refund_result((r ->> 'refund_id')::uuid, 'approved', repeat('4', 64));
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'partially_refunded', '605', 'OP-AUD-4', '2500.00', 10, '3'), 'reconciliation');
+  perform pg_temp.check((select refunded_amount from public.mobbex_payment_intents where id = i) = 500
+    and (select internal_status from public.mobbex_payment_intents where id = i) = 'partially_refunded'
+    and (select attention_reason from public.mobbex_payment_intents where id = i) is null,
+    'after the operator records the result, the next 605 read clears the attention without double counting');
 
   -- ═══ 9. Webhook receipts and the job queue ═════════════════════════════════════════════════════════════
   c := pg_temp.new_checkout(t, 1, 'mbxcheckout00013');

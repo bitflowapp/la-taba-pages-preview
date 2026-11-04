@@ -1011,7 +1011,11 @@ begin
   update public.mobbex_payment_intents set last_reconciled_at = clock_timestamp(), reconcile_misses = 0 where id = v_intent.id;
 
   -- 10.2 Out of order. What moved money decides; for everything else the provider's own clock does.
-  if not v_money and (v_paid or (v_intent.provider_event_at is not null and v_time < v_intent.provider_event_at)) then
+  -- Excepción: la cancelación (601/610) o su proceso (600) de la MISMA operación cobrada, no anterior al cobro, es la devolución
+  -- del mismo día; antes se descartaba aquí como «vieja» y la rama 'cancelled' de abajo nunca se alcanzaba.
+  if not v_money and (v_paid or (v_intent.provider_event_at is not null and v_time < v_intent.provider_event_at))
+     and not (v_paid and v_class in ('cancelled', 'reversing') and v_pid = v_intent.provider_payment_id
+              and (v_intent.provider_event_at is null or v_time >= v_intent.provider_event_at)) then
     perform private.mobbex_event(v_intent.id, 'payment.stale_snapshot_ignored', v_code, v_pid, v_time, v_hash,
       jsonb_build_object('stored_status', v_intent.provider_status, 'source', p_source));
     if v_paid and v_class in ('rejected', 'expired', 'unknown') then

@@ -72,7 +72,15 @@ jobs:
         env:
           TABA_LOCAL_PAYMENT_DB: '1'
           MOBBEX_NATIVE_PG_DIR: ${{ runner.temp }}/mobbex-native-pg
-        run: PATH="$TABA_PG_BIN:$PATH" node scripts/mobbex/run-mobbex-db-tests.mjs --native
+        run: PATH="$TABA_PG_BIN:$PATH" node scripts/mobbex/run-mobbex-db-tests.mjs --native --keep
+      - name: Mobbex real concurrency (independent PostgreSQL sessions released together; own throwaway cluster, no money)
+        env:
+          TABA_LOCAL_PAYMENT_DB: '1'
+          MOBBEX_NATIVE_PG_DIR: ${{ runner.temp }}/mobbex-native-pg
+        run: PATH="$TABA_PG_BIN:$PATH" node scripts/mobbex/run-mobbex-concurrency.mjs --native --rounds=8 --workers=6
+      - name: Stop the Mobbex throwaway cluster
+        if: always()
+        run: 'test ! -f "$RUNNER_TEMP/mobbex-native-pg/postmaster.pid" || "$TABA_PG_BIN/pg_ctl" -D "$RUNNER_TEMP/mobbex-native-pg" -m immediate -w stop'
       - name: Stop own PostgreSQL
         if: always()
         run: 'test ! -f "$RUNNER_TEMP/taba-payment-pg/postmaster.pid" || "$TABA_PG_BIN/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -m immediate -w stop'

@@ -10,7 +10,7 @@ Ver [GO / NO-GO](#go--no-go) al final: faltan pasos que sólo puede hacer el tit
 | Capa | Archivos |
 |---|---|
 | Migración aditiva + rollback | `supabase/migrations/20261103010000_mobbex_checkout_foundation.sql`, `docs/migrations/rollback/20261103010000_mobbex_checkout_foundation.rollback.sql` |
-| Consola del comercio (lista, devoluciones, relectura) | `supabase/migrations/20261105010000_mobbex_merchant_console.sql` (+ rollback), `js/business/business-mobbex-payments.js`, vista `payments-mobbex` del Panel, `supabase/tests/mobbex_merchant_console.local.sql`, `tests/mobbex-panel.test.mjs` |
+| Consola del comercio (lista, devoluciones, relectura, reconocimiento de incidencias) | `supabase/migrations/20261105010000_mobbex_merchant_console.sql` y `20261105020000_mobbex_attention_readers.sql` (+ rollbacks), `js/business/business-mobbex-payments.js`, vista `payments-mobbex` del Panel, `supabase/tests/mobbex_merchant_console.local.sql`, `tests/mobbex-panel.test.mjs` |
 | Funciones Edge | `supabase/functions/mobbex-{availability,create-checkout,checkout-status,webhook,worker,refund}` |
 | Lógica pura (inyectable, sin red) | `supabase/functions/_shared/mobbex/` (`handlers`, `customer-handlers`, `client`, `config`, `status`, `snapshot`, `webhook`) |
 | Adaptador | `supabase/functions/_shared/payment-provider.ts` (`PaymentProvider`; Mercado Pago no se modifica) |

@@ -26,8 +26,8 @@ Titular: el titular de La Taba (Walter), distinto del de MiFav. Mobbex (Integrac
 - [ ] Fijar la forma real de la operación en `tests/mobbex-core.test.mjs`.
 
 ## E. Migraciones
-- [ ] `20261103010000_mobbex_checkout_foundation.sql`, `20261103020000_mobbex_operational_alert.sql` y `20261105010000_mobbex_merchant_console.sql` (en ese orden) primero en **staging**.
-- [ ] Verificación local ya disponible: `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (128 + 25 + 37 aserciones, rollback drills de las 3 migraciones, huella de Mercado Pago idéntica) y `node scripts/mobbex/run-mobbex-concurrency.mjs --native` (8 escenarios con sesiones simultáneas reales). El banco canónico es el de Docker en CI (`payment-certification.yml`).
+- [ ] `20261103010000_mobbex_checkout_foundation.sql`, `20261103020000_mobbex_operational_alert.sql`, `20261105010000_mobbex_merchant_console.sql` y `20261105020000_mobbex_attention_readers.sql` (en ese orden) primero en **staging**. Rollback en orden inverso (los lectores antes que la consola, que borra la tabla de reconocimientos).
+- [ ] Verificación local ya disponible: `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (136 + 25 + 48 + 29 aserciones, rollback drills de las 4 migraciones, huella de Mercado Pago idéntica) y `node scripts/mobbex/run-mobbex-concurrency.mjs --native` (8 escenarios con sesiones simultáneas reales). El banco canónico es el de Docker en CI (`payment-certification.yml`).
 - [ ] Rollback de esquema probado: `docs/migrations/rollback/…foundation.rollback.sql` (se niega si ya hay dinero).
 
 ## F. Activación por capas

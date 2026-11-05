@@ -107,8 +107,8 @@ Otros hechos medidos:
   la marca `test:true` y la lee como ARS: el sandbox la puede confirmar y producción la rechaza (`test_operation_in_production`).
 - `REF:` devuelve sólo el **intento más reciente** (medido en 3 referencias con 2-6 intentos) y `data.transactions` vino
   **vacío** en todas las respuestas reales: la defensa "intento aprobado anterior + titular rechazado" no tenía datos. Ahora
-  el cliente lee los intentos con `/p/entity/operations` (`test=true` en sandbox); si esa lista falla decide el titular,
-  como antes.
+  el cliente lee los intentos con `/p/entity/operations` (`test=true` en sandbox); si esa lista falla sólo decide un titular
+  que no libera stock (ver sección 7).
 - Estado `501` (no documentado) con texto real "Error, Entidad Inválida / Pago declinado. Comercio inválido": todos los
   checkouts web recientes de la cuenta DEMO terminan así. Queda `unknown` (revisión). **Para el pago con persona usar las
   credenciales sandbox propias del comercio**: con las DEMO el pago probablemente se rechace con 501.
@@ -123,3 +123,30 @@ Otros hechos medidos:
   (`POST /p/operations/{intent_token}` con datos de tarjeta), que según `/integracion-transparente` "no podrá utilizarse si no
   se contacta previamente" a Mobbex y exige PCI DSS. **No se usó.** Tampoco hay simulador de webhooks documentado.
 - Sondas: `scripts/mobbex/sandbox-pay-probe.mjs --reference taba2-mbx-<uuid>` relee un checkout existente sin crear otro.
+
+## 7. Sesión 7 (2026-11-04): lista de intentos ilegible + titular que libera stock
+
+Sin consumo de API (cero llamadas a Mobbex, cero checkouts, cero dinero): análisis estático y pruebas locales sintéticas.
+
+**Verificado sin cambios:** `getOperationByReference` usa `REF:`; sólo `NDFE` es «sin operación»; `EFCS`, otro `result:false`, 404, 5xx, 429,
+401/403, timeout y respuesta no JSON son fallas reintentables que nunca llegan a `recordNoOperation` (`handlers.ts:222-229`).
+
+**Defecto (demostrado con prueba que falló antes del arreglo):** `REF:` devuelve sólo el intento más reciente. Si la lista
+`/p/entity/operations` fallaba (`attempts === null`), `buildMobbexSnapshot` aceptaba el titular solo. El libro libera el stock con un
+titular `rejected` con la sesión vencida (`foundation.sql:1093`) y con `expired`/`cancelled` de un pago no cobrado (`:1105`). Un intento
+anterior pagado quedaba invisible: stock liberado de una compra cobrada, con un fallo transitorio de la lista como único disparador.
+
+**Cambio mínimo:** `snapshot.ts`: con `attempts === null`, sin `transactions` embebidas y titular `rejected|expired|cancelled`, devuelve
+`conflicting_operations` (el job falla, reintenta con backoff y termina en dead-letter/alerta; nunca en una conjetura). `undefined`
+(el llamador nunca tuvo lista), `pending`, `authorized`, `unknown` y `approved` no cambian. **Costo:** si la lista falla de forma persistente,
+un rechazo/expiración real se registra más tarde (el stock se retiene más tiempo): se prefiere eso a liberar dinero cobrado.
+Prueba: `snapshot uses the listed attempts…` en `tests/mobbex-core.test.mjs` (ahora con lista ilegible y los códigos 300/401/402/403/600/601/610).
+
+**No verificado (necesita sandbox propio o persona):** forma real del titular cuando hay un intento aprobado y otro rechazado en la misma
+referencia; si `status` de la lista llega como objeto (`listAttempts` sólo acepta texto/número: un objeto se lee `''`/unknown y no cuenta como pago);
+`payment.total` con cuotas; orden real de los webhooks.
+
+**Cierre sesión 7 (2026-11-05):** el hueco del `status` como objeto se cerró sin medir la forma real: `listAttempts` lee `status.code`
+y, si algún intento de la referencia tiene un estado ilegible, toda la lista es `null` (nunca una lista parcial que omita el pago), con
+lo que rige la regla anterior. Verificado: `npm test` (3421+), `npm run check`, `npm run check:edge`, `npm run test:mobbex:deno` (46).
+El banco SQL local no se ejecutó (sin CLI de Supabase instalada; el cambio no toca SQL). Sigue sin medirse la forma real de la lista.

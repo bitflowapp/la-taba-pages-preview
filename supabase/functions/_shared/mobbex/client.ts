@@ -222,8 +222,9 @@ export class MobbexClient {
   }
 
   /**
-   * GET /p/entity/operations?reference=... (doc /consulta-de-operaciones-y-childs). Best effort: any failure is null and
-   * the caller falls back to the headline operation, exactly as before this list existed.
+   * GET /p/entity/operations?reference=... (doc /consulta-de-operaciones-y-childs). Any failure is null (never throws):
+   * the snapshot then trusts a pending/authorized/approved headline, but REFUSES a rejected/expired/cancelled one (those
+   * release stock and an older paid attempt would be invisible), so the job retries until the list can be read.
    */
   private async listAttempts(reference: string): Promise<OperationAttempt[] | null> {
     try {
@@ -236,7 +237,11 @@ export class MobbexClient {
         const entry = doc && typeof doc === 'object' ? doc as Record<string, unknown> : {};
         // The list also filters by text: only an exact reference match is one of OUR attempts.
         if (entry.reference !== reference) continue;
-        const code = typeof entry.status === 'string' || typeof entry.status === 'number' ? String(entry.status) : '';
+        // The headline reports `status: { code, text }`; the list's shape is not measured, so both forms are read. A status
+        // that cannot be read could be the paid attempt: the whole list is then unreadable (null), never a partial answer.
+        const node = entry.status && typeof entry.status === 'object' ? (entry.status as Record<string, unknown>).code : entry.status;
+        const code = typeof node === 'string' || typeof node === 'number' ? String(node).trim() : '';
+        if (!code) return null;
         attempts.push({ uid: typeof entry.uid === 'string' ? entry.uid : '', status: code });
       }
       return attempts;

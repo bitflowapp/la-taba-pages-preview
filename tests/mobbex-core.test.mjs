@@ -397,7 +397,16 @@ test('operation lookup also lists every attempt of the reference (REF: answers o
   recorded.length = 0;
   await new MobbexClient({ apiKey: 'K', accessToken: 'T', fetchImpl }).getOperationByReference(REFERENCE);
   assert.equal(recorded[1].includes('test=true'), false, 'production lists production operations');
-  // The list failing never fails the lookup: attempts null, the headline decides as before.
+  // A list status given as an object is read by its code; an unreadable status makes the whole list unreadable (null).
+  const objectList = { result: true, data: { docs: [{ uid: 'A', status: { code: 200, text: 'Paga' }, reference: REFERENCE }] } };
+  const { client: objClient } = client((url) => String(url).includes('/p/entity/') ? json(200, objectList) : json(200, realApprovedTestOperation()));
+  assert.deepEqual((await objClient.getOperationByReference(REFERENCE)).attempts, [{ uid: 'A', status: '200' }]);
+  for (const status of [undefined, null, '', {}, { text: 'Paga' }, true]) {
+    const unreadable = { result: true, data: { docs: [{ uid: 'B', status: '400', reference: REFERENCE }, { uid: 'A', status, reference: REFERENCE }] } };
+    const { client: c } = client((url) => String(url).includes('/p/entity/') ? json(200, unreadable) : json(200, realApprovedTestOperation()));
+    assert.equal((await c.getOperationByReference(REFERENCE)).attempts, null, `unreadable status ${JSON.stringify(status)} = unreadable list`);
+  }
+  // The list failing never fails the lookup: attempts null (the snapshot then refuses a stock-releasing headline).
   let n = 0;
   const flaky = new MobbexClient({ apiKey: 'K', accessToken: 'T', testOperations: true, fetchImpl: async () => { n += 1; if (n === 1) return json(200, realApprovedTestOperation()); throw new Error('reset'); } });
   const fallback = await flaky.getOperationByReference(REFERENCE);
@@ -409,7 +418,19 @@ test('operation lookup also lists every attempt of the reference (REF: answers o
 test('snapshot uses the listed attempts: newest declined over an older approved never releases the stock; two paid = double payment', () => {
   const declinedNewest = realApprovedTestOperation(); declinedNewest.data.transaction.payment.status = { code: '400', text: 'Rechazado' };
   assert.deepEqual(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, [{ uid: 'A', status: '200' }, { uid: 'B', status: '400' }]), { ok: false, reason: 'conflicting_operations' });
-  assert.equal(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, null).snapshot.status_class, 'rejected', 'no list: headline, as before');
+  // Session 7: the ledger RELEASES the stock on a rejected (session over), expired or cancelled headline. With the attempt
+  // list unreadable (null) an older paid attempt is invisible, so those headlines must not be decided: retry instead.
+  assert.deepEqual(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, null), { ok: false, reason: 'conflicting_operations' }, 'list unreadable + rejected headline: never decide');
+  for (const code of ['401', '402', '403', '600', '601', '610', '300']) { /* non-paying headlines that release stock or close the intent */
+    const headline = realApprovedTestOperation(); headline.data.transaction.payment.status = { code, text: 'x' };
+    const cls = classifyMobbexStatus(code).statusClass;
+    const result = buildMobbexSnapshot(REFERENCE, headline, HASH, null);
+    if (['rejected', 'expired', 'cancelled'].includes(cls)) assert.equal(result.ok, false, `${code}/${cls} with no list must not be decided`);
+  }
+  assert.equal(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, undefined).snapshot.status_class, 'rejected', 'caller without a list (never attempted): unchanged');
+  const pendingHeadline = realApprovedTestOperation(); pendingHeadline.data.transaction.payment.status = { code: '2', text: 'En proceso' };
+  assert.equal(buildMobbexSnapshot(REFERENCE, pendingHeadline, HASH, null).ok, true, 'pending never releases stock: still recorded without a list');
+  assert.equal(buildMobbexSnapshot(REFERENCE, realApprovedTestOperation(), HASH, null).snapshot.status_class, 'approved', 'an approved headline needs no list');
   assert.equal(buildMobbexSnapshot(REFERENCE, declinedNewest, HASH, [{ uid: 'B', status: '400' }]).snapshot.status_class, 'rejected');
   const twice = buildMobbexSnapshot(REFERENCE, realApprovedTestOperation(), HASH, [{ uid: 'A', status: '200' }, { uid: 'B', status: '200' }]);
   assert.equal(twice.snapshot.approved_operation_count, 2);

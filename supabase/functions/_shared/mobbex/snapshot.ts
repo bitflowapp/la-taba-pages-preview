@@ -94,6 +94,14 @@ export function buildMobbexSnapshot(
   const headlineIsNotPaid = ['pending', 'authorized', 'rejected', 'expired', 'unknown'].includes(status.statusClass);
   if (approvedFromList > 0 && headlineIsNotPaid) return { ok: false, reason: 'conflicting_operations' };
 
+  // The list was ATTEMPTED and failed (null; undefined = the caller never had one). The headline is only the newest attempt,
+  // so an older paid attempt is invisible. The ledger releases the stock on a rejected (session over), expired or cancelled
+  // headline: deciding it blind could release a paid purchase. Refuse and let the job retry until the list can be read.
+  // Pending/authorized/unknown release nothing, and an approved headline is itself the evidence of payment.
+  if (attempts === null && embedded.length === 0 && ['rejected', 'expired', 'cancelled'].includes(status.statusClass)) {
+    return { ok: false, reason: 'conflicting_operations' };
+  }
+
   return {
     ok: true,
     snapshot: {

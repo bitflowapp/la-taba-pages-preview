@@ -20,7 +20,7 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * dejaría dos artefactos bajo la misma identidad, y como `precargar()` borra primero la
  * caché de su propio nombre, reinstalar «v166» vaciaría la del worker activo.
  */
-const CACHE_NAME = 'la-taba-runtime-v172-mobbex-retry';
+const CACHE_NAME = 'la-taba-runtime-v173-mobbex-console';
 const ASSETS = [
   './',
   './index.html',
@@ -277,6 +277,7 @@ const ASSETS = [
   './js/business/business-day-control.js',
   './js/business/business-device-check.js',
   './js/business/business-fiscal-assistant.js',
+  './js/business/business-mobbex-payments.js',
   './js/business/business-operation-language.js',
   './js/business/business-operations-center.js',
   './js/business/business-operations-config.js',

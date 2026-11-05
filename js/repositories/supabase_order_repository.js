@@ -1564,6 +1564,63 @@ export function createSupabaseOrderRepository({
     });
   }
 
+  // ── Mobbex desde el mostrador: lista, devolución, relectura y rearmado. Aditivo; no toca Mercado Pago. ──────
+  // La lista y la relectura son RPC que revalidan rol y comercio en la base; la devolución pasa por la Edge `mobbex-refund`,
+  // que repite la confirmación explícita y revalida el entorno. Estas funciones sólo arman el pedido: no deciden nada.
+  async function listMobbexBusinessPayments() {
+    const teamAccess = await auth.getTeamAccess();
+    if (!teamAccess.ok || !['owner', 'admin', 'staff'].includes(teamAccess.membership?.role)) {
+      return repositoryResult(false, { message: 'Tu rol no puede consultar pagos.' });
+    }
+    const { data, error } = await client.rpc('mobbex_list_business_payments', { p_business_id: businessId, p_limit: 100 });
+    if (error) return repositoryResult(false, { message: 'No pudimos cargar los cobros de Mobbex.' });
+    return repositoryResult(true, { payments: Array.isArray(data) ? data : [] });
+  }
+
+  async function requestMobbexReconcile(paymentIntentId) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_request_business_reconcile', { p_payment_intent_id: paymentIntentId });
+    if (error) return repositoryResult(false, { message: 'No pudimos pedir la consulta a Mobbex.' });
+    if (data?.queued !== true) {
+      return repositoryResult(true, { ...data, message: 'Este cobro ya está cerrado: no hay nada que consultar.' });
+    }
+    return repositoryResult(true, { ...data, message: 'Consulta pedida. En unos minutos el estado se actualiza solo.' });
+  }
+
+  async function recoverMobbexPaidOrder(paymentIntentId) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_recover_paid_checkout', { p_payment_intent_id: paymentIntentId });
+    if (error) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });
+    if (data?.reason === 'stock_insuficiente') {
+      const faltantes = Array.isArray(data.missing) ? data.missing : [];
+      return repositoryResult(false, { ...data, message: `No hay stock para armarlo: ${describeMissingStock(faltantes)}. Devolvé el dinero desde el Panel.` });
+    }
+    if (data?.ok !== true) {
+      return repositoryResult(false, { ...data, message: 'No pudimos armar el pedido de este cobro.' });
+    }
+    return repositoryResult(true, { ...data, message: data.idempotent ? 'El pedido de este cobro ya estaba armado.' : 'Pedido armado.' });
+  }
+
+  // La clave de idempotencia la conserva quien llama mientras la devolución no tenga respuesta definitiva: reintentar tras una
+  // respuesta perdida reutiliza la misma fila y NUNCA crea una segunda devolución.
+  async function requestMobbexRefund({ paymentIntentId, amount = null, reason = '', confirmation = '', idempotencyKey: providedKey = '' } = {}) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    let idempotencyKey = isUuid(providedKey) ? providedKey : '';
+    try {
+      idempotencyKey ||= createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, { message: 'No pudimos generar una solicitud de devolución segura.' });
+    }
+    const result = await invokePaymentFunction('mobbex-refund', {
+      payment_intent_id: paymentIntentId, amount, reason, confirmation, idempotency_key: idempotencyKey,
+    });
+    return repositoryResult(result.ok, {
+      code: result.data?.code || '',
+      status: result.data?.status || '',
+      message: result.data?.message || (result.ok ? 'Devolución enviada a Mobbex.' : 'No se pudo pedir la devolución.'),
+    });
+  }
+
   async function invokePaymentFunction(name, body) {
     if (typeof client.functions?.invoke !== 'function') {
       return { ok: false, data: null };
@@ -1782,6 +1839,18 @@ export function createSupabaseOrderRepository({
     },
     async requestMercadoPagoCancellation(payload = {}) {
       return requestMercadoPagoCancellation(payload);
+    },
+    async listMobbexBusinessPayments() {
+      return listMobbexBusinessPayments();
+    },
+    async requestMobbexReconcile(paymentIntentId) {
+      return requestMobbexReconcile(paymentIntentId);
+    },
+    async recoverMobbexPaidOrder(paymentIntentId) {
+      return recoverMobbexPaidOrder(paymentIntentId);
+    },
+    async requestMobbexRefund(payload = {}) {
+      return requestMobbexRefund(payload);
     },
     async getActiveOrder() {
       const result = await fetchOrders();

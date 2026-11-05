@@ -42,9 +42,10 @@ import { activateTeam, handleTeamAction, renderTeamSurface, resetTeam } from './
 import { activatePrintAgent, handlePrintAgentAction, renderPrintAgentSurface, resetPrintAgent } from './business-print-agent.js';
 import { handlePhotoIntakeAction, photoIntakeState, renderPhotoIntake, resetPhotoIntake } from './business-photo-intake.js';
 import { activateTeamApps, handleTeamAppsAction, renderTeamAppBlock, resetTeamApps } from './business-team-apps.js';
+import { activateMobbexPayments, handleMobbexAction, renderMobbexSurface, resetMobbexPayments } from './business-mobbex-payments.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'store-opening', 'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'store-opening', 'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-mobbex', 'payments-setup', 'scanner', 'product-create',
   'catalog', 'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'print-agent', 'team', 'team-access', 'day-close',
 ]);
@@ -58,6 +59,8 @@ const VIEW_META = Object.freeze({
   orders: ['Pedidos', null],
   'operations-config': ['Horarios y cobertura', null],
   payments: ['Pagos', null],
+  // Mobbex es otro medio de pago, con su propia lista y sus propias devoluciones: no comparte pantalla con Mercado Pago.
+  'payments-mobbex': ['Cobros Mobbex', null],
   // Ahí se conecta, se ve el estado, se reconecta y se desvincula: no sólo «conectar».
   'payments-setup': ['Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
@@ -92,6 +95,7 @@ const VIEW_CAPABILITY = Object.freeze({
   // `can_manage_commercial_settings`, incluida la delegación explícita.
   'operations-config': 'orders.view',
   payments: 'payments.view',
+  'payments-mobbex': 'payments.view',
   'payments-setup': 'payments.reconcile',
   scanner: 'scanner.use',
   'product-create': 'products.draft',
@@ -284,6 +288,7 @@ export function configureBusinessOperations(next = {}) {
   resetPrintAgent();
   resetPhotoIntake();
   resetTeamApps();
+  resetMobbexPayments();
   return context;
 }
 
@@ -317,6 +322,7 @@ export function renderBusinessOperations(view) {
       role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget, cancelTarget,
       onlinePayments: onlinePaymentsEnabled(), connectionUi: mercadoPagoConnectionUi(),
     }),
+    'payments-mobbex': () => renderMobbexSurface({ role: context.role }),
     'payments-setup': () => renderPaymentsSetupSurface({
       activation: paymentsActivation, connection: sellerConnection, role: context.role, busy,
       onlinePayments: onlinePaymentsEnabled(), connectionUi: mercadoPagoConnectionUi(),
@@ -487,6 +493,7 @@ export function activateBusinessOperations(view = currentView) {
     }
     if (view === 'store-opening' || view === 'day-open') void activateStoreOpening(context);
     if (view === 'team') { void activateTeam(context); void activateTeamApps(context); }
+    if (view === 'payments-mobbex') void activateMobbexPayments(context);
     if (view === 'print-agent') { void activatePrintAgent(context); void activateTeamApps(context); }
     if (view === 'operations-config' && !operationsConfigLoadStarted) {
       operationsConfigLoadStarted = true;
@@ -791,6 +798,7 @@ export async function handleBusinessOperationsAction(target) {
     || await handleTeamAction(target, context)
     || await handlePrintAgentAction(target, context)
     || await handleTeamAppsAction(target, context)
+    || await handleMobbexAction(target, context)
     || await handlePhotoIntakeAction(target, {
       context,
       products: () => catalogProducts,
@@ -3597,6 +3605,10 @@ function defaultContext() {
     setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    listMobbexPayments: async () => ({ ok: false, message: 'Los cobros de Mobbex no están disponibles.' }),
+    requestMobbexReconcile: async () => ({ ok: false, message: 'La consulta a Mobbex no está disponible.' }),
+    recoverMobbexPaidOrder: async () => ({ ok: false, message: 'Armar el pedido no está disponible.' }),
+    requestMobbexRefund: async () => ({ ok: false, message: 'Las devoluciones de Mobbex no están disponibles.' }),
     listManualPayments: async () => ({ ok: false, message: 'Los cobros manuales no están disponibles.' }),
     confirmManualPayment: async () => ({ ok: false }),
     reverseManualPayment: async () => ({ ok: false }),

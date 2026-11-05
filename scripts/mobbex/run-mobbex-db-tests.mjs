@@ -40,6 +40,9 @@ const ROLLBACK = 'docs/migrations/rollback/20261103010000_mobbex_checkout_founda
 // Additive follow-up: needs the foundation, so it is applied INSIDE the test transactions, never into the base cluster.
 const ALERT_MIGRATION = '20261103020000_mobbex_operational_alert.sql';
 const ALERT_ROLLBACK = 'docs/migrations/rollback/20261103020000_mobbex_operational_alert.rollback.sql';
+// Merchant console (panel list + re-read request): additive too, needs the foundation, applied inside the test transactions.
+const CONSOLE_MIGRATION = '20261105010000_mobbex_merchant_console.sql';
+const CONSOLE_ROLLBACK = 'docs/migrations/rollback/20261105010000_mobbex_merchant_console.rollback.sql';
 const image = 'public.ecr.aws/supabase/postgres:17.6.1.166';
 const native = process.argv.includes('--native');
 const keep = process.argv.includes('--keep');
@@ -120,7 +123,7 @@ function applyAfterInterlock(migrations) {
   sql(migration(EXPAND[3]));
   sql(`insert into supabase_migrations.schema_migrations(version,name,statements) values('${EXPAND[3].slice(0, 14)}','${EXPAND[3].slice(15, -4)}',array['']) on conflict do nothing`);
   let count = 0;
-  for (const name of migrations.filter((v) => v.slice(0, 14) > '20260909050330' && v !== MIGRATION && v !== ALERT_MIGRATION)) { sql(migration(name)); count += 1; }
+  for (const name of migrations.filter((v) => v.slice(0, 14) > '20260909050330' && v !== MIGRATION && v !== ALERT_MIGRATION && v !== CONSOLE_MIGRATION)) { sql(migration(name)); count += 1; }
   return count;
 }
 
@@ -246,6 +249,27 @@ ${read('supabase/tests/mobbex_health_alert.local.sql')}`);
   assert.equal(md5Of('REWIRED_MD5'), md5Of('WIRED_MD5'), 're-applying after rollback differs from the first apply');
   assert.equal(/ALERT_LEFTOVERS=(\S+)/.exec(outputE)?.[1], '0/0', 'the alert rollback leaves objects behind');
   console.log('MOBBEX_HEALTH_ALERT_ROLLBACK_DRILL: reconciliation restored byte for byte, nothing left behind, re-apply identical PASS');
+
+  // Merchant console (20261105010000): isolation between businesses, role gating, honest flags, bounded list.
+  const outputF = runTransaction('merchant console', `${migration(MIGRATION)}
+${migration(CONSOLE_MIGRATION)}
+${helpers}
+${read('supabase/tests/mobbex_merchant_console.local.sql')}`);
+  assert.match(outputF, /MOBBEX_MERCHANT_CONSOLE_ALL_PASS/, 'the merchant console contract did not finish');
+  assert.doesNotMatch(outputF, /FAILED:/);
+  console.log(`MOBBEX_MERCHANT_CONSOLE_CONTRACT: ${[...outputF.matchAll(/ok - (.+)/g)].length} assertions passed`);
+  const consoleObjects = `select 'CONSOLE_FUNCTIONS=' || (select count(*) from pg_proc where proname in ('mobbex_list_business_payments', 'mobbex_request_business_reconcile'));`;
+  const outputG = runTransaction('merchant console rollback drill', `${migration(MIGRATION)}
+    ${migration(CONSOLE_MIGRATION)}
+    ${consoleObjects.replace('CONSOLE_FUNCTIONS=', 'UP_CONSOLE=')}
+    ${read(CONSOLE_ROLLBACK)}
+    ${consoleObjects.replace('CONSOLE_FUNCTIONS=', 'DOWN_CONSOLE=')}
+    ${migration(CONSOLE_MIGRATION)}
+    ${consoleObjects.replace('CONSOLE_FUNCTIONS=', 'REUP_CONSOLE=')}`);
+  assert.equal(/UP_CONSOLE=(\S+)/.exec(outputG)?.[1], '2');
+  assert.equal(/DOWN_CONSOLE=(\S+)/.exec(outputG)?.[1], '0', 'the console rollback leaves functions behind');
+  assert.equal(/REUP_CONSOLE=(\S+)/.exec(outputG)?.[1], '2', 're-applying after rollback differs');
+  console.log('MOBBEX_MERCHANT_CONSOLE_ROLLBACK_DRILL: up(2) -> down(0) -> up(2) PASS');
   ok = true;
 } finally {
   if (native) {

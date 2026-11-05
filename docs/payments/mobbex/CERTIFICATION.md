@@ -150,3 +150,18 @@ referencia; si `status` de la lista llega como objeto (`listAttempts` sólo acep
 y, si algún intento de la referencia tiene un estado ilegible, toda la lista es `null` (nunca una lista parcial que omita el pago), con
 lo que rige la regla anterior. Verificado: `npm test` (3421+), `npm run check`, `npm run check:edge`, `npm run test:mobbex:deno` (46).
 El banco SQL local no se ejecutó (sin CLI de Supabase instalada; el cambio no toca SQL). Sigue sin medirse la forma real de la lista.
+
+## 8. Sesión 8 (2026-11-05): consola del comercio y concurrencia real
+
+**Qué faltaba:** (a) no había ninguna pantalla para que el comercio viera sus cobros Mobbex ni pidiera una devolución (la de Mercado Pago no sirve: otro ledger, otro proveedor); (b) la concurrencia sólo se había probado «por semántica + TypeScript + contrato», nunca con sesiones de PostgreSQL independientes.
+
+**Qué hay ahora**
+- Migración `20261105010000_mobbex_merchant_console.sql` (+ rollback) y vista `payments-mobbex` del Panel: ver README §5.1.
+- Contrato SQL `supabase/tests/mobbex_merchant_console.local.sql`: 37 aserciones (aislamiento entre comercios, roles, banderas honestas, entorno, límite de la lista, nada sensible en la fila), corre dentro de `run-mobbex-db-tests.mjs`.
+- `tests/mobbex-panel.test.mjs`: 16 pruebas (presentador, validación de la devolución, misma clave tras respuesta perdida, clave nueva tras rechazo definitivo, doble clic, `staff` sin acciones, contrato navegador↔SQL). Mutaciones verificadas: clave nueva por clic, sin guarda `busy`, sin guarda de rol → cada una hace fallar su prueba.
+- **Concurrencia real:** `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-concurrency.mjs --native [--workers=6 --rounds=12]`. Necesita el clúster nativo que deja vivo `run-mobbex-db-tests.mjs --native --keep` (`MOBBEX_NATIVE_PG_DIR` / `MOBBEX_NATIVE_PG_PORT`), crea una base descartable a partir de él, abre N backends que esperan un candado consultivo y los suelta juntos (dispersión de arranque medida: < 1 ms), y la borra al terminar. Escenarios C1–C8 en la matriz. Trae un **control negativo**: reemplaza `mobbex_mark_refund_sent` por una versión sin guarda y exige que el arnés lo detecte.
+
+**Qué prueba y qué no:** que la base serializa a quienes llaman a la vez (webhook, worker, navegador, comercio). No prueba el comportamiento de Mobbex ni una imagen de Supabase fija (la corrida canónica sigue siendo la de Docker en CI para el contrato transaccional; la concurrencia es sólo local/nativa).
+
+Matriz completa de 20 casos con su nivel de evidencia: [CERTIFICATION-MATRIX.md](CERTIFICATION-MATRIX.md).
+

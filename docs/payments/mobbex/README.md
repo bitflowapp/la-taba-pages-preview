@@ -10,6 +10,7 @@ Ver [GO / NO-GO](#go--no-go) al final: faltan pasos que sólo puede hacer el tit
 | Capa | Archivos |
 |---|---|
 | Migración aditiva + rollback | `supabase/migrations/20261103010000_mobbex_checkout_foundation.sql`, `docs/migrations/rollback/20261103010000_mobbex_checkout_foundation.rollback.sql` |
+| Consola del comercio (lista, devoluciones, relectura) | `supabase/migrations/20261105010000_mobbex_merchant_console.sql` (+ rollback), `js/business/business-mobbex-payments.js`, vista `payments-mobbex` del Panel, `supabase/tests/mobbex_merchant_console.local.sql`, `tests/mobbex-panel.test.mjs` |
 | Funciones Edge | `supabase/functions/mobbex-{availability,create-checkout,checkout-status,webhook,worker,refund}` |
 | Lógica pura (inyectable, sin red) | `supabase/functions/_shared/mobbex/` (`handlers`, `customer-handlers`, `client`, `config`, `status`, `snapshot`, `webhook`) |
 | Adaptador | `supabase/functions/_shared/payment-provider.ts` (`PaymentProvider`; Mercado Pago no se modifica) |
@@ -64,11 +65,26 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 
 Checklist de producción verificable: [PRODUCTION-CHECKLIST.md](PRODUCTION-CHECKLIST.md).
 
+### 5.1 Consola del comercio: «Cobros Mobbex» (Panel › Cobros)
+
+Pantalla propia, separada de «Pagos» (Mercado Pago). Lee `mobbex_list_business_payments`: dueño, encargado y equipo ven la lista; sólo dueño y encargado reciben las banderas `can_*` y cada acción las vuelve a exigir en tres capas (panel, RPC/Edge, base).
+
+| Acción | Qué hace | Qué NO hace |
+|---|---|---|
+| **Consultar a Mobbex** (`mobbex_request_business_reconcile`) | Encola la misma relectura que hace el worker (se deduplica: un solo trabajo abierto por cobro) y deja un evento de auditoría. | No cambia ningún estado: lo que Mobbex confirme entra por `mobbex_record_provider_snapshot`. |
+| **Armar el pedido de este cobro** (`mobbex_recover_paid_checkout`) | Sólo para cobro aprobado sin pedido por reserva vencida / sin reserva activa. Si falta stock lo dice y ofrece devolver. | No actúa sobre `amount_mismatch` ni cobros dudosos. |
+| **Devolver el dinero** (Edge `mobbex-refund`) | Total o parcial. Pide motivo (≥ 5 caracteres), muestra cuánto falta devolver, exige escribir `DEVOLVER`, manda el importe SIEMPRE explícito y una clave de idempotencia que el panel conserva hasta tener respuesta definitiva. | No se ofrece con una devolución en curso (`requested/processing/ambiguous`), con un cobro de otro entorno, sin saldo, ni sobre estados dudosos. Una devolución `REFUND_RECONCILING` cierra el formulario: «no la repitas». |
+
+Lo que el comercio NUNCA ve: credenciales, URL de checkout, huellas de respuesta, cuerpos de webhook, el texto de errores internos del worker ni el `details` de los eventos (sólo tipo, código y hora). La referencia y la operación se muestran truncadas.
+
+Estados que muestra: Verificando · Aprobado · Rechazado · Cerrado sin cobro · Devuelto · Devuelto en parte · En revisión · Cobrado sin pedido · Dinero sin resolver (devolución sin confirmar o dato que no coincide: bloquea la entrega). Un estado desconocido se muestra como «Verificando», jamás como aprobado. Un cobro de prueba lleva la etiqueta «Prueba».
+
 ## 6. Rollback
 
 - **Inmediato (sin tocar datos):** `MOBBEX_ENABLED` distinto de `true` → la opción desaparece, el webhook responde 200 «disabled», el worker no hace nada. Efectivo y Mercado Pago siguen igual.
 - **De esquema:** ejecutar `docs/migrations/rollback/20261103010000_mobbex_checkout_foundation.rollback.sql`. **Se niega a correr si ya se registró dinero** (protege la contabilidad); está probado: sube → baja → sube y la negativa con dinero.
 - Frontend: revertir el commit del PR; `CACHE_NAME` vuelve a `la-taba-runtime-v170-payment-review` (re-firmar con `node scripts/check-release-identity.mjs --write`).
+- **Consola del comercio:** `docs/migrations/rollback/20261105010000_mobbex_merchant_console.rollback.sql` borra las dos funciones (sólo leen o encolan una relectura; sin dinero, sin guarda). Probado: sube → baja → sube. Sin ellas el panel muestra «No pudimos cargar los cobros de Mobbex» y no ofrece ninguna acción; el resto no depende de ellas.
 
 ## 7. Evidencia real de esta rama
 

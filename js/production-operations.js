@@ -1668,6 +1668,15 @@ async function configureBusinessRuntime(result) {
         ? { ok: true, data: response.payments || [] }
         : { ok: false, message: response?.message || '' };
     },
+    listMobbexPayments: async () => {
+      const response = await repository.listMobbexBusinessPayments?.();
+      return response?.ok
+        ? { ok: true, data: response.payments || [] }
+        : { ok: false, message: response?.message || '' };
+    },
+    requestMobbexReconcile: (paymentIntentId) => repository.requestMobbexReconcile(paymentIntentId),
+    recoverMobbexPaidOrder: (paymentIntentId) => repository.recoverMobbexPaidOrder(paymentIntentId),
+    requestMobbexRefund: (input) => repository.requestMobbexRefund(input),
     listManualPayments: () => manualPaymentsRepository.list(),
     confirmManualPayment: (input) => manualPaymentsRepository.confirm(input),
     reverseManualPayment: (input) => manualPaymentsRepository.reverse(input),
@@ -2612,7 +2621,7 @@ function restaurarFoco(workspace, foco) {
  * persona esperando una decision.
  */
 export const BUSINESS_VIEW_ORDER = Object.freeze([
-  'store-opening', 'day-open', 'operation-center', 'orders', 'team-access', 'team', 'payments', 'packing', 'pos', 'scanner',
+  'store-opening', 'day-open', 'operation-center', 'orders', 'team-access', 'team', 'payments', 'payments-mobbex', 'packing', 'pos', 'scanner',
   'catalog', 'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'operations-config', 'payments-setup',
   'devices', 'print-agent', 'day-close',
@@ -2625,7 +2634,7 @@ export const BUSINESS_VIEW_ORDER = Object.freeze([
  * hace.
  */
 const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
-  'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
+  'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos', 'payments-mobbex': 'Mobbex',
   'catalog': 'Catálogo', 'product-create': 'Nuevo producto', 'inventory-receive': 'Recepción',
   'team-access': 'Solicitudes', 'day-close': 'Cerrar',
   'store-opening': 'Apertura', team: 'Equipo', 'print-agent': 'Impresora',
@@ -2658,7 +2667,7 @@ const BUSINESS_MOBILE_NAV_SLOTS = 4;
 export const BUSINESS_MORE_GROUPS = Object.freeze([
   ['Día a día', ['store-opening', 'day-open', 'operation-center', 'orders', 'packing', 'pos', 'scanner', 'day-close']],
   ['Catálogo y stock', ['catalog', 'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count']],
-  ['Cobros', ['payments', 'fiscal-status']],
+  ['Cobros', ['payments', 'payments-mobbex', 'fiscal-status']],
   ['Configuración', ['operations-config', 'payments-setup', 'team', 'team-access', 'fiscal-setup', 'fiscal-config', 'devices', 'print-agent']],
 ]);
 

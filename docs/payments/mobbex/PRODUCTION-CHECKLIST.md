@@ -26,8 +26,8 @@ Titular: el titular de La Taba (Walter), distinto del de MiFav. Mobbex (Integrac
 - [ ] Fijar la forma real de la operación en `tests/mobbex-core.test.mjs`.
 
 ## E. Migraciones
-- [ ] `20261103010000_mobbex_checkout_foundation.sql` y `20261103020000_mobbex_operational_alert.sql` primero en **staging**.
-- [ ] Verificación local ya disponible: `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (102 + 22 aserciones, rollback drill, huella de Mercado Pago idéntica). El banco canónico es el de Docker en CI (`payment-certification.yml`).
+- [ ] `20261103010000_mobbex_checkout_foundation.sql`, `20261103020000_mobbex_operational_alert.sql` y `20261105010000_mobbex_merchant_console.sql` (en ese orden) primero en **staging**.
+- [ ] Verificación local ya disponible: `TABA_LOCAL_PAYMENT_DB=1 node scripts/mobbex/run-mobbex-db-tests.mjs --native` (128 + 25 + 37 aserciones, rollback drills de las 3 migraciones, huella de Mercado Pago idéntica) y `node scripts/mobbex/run-mobbex-concurrency.mjs --native` (8 escenarios con sesiones simultáneas reales). El banco canónico es el de Docker en CI (`payment-certification.yml`).
 - [ ] Rollback de esquema probado: `docs/migrations/rollback/…foundation.rollback.sql` (se niega si ya hay dinero).
 
 ## F. Activación por capas
@@ -47,6 +47,13 @@ Titular: el titular de La Taba (Walter), distinto del de MiFav. Mobbex (Integrac
 ## I. Rollback
 - [ ] Inmediato: `MOBBEX_ENABLED` ≠ `true` (la opción desaparece; MP/efectivo intactos).
 - [ ] Frontend: revertir el commit del PR y re-firmar `CACHE_NAME`.
+
+## I2. Consola del comercio (Panel › Cobros Mobbex) — verificar en staging antes de producción
+- [ ] Con un dueño: la lista muestra los cobros de **su** comercio y ninguno de otro (probar con dos comercios).
+- [ ] Con un empleado (`staff`): ve la lista, **no** ve «Devolver», «Consultar» ni «Armar el pedido».
+- [ ] «Consultar a Mobbex» sobre un cobro `pending` encola UNA relectura (repetir el clic no crea otra) y el estado se actualiza solo.
+- [ ] Una devolución parcial de prueba (sandbox propio): queda «Pedida/Enviada, verificando» y después «Devuelta»; el saldo baja; el botón no reaparece mientras haya una en curso.
+- [ ] Cortar la red a mitad de una devolución: reintentar usa la MISMA clave y no crea una segunda devolución (`select count(*) from mobbex_refunds where payment_intent_id = '<id>'` = 1).
 
 ## J. Primera operación controlada
 - [ ] Una compra real de importe mínimo autorizada por el titular con `authorize_mobbex_live_payment`.

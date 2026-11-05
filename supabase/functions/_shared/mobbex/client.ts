@@ -222,6 +222,25 @@ export class MobbexClient {
   }
 
   /**
+   * GET /p/operations/{uid} (doc /consulta-de-operaciones-y-childs: «el segmento es el UID»). Measured read-only on the DEMO account:
+   * an existing approved operation is found by its uid. Used ONLY to read a specific PAID attempt that `REF:` hides behind a newer
+   * declined one (it answers just the newest attempt). Same error mapping as the lookup by reference; a not-found is NOT "no operation".
+   */
+  async getOperationByUid(uid: string): Promise<OperationLookup> {
+    if (!MOBBEX_OPERATION_ID_PATTERN.test(uid)) throw new RangeError('invalid Mobbex operation id');
+    const { status, json, hash } = await this.request('GET', `/p/operations/${encodeURIComponent(uid)}`);
+    if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
+    if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
+    if (status >= 400) throw new MobbexApiError('malformed', status, 'Unexpected Mobbex response');
+    if (!json) throw new MobbexApiError('malformed', status, 'Mobbex operation response is not JSON');
+    if (json.result !== true) {
+      const code = typeof json.code === 'string' ? json.code.slice(0, 64) : 'RESULT_FALSE';
+      return { found: false, code, responseHash: hash };
+    }
+    return { found: true, body: json, responseHash: hash };
+  }
+
+  /**
    * GET /p/entity/operations?reference=... (doc /consulta-de-operaciones-y-childs). Any failure is null (never throws):
    * the snapshot then trusts a pending/authorized/approved headline, but REFUSES a rejected/expired/cancelled one (those
    * release stock and an older paid attempt would be invisible), so the job retries until the list can be read.

@@ -231,6 +231,24 @@ test('operation lookup: credentials failure, WAF 403 page, server errors and bad
   assert.equal(calls.length, 0, 'a malformed reference never reaches the network (path traversal / WAF)');
 });
 
+test('operation by uid: same error mapping, a path-traversal id never reaches the network, result:false is "not found" (never "no operation")', async () => {
+  for (const [status, body, kind] of [[401, '{}', 'auth'], [403, '<html>403</html>', 'auth'], [502, 'Bad gateway', 'server'], [404, '{}', 'malformed']]) {
+    const { client: c } = client(() => json(status, body));
+    await assert.rejects(() => c.getOperationByUid('UID-PAID1'), (error) => error.kind === kind, String(status));
+  }
+  const { client: ok, calls } = client(() => json(200, { result: true, data: { transaction: { payment: { id: 'OP-1' } } } }));
+  const found = await ok.getOperationByUid('UID-PAID1');
+  assert.equal(found.found, true);
+  assert.equal(calls[0].url, 'https://api.mobbex.com/p/operations/UID-PAID1');
+  assert.equal(calls[0].init.method, 'GET');
+  const { client: no } = client(() => json(200, { result: false, code: 'NDFE' }));
+  assert.equal((await no.getOperationByUid('UID-PAID1')).found, false);
+  for (const bad of ['../../p/entity', 'a b', '', 'x', 'UID/refund']) {
+    await assert.rejects(() => ok.getOperationByUid(bad), RangeError, bad);
+  }
+  assert.equal(calls.length, 1, 'bad ids never reach the network');
+});
+
 test('refund: full refund is a GET, partial is a POST with the amount; Mobbex refusing is not a transport error', async () => {
   const { client: c, calls } = client((url) => json(200, { result: !url.includes('/OP-BAD1/') }));
   assert.deepEqual({ approved: (await c.refundOperation('OP-1234', null)).approved }, { approved: true });

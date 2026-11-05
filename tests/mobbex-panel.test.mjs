@@ -274,9 +274,10 @@ test('the repository calls the console RPCs with the migration\'s own parameter 
   const repo = readFileSync(new URL('../js/repositories/supabase_order_repository.js', import.meta.url), 'utf8');
   const sql = readFileSync(new URL('../supabase/migrations/20261105010000_mobbex_merchant_console.sql', import.meta.url), 'utf8');
   const expectations = {
-    mobbex_list_business_payments: ['p_business_id', 'p_limit'],
+    mobbex_list_business_payments: ['p_business_id', 'p_limit', 'p_offset'],
     mobbex_request_business_reconcile: ['p_payment_intent_id'],
     mobbex_recover_paid_checkout: ['p_payment_intent_id'],
+    mobbex_acknowledge_attention: ['p_payment_intent_id', 'p_note'],
   };
   const foundation = readFileSync(new URL('../supabase/migrations/20261103010000_mobbex_checkout_foundation.sql', import.meta.url), 'utf8');
   for (const [name, params] of Object.entries(expectations)) {
@@ -288,10 +289,122 @@ test('the repository calls the console RPCs with the migration\'s own parameter 
     assert.ok(declared, `${name} is declared`);
     for (const param of params) assert.ok(declared[1].includes(param), `${name} declares ${param}`);
   }
-  assert.match(sql, /revoke all on function public\.mobbex_list_business_payments\(uuid, integer\) from public, anon, authenticated;/);
+  assert.match(sql, /revoke all on function public\.mobbex_list_business_payments\(uuid, integer, integer\) from public, anon, authenticated;/);
   assert.match(sql, /grant execute on function public\.mobbex_request_business_reconcile\(uuid\) to authenticated, service_role;/);
-  assert.doesNotMatch(sql, /to (anon|public)\b/i, 'nothing is granted to anon or PUBLIC');
+  assert.doesNotMatch(sql, /grant\s[^;]*\sto\s(?:[^;]*,\s*)?(?:anon|public)\s*[,;]/i, 'nothing is granted to anon or PUBLIC');
   assert.match(repo, /invokePaymentFunction\('mobbex-refund'/, 'refunds go through the Mobbex Edge function, never the Mercado Pago one');
   const mobbexBlock = repo.slice(repo.indexOf('async function listMobbexBusinessPayments'), repo.indexOf('async function invokePaymentFunction'));
   assert.doesNotMatch(mobbexBlock, /mercadopago|'list_business_payments'|payment_refunds/, 'the Mobbex repository code touches nothing of Mercado Pago');
+});
+
+test('progressive loading: pages append without duplicates, "load more" only while the server filled the page, attention total comes from the server', async () => {
+  resetBusinessOperationsForTests();
+  const pageCalls = [];
+  const make = (n, extra = {}) => payment({ payment_intent_id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, order_public_code: `TABA-${n}`, ...extra });
+  const all = Array.from({ length: 120 }, (_, n) => make(n + 1, n === 0 ? { attention_total: 7, needs_attention: true, internal_status: 'security_review_required', review_reason: 'amount_mismatch', order_public_code: null, paid_amount: null } : {}));
+  await openPanel({
+    listMobbexPayments: async (page) => { pageCalls.push(page); return { ok: true, data: all.slice(page.offset, page.offset + page.limit) }; },
+  });
+  let html = renderBusinessOperations('payments-mobbex');
+  assert.deepEqual(pageCalls[0], { offset: 0, limit: 50 });
+  assert.match(html, /data-mobbex-more/);
+  assert.match(html, /7 para revisar/, 'the attention total is the server value, even though only some rows are loaded');
+  assert.match(html, /hay más/);
+  await handleBusinessOperationsAction(click('[data-mobbex-more]'));
+  assert.deepEqual(pageCalls[1], { offset: 50, limit: 50 });
+  await handleBusinessOperationsAction(click('[data-mobbex-more]'));
+  html = renderBusinessOperations('payments-mobbex');
+  assert.equal((html.match(/data-mobbex-card=/g) || []).length, 100 + 20, 'all 120 shown once');
+  assert.doesNotMatch(html, /data-mobbex-more/, 'the last page was not full: nothing more to load');
+  // An action refreshes keeping what is already on screen (it does not send the person back to page one).
+  pageCalls.length = 0;
+  await handleBusinessOperationsAction(click('[data-mobbex-refresh]'));
+  assert.deepEqual(pageCalls[0], { offset: 0, limit: 120 });
+});
+
+test('a failed "load more" keeps the rows already shown and says so', async () => {
+  resetBusinessOperationsForTests();
+  let fail = false;
+  const rows = Array.from({ length: 50 }, (_, n) => payment({ payment_intent_id: `00000000-0000-4000-8000-${String(n + 1).padStart(12, '0')}`, order_public_code: `TABA-${n + 1}` }));
+  await openPanel({ listMobbexPayments: async () => (fail ? { ok: false, message: 'timeout' } : { ok: true, data: rows }) });
+  fail = true;
+  const result = await handleBusinessOperationsAction(click('[data-mobbex-more]'));
+  assert.equal(result.ok, false);
+  const html = renderBusinessOperations('payments-mobbex');
+  assert.equal((html.match(/data-mobbex-card=/g) || []).length, 50, 'nothing already shown disappears');
+  assert.match(html, /role="alert"/);
+});
+
+test('acknowledging an incident: needs a written note, goes through its own RPC, is offered only when the server says so, and an acknowledged concern stops reading as unresolved money', async () => {
+  resetBusinessOperationsForTests();
+  const acks = [];
+  const dup = payment({ attention_reason: 'duplicate_approved_payment', needs_attention: true, concern_open: true, can_acknowledge: true, can_refund: false });
+  const calls = await openPanel({ acknowledgeMobbexAttention: async (id, note) => { acks.push([id, note]); return { ok: true, message: 'ok' }; } }, [dup]);
+  assert.equal(classifyMobbexPayment(dup).state, 'money-unresolved');
+  assert.equal(classifyMobbexPayment({ ...dup, attention_acknowledged: true, concern_open: false }).state, 'approved', 'an acknowledged concern is not shown as unresolved money');
+  assert.equal(classifyMobbexPayment({ ...dup, attention_acknowledged: true }).acknowledged, true);
+  assert.deepEqual(mobbexActionsFor(dup, { elevated: true }).map((a) => a.id), ['acknowledge']);
+  assert.deepEqual(mobbexActionsFor(dup, { elevated: false }), []);
+  await handleBusinessOperationsAction(click('[data-mobbex-ack-open]', { mobbexAckOpen: ID }));
+  assert.match(renderBusinessOperations('payments-mobbex'), /data-mobbex-ack-form/);
+  const press = (note) => handleBusinessOperationsAction(click('[data-mobbex-ack-confirm]', { mobbexAckConfirm: ID }, { '[data-mobbex-ack-form]': form({ mobbexAckNote: note }) }));
+  assert.equal((await press('corto')).ok, false);
+  assert.equal(acks.length, 0, 'nothing is sent with a short note');
+  assert.equal((await press('Devuelto el cobro repetido desde el panel de Mobbex')).ok, true);
+  assert.deepEqual(acks, [[ID, 'Devuelto el cobro repetido desde el panel de Mobbex']]);
+  assert.ok(calls.list >= 2, 'the list is re-read');
+});
+
+test('acknowledge is refused for staff even if the markup is forged, and an unflagged payment cannot open the form', async () => {
+  resetBusinessOperationsForTests();
+  const acks = [];
+  await openPanel({ role: 'staff', acknowledgeMobbexAttention: async (...a) => { acks.push(a); return { ok: true }; } }, [payment({ can_acknowledge: true, attention_reason: 'duplicate_approved_payment' })]);
+  assert.doesNotMatch(renderBusinessOperations('payments-mobbex'), /data-mobbex-ack-open/);
+  assert.equal((await handleBusinessOperationsAction(click('[data-mobbex-ack-open]', { mobbexAckOpen: ID }))).ok, false);
+  resetBusinessOperationsForTests();
+  await openPanel({ acknowledgeMobbexAttention: async (...a) => { acks.push(a); return { ok: true }; } }, [payment({ can_acknowledge: false })]);
+  assert.equal((await handleBusinessOperationsAction(click('[data-mobbex-ack-open]', { mobbexAckOpen: ID }))).ok, false);
+  assert.equal(acks.length, 0);
+});
+
+test('a payment Mobbex confirmed seconds ago is "building the order" (not a red alarm); after 10 minutes it is the real problem', () => {
+  const fresh = payment({ internal_status: 'approved_order_pending', order_public_code: null, approved_at: new Date(Date.now() - 2 * 60 * 1000).toISOString() });
+  const old = payment({ internal_status: 'approved_order_pending', order_public_code: null, approved_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() });
+  assert.equal(classifyMobbexPayment(fresh).state, 'building-order');
+  assert.equal(classifyMobbexPayment(fresh).blocksDelivery, true, 'but it still blocks delivery');
+  assert.equal(classifyMobbexPayment(old).state, 'approved-without-order');
+  assert.equal(classifyMobbexPayment({ ...fresh, approved_at: null }).state, 'approved-without-order', 'no confirmation time: never softened');
+  assert.equal(classifyMobbexPayment({ ...fresh, approved_at: new Date(Date.now() + 3600_000).toISOString() }).state, 'approved-without-order', 'a time in the future is never trusted');
+});
+
+test('accessible names say WHICH payment; hints are text, not only a tooltip; the list says when it was read; unpaid amounts say "a cobrar"', async () => {
+  resetBusinessOperationsForTests();
+  await openPanel({}, [payment({ can_reconcile: true }), payment({ payment_intent_id: ID2, order_public_code: 'TABA-0002', paid_amount: null, approved_at: null, internal_status: 'pending', can_refund: false, can_reconcile: true })]);
+  const html = renderBusinessOperations('payments-mobbex');
+  assert.match(html, /aria-label="Devolver el dinero: TABA-0001"/);
+  assert.match(html, /aria-label="Consultar a Mobbex: TABA-0002"/);
+  assert.match(html, /data-mobbex-hints/);
+  assert.match(html, /Es irreversible/);
+  assert.match(html, /data-mobbex-updated>Actualizado a las \d{2}:\d{2}\./);
+  assert.match(html, /role="status" aria-live="polite" data-mobbex-live/, 'the live region is always in the page (a node created with the message is not announced)');
+  assert.match(html, /a cobrar/);
+  assert.match(html, /Iniciado el/);
+  assert.match(html, /Cobrado el/);
+});
+
+test('after a failed refresh the old rows stay but the person is told how old they are; the action result appears next to the open form', async () => {
+  resetBusinessOperationsForTests();
+  let fail = false;
+  await openPanel({ listMobbexPayments: async () => (fail ? { ok: false, message: 'timeout' } : { ok: true, data: [payment()] }) });
+  fail = true;
+  await handleBusinessOperationsAction(click('[data-mobbex-refresh]'));
+  const html = renderBusinessOperations('payments-mobbex');
+  assert.match(html, /role="alert"[^>]*>[^<]*Lo que ves es de las \d{2}:\d{2}: puede estar desactualizado/);
+  assert.match(html, /data-mobbex-card=/);
+  fail = false;
+  await handleBusinessOperationsAction(click('[data-mobbex-refresh]'));
+  await handleBusinessOperationsAction(click('[data-mobbex-refund-open]', { mobbexRefundOpen: ID }));
+  const result = await handleBusinessOperationsAction(click('[data-mobbex-refund-confirm]', { mobbexRefundConfirm: ID }, { '[data-mobbex-refund-form]': form({ mobbexRefundAmount: '', mobbexRefundReason: 'x', mobbexRefundConfirmation: 'DEVOLVER' }) }));
+  assert.equal(result.ok, false);
+  assert.match(renderBusinessOperations('payments-mobbex'), /data-mobbex-card-feedback/, 'the error is rendered inside the card that has the form');
 });

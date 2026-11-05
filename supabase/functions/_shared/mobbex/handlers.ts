@@ -10,6 +10,7 @@
 import { MobbexApiError } from './client.ts';
 import { MobbexConfigError, type MobbexConfig } from './config.ts';
 import { buildMobbexSnapshot } from './snapshot.ts';
+import { classifyMobbexStatus } from './status.ts';
 import {
   MOBBEX_WEBHOOK_MAX_BYTES,
   buildMobbexWebhookUrl,
@@ -72,6 +73,8 @@ export interface LedgerPort {
 export interface MobbexOperationsPort {
   createCheckout(input: Parameters<import('./client.ts').MobbexClient['createCheckout']>[0]): Promise<CreatedCheckout>;
   getOperationByReference(reference: string): Promise<OperationLookup>;
+  /** Optional: reads one specific attempt by its uid (see MobbexClient.getOperationByUid). */
+  getOperationByUid?(uid: string): Promise<OperationLookup>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -203,7 +206,9 @@ export type ReconcileOutcome =
   | { outcome: 'again'; delaySeconds: number; internalStatus?: string }
   | { outcome: 'failed'; error: string };
 
-const TERMINAL = new Set(['completed', 'refunded', 'expired', 'cancelled', 'failed', 'security_review_required']);
+// 'partially_refunded' is a STABLE state: a refund still unconfirmed is followed by the sweep (`refund_check`), so polling it every 90 s
+// forever only competes with real payments for the worker's time budget (audit session 9).
+const TERMINAL = new Set(['completed', 'refunded', 'partially_refunded', 'expired', 'cancelled', 'failed', 'security_review_required']);
 
 export async function reconcileMobbexPayment(
   deps: { ledger: LedgerPort; operations: MobbexOperationsPort; environment?: string },
@@ -227,7 +232,22 @@ export async function reconcileMobbexPayment(
     const miss = await deps.ledger.recordNoOperation(target.intentId, lookup.code);
     return miss.closed ? { outcome: 'done', internalStatus: 'expired' } : { outcome: 'again', delaySeconds: miss.retry_after_seconds };
   }
-  const built = buildMobbexSnapshot(target.reference, lookup.body, lookup.responseHash, lookup.attempts);
+  let built = buildMobbexSnapshot(target.reference, lookup.body, lookup.responseHash, lookup.attempts);
+  // `REF:` answers only the NEWEST attempt. A paid attempt hidden behind a newer declined/pending one (a second click after paying)
+  // used to be a dead end: the read failed forever, the reservation expired and nothing in TABA could book the money. With exactly ONE
+  // paid attempt we read that attempt itself; its reference is re-checked by the parser. Two paid attempts, an unreadable one or a
+  // missing port stay a visible failure: a person decides, nothing is guessed.
+  if (!built.ok && built.reason === 'conflicting_operations' && Array.isArray(lookup.attempts) && deps.operations.getOperationByUid) {
+    const paid = lookup.attempts.filter((attempt) => classifyMobbexStatus(attempt.status).statusClass === 'approved' && attempt.uid);
+    if (paid.length === 1 && lookup.attempts.filter((attempt) => classifyMobbexStatus(attempt.status).statusClass === 'approved').length === 1) {
+      try {
+        const paidLookup = await deps.operations.getOperationByUid(paid[0].uid);
+        if (paidLookup.found) built = buildMobbexSnapshot(target.reference, paidLookup.body, paidLookup.responseHash, lookup.attempts);
+      } catch (error) {
+        return { outcome: 'failed', error: error instanceof MobbexApiError ? `${error.kind}:${error.status}` : 'unexpected' };
+      }
+    }
+  }
   if (!built.ok) return { outcome: 'failed', error: built.reason };
   const result = await deps.ledger.recordSnapshot(target.intentId, built.snapshot as unknown as Record<string, unknown>, source);
   const status = typeof result.internal_status === 'string' ? result.internal_status : undefined;

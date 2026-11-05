@@ -1567,12 +1567,12 @@ export function createSupabaseOrderRepository({
   // ── Mobbex desde el mostrador: lista, devolución, relectura y rearmado. Aditivo; no toca Mercado Pago. ──────
   // La lista y la relectura son RPC que revalidan rol y comercio en la base; la devolución pasa por la Edge `mobbex-refund`,
   // que repite la confirmación explícita y revalida el entorno. Estas funciones sólo arman el pedido: no deciden nada.
-  async function listMobbexBusinessPayments() {
+  async function listMobbexBusinessPayments({ offset = 0, limit = 50 } = {}) {
     const teamAccess = await auth.getTeamAccess();
     if (!teamAccess.ok || !['owner', 'admin', 'staff'].includes(teamAccess.membership?.role)) {
       return repositoryResult(false, { message: 'Tu rol no puede consultar pagos.' });
     }
-    const { data, error } = await client.rpc('mobbex_list_business_payments', { p_business_id: businessId, p_limit: 100 });
+    const { data, error } = await client.rpc('mobbex_list_business_payments', { p_business_id: businessId, p_limit: Math.min(Math.max(Number(limit) || 50, 1), 200), p_offset: Math.max(Number(offset) || 0, 0) });
     if (error) return repositoryResult(false, { message: 'No pudimos cargar los cobros de Mobbex.' });
     return repositoryResult(true, { payments: Array.isArray(data) ? data : [] });
   }
@@ -1585,6 +1585,20 @@ export function createSupabaseOrderRepository({
       return repositoryResult(true, { ...data, message: 'Este cobro ya está cerrado: no hay nada que consultar.' });
     }
     return repositoryResult(true, { ...data, message: 'Consulta pedida. En unos minutos el estado se actualiza solo.' });
+  }
+
+  async function acknowledgeMobbexAttention(paymentIntentId, note = '') {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_acknowledge_attention', { p_payment_intent_id: paymentIntentId, p_note: String(note || '').slice(0, 300) });
+    if (error) {
+      const text = String(error.message || '');
+      if (/devolucion en curso/i.test(text)) return repositoryResult(false, { message: 'Hay una devolución en curso: esperá a que Mobbex la confirme.' });
+      if (/cobro sin pedido/i.test(text)) return repositoryResult(false, { message: 'Este cobro no tiene pedido: armá el pedido o devolvé el dinero; no se puede ocultar.' });
+      if (/nada para reconocer/i.test(text)) return repositoryResult(false, { message: 'Este cobro ya no tiene nada para reconocer. Actualizá la lista.' });
+      if (/motivo requerido/i.test(text)) return repositoryResult(false, { message: 'Escribí qué verificaste (al menos 10 caracteres).' });
+      return repositoryResult(false, { message: 'No pudimos reconocer la incidencia.' });
+    }
+    return repositoryResult(data?.acknowledged === true, { ...data, message: 'Incidencia reconocida.' });
   }
 
   async function recoverMobbexPaidOrder(paymentIntentId) {
@@ -1840,14 +1854,17 @@ export function createSupabaseOrderRepository({
     async requestMercadoPagoCancellation(payload = {}) {
       return requestMercadoPagoCancellation(payload);
     },
-    async listMobbexBusinessPayments() {
-      return listMobbexBusinessPayments();
+    async listMobbexBusinessPayments(page = {}) {
+      return listMobbexBusinessPayments(page);
     },
     async requestMobbexReconcile(paymentIntentId) {
       return requestMobbexReconcile(paymentIntentId);
     },
     async recoverMobbexPaidOrder(paymentIntentId) {
       return recoverMobbexPaidOrder(paymentIntentId);
+    },
+    async acknowledgeMobbexAttention(paymentIntentId, note) {
+      return acknowledgeMobbexAttention(paymentIntentId, note);
     },
     async requestMobbexRefund(payload = {}) {
       return requestMobbexRefund(payload);

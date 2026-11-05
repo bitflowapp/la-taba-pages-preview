@@ -1668,14 +1668,15 @@ async function configureBusinessRuntime(result) {
         ? { ok: true, data: response.payments || [] }
         : { ok: false, message: response?.message || '' };
     },
-    listMobbexPayments: async () => {
-      const response = await repository.listMobbexBusinessPayments?.();
+    listMobbexPayments: async (page) => {
+      const response = await repository.listMobbexBusinessPayments?.(page);
       return response?.ok
         ? { ok: true, data: response.payments || [] }
         : { ok: false, message: response?.message || '' };
     },
     requestMobbexReconcile: (paymentIntentId) => repository.requestMobbexReconcile(paymentIntentId),
     recoverMobbexPaidOrder: (paymentIntentId) => repository.recoverMobbexPaidOrder(paymentIntentId),
+    acknowledgeMobbexAttention: (paymentIntentId, note) => repository.acknowledgeMobbexAttention(paymentIntentId, note),
     requestMobbexRefund: (input) => repository.requestMobbexRefund(input),
     listManualPayments: () => manualPaymentsRepository.list(),
     confirmManualPayment: (input) => manualPaymentsRepository.confirm(input),

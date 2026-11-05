@@ -3608,6 +3608,7 @@ function defaultContext() {
     listMobbexPayments: async () => ({ ok: false, message: 'Los cobros de Mobbex no están disponibles.' }),
     requestMobbexReconcile: async () => ({ ok: false, message: 'La consulta a Mobbex no está disponible.' }),
     recoverMobbexPaidOrder: async () => ({ ok: false, message: 'Armar el pedido no está disponible.' }),
+    acknowledgeMobbexAttention: async () => ({ ok: false, message: 'Reconocer incidencias no está disponible.' }),
     requestMobbexRefund: async () => ({ ok: false, message: 'Las devoluciones de Mobbex no están disponibles.' }),
     listManualPayments: async () => ({ ok: false, message: 'Los cobros manuales no están disponibles.' }),
     confirmManualPayment: async () => ({ ok: false }),

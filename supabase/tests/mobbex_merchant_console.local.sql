@@ -53,8 +53,8 @@ begin
   select x into row from public.mobbex_list_business_payments(v_biz) x limit 1;
   perform pg_temp.check((row ->> 'internal_status') = 'completed' and (row ->> 'paid_amount')::numeric = 2500 and (row ->> 'refundable_amount')::numeric = 2500,
     'a completed payment shows what was paid and what can still be returned');
-  perform pg_temp.check((row ->> 'can_refund')::boolean and (row ->> 'can_operate')::boolean and not (row ->> 'can_reconcile')::boolean,
-    'completed + owner + same environment: refundable, nothing to re-read');
+  perform pg_temp.check((row ->> 'can_refund')::boolean and (row ->> 'can_operate')::boolean and (row ->> 'can_reconcile')::boolean,
+    'completed + owner + same environment: refundable, and re-readable (the merchant may have refunded from the Mobbex panel)');
   perform pg_temp.check(row ->> 'order_public_code' is not null and (row ->> 'payment_id_short') = right('OP-CONSOLE-1', 6),
     'the order code is shown and the operation id is only its last 6 characters');
   perform pg_temp.check(row::text !~* '(access.?token|api.?key|secret|checkout_url|raw_response_hash|mobbex\.com/p/)' and not (row ? 'checkout_url') and not (row ? 'raw_response_hash'),
@@ -129,7 +129,14 @@ begin
     'the request is in the audit trail');
   perform pg_temp.as_user(v_owner);
   r := public.mobbex_request_business_reconcile(i);
-  perform pg_temp.check(not (r ->> 'queued')::boolean, 'a settled, fully-confirmed payment has nothing to re-read');
+  perform pg_temp.check((r ->> 'queued')::boolean, 'a completed payment CAN be re-read: a refund made in the Mobbex panel is then reflected here');
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set internal_status = 'refunded', refunded_amount = paid_amount where id = i;
+  perform pg_temp.as_user(v_owner);
+  perform pg_temp.check(not (public.mobbex_request_business_reconcile(i) ->> 'queued')::boolean, 'a fully refunded payment has nothing left to re-read');
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set internal_status = 'partially_refunded', refunded_amount = 500 where id = i;
+  perform pg_temp.as_user(v_owner);
 
   -- ═══ 6. A paid order that is stuck after a worker failure is shown as stuck ═══
   perform pg_temp.as_admin();
@@ -144,7 +151,7 @@ begin
   perform pg_temp.as_user(v_owner);
   select x into row from public.mobbex_list_business_payments(v_biz) x where (x ->> 'payment_intent_id')::uuid = i2;
   perform pg_temp.check((row ->> 'processing_state') = 'stuck', 'an exhausted job is shown as stuck, with no error text');
-  perform pg_temp.check(row::text !~ '401', 'the worker error text never reaches the browser');
+  perform pg_temp.check(row::text !~ 'auth:401', 'the worker error text never reaches the browser');
 
   -- ═══ 7. A money-in/no-order case offers recovery and refund, nothing else ═══
   perform pg_temp.as_admin();
@@ -163,6 +170,51 @@ begin
   -- ═══ 8. The list is bounded ═══
   perform pg_temp.check((select count(*) from public.mobbex_list_business_payments(v_biz, 1)) = 1, 'p_limit bounds the list');
   perform pg_temp.check((select count(*) from public.mobbex_list_business_payments(v_biz, -5)) = 1, 'a nonsensical limit is clamped to 1, not an error');
+
+  -- ═══ 9. What needs a person comes FIRST (an old doubtful payment is never behind a "load more"), pagination is stable ═══
+  perform pg_temp.as_admin();
+  delete from public.mobbex_jobs where payment_intent_id = i2;
+  update public.mobbex_payment_intents set internal_status = 'pending', review_reason = null, paid_amount = null, provider_payment_id = null where id = i2;
+  alter table public.mobbex_payment_intents disable trigger mobbex_intents_touch;
+  update public.mobbex_payment_intents set attention_reason = 'duplicate_approved_payment', created_at = clock_timestamp() - interval '40 days' where id = i;
+  alter table public.mobbex_payment_intents enable trigger mobbex_intents_touch;
+  perform pg_temp.as_user(v_owner);
+  select count(*) into rows_count from public.mobbex_list_business_payments(v_biz);
+  perform pg_temp.check(rows_count >= 2, 'fixture: at least two payments to order');
+  perform pg_temp.check((select (x ->> 'payment_intent_id')::uuid from public.mobbex_list_business_payments(v_biz) x limit 1) = i,
+    'a 40-day-old payment that needs a person is listed BEFORE newer healthy ones');
+  perform pg_temp.check(not exists (select 1 from public.mobbex_list_business_payments(v_biz) x where x -> 'needs_attention' = 'null'::jsonb or (x ->> 'needs_attention') is null),
+    'needs_attention is always true or false, never NULL (a payment without a job must not sort as urgent)');
+  perform pg_temp.check((select bool_and((x ->> 'attention_total')::integer = 1) from public.mobbex_list_business_payments(v_biz) x),
+    'every row carries the total that needs attention, whatever page it is on');
+  -- Un cobro en revisión SIN motivo escrito (review_reason NULL) no puede dejar banderas en null.
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set internal_status = 'security_review_required', review_reason = null, order_id = null, paid_amount = expected_amount, provider_payment_id = 'OP-NOREASON' where id = i2;
+  perform pg_temp.as_user(v_owner);
+  perform pg_temp.check(not exists (select 1 from public.mobbex_list_business_payments(v_biz) x
+      where jsonb_typeof(x -> 'can_refund') <> 'boolean' or jsonb_typeof(x -> 'can_recover_order') <> 'boolean' or jsonb_typeof(x -> 'can_reconcile') <> 'boolean' or jsonb_typeof(x -> 'can_operate') <> 'boolean'),
+    'every action flag is a real boolean, even for a review without a written reason');
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set internal_status = 'pending', review_reason = null, paid_amount = null, provider_payment_id = null where id = i2;
+  perform pg_temp.as_user(v_owner);
+  perform pg_temp.check((select (x ->> 'payment_intent_id')::uuid from public.mobbex_list_business_payments(v_biz, 1, 1) x) <> i,
+    'offset 1 skips the attention row and returns the next one');
+  perform pg_temp.check((select count(*) from public.mobbex_list_business_payments(v_biz, 50, 10000)) = 0, 'an offset past the end is an empty page, not an error');
+  perform pg_temp.check((select count(*) from public.mobbex_list_business_payments(v_biz, 50, -3)) = rows_count, 'a negative offset is clamped to 0');
+
+  -- ═══ 10. A refund row that never left TABA is not "money in flight" for long (audit session 9) ═══
+  perform pg_temp.as_admin();
+  update public.mobbex_payment_intents set internal_status = 'completed', order_id = (select id from public.orders where business_id = v_biz limit 1),
+         paid_amount = expected_amount, provider_payment_id = 'OP-REQ-STALE', refunded_amount = 0, review_reason = null, attention_reason = null where id = i;
+  insert into public.mobbex_refunds (payment_intent_id, idempotency_key, amount, status, requested_at) values (i, gen_random_uuid(), 100, 'requested', clock_timestamp());
+  perform pg_temp.as_user(v_owner);
+  select x into row from public.mobbex_list_business_payments(v_biz) x where (x ->> 'payment_intent_id')::uuid = i;
+  perform pg_temp.check((row ->> 'refund_in_flight')::boolean and not (row ->> 'can_refund')::boolean, 'a refund requested seconds ago is in flight: no second one is offered');
+  perform pg_temp.as_admin();
+  update public.mobbex_refunds set requested_at = clock_timestamp() - interval '5 minutes' where payment_intent_id = i and status = 'requested';
+  perform pg_temp.as_user(v_owner);
+  select x into row from public.mobbex_list_business_payments(v_biz) x where (x ->> 'payment_intent_id')::uuid = i;
+  perform pg_temp.check(not (row ->> 'refund_in_flight')::boolean and (row ->> 'can_refund')::boolean, 'a requested row older than 2 minutes never left TABA: not in flight, refund offered again');
 
   raise notice 'MOBBEX_MERCHANT_CONSOLE_ALL_PASS';
 end $$;

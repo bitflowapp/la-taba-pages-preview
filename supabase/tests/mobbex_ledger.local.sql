@@ -177,6 +177,38 @@ begin
     and (select attention_reason from public.mobbex_payment_intents where id = i) = 'duplicate_approved_payment',
     'a second approved payment is recorded for a refund and never creates a second order');
   perform pg_temp.check((select count(*) from public.mobbex_payment_intents where provider_payment_id = 'OP-100') = 1, 'one provider payment, one checkout');
+  -- Auditoría sesión 9: devolver el DUPLICADO desde el panel de Mobbex no puede dar por devuelto el cobro que financió el pedido.
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'refunded', '602', 'OP-200', '2500.00', 3, '4'), 'webhook');
+  perform pg_temp.check((r ->> 'ignored_for_intent')::boolean and (select internal_status from public.mobbex_payment_intents where id = i) = 'completed'
+    and (select refunded_amount from public.mobbex_payment_intents where id = i) = 0,
+    'a full refund of the DUPLICATE operation leaves the funding payment completed and un-refunded');
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'partially_refunded', '605', 'OP-200', '2500.00', 4, '5'), 'webhook');
+  perform pg_temp.check((r ->> 'ignored_for_intent')::boolean and (select refunded_amount from public.mobbex_payment_intents where id = i) = 0,
+    'a partial refund of the duplicate does not count against the funding payment');
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'reversing', '600', 'OP-200', '2500.00', 5, '6'), 'webhook');
+  perform pg_temp.check(coalesce((r ->> 'ignored_for_intent')::boolean, false) or coalesce((r ->> 'stale')::boolean, false), 'a reversal on the duplicate is ignored for the funding payment (stale or other-operation)');
+  perform pg_temp.check((select attention_reason from public.mobbex_payment_intents where id = i) = 'duplicate_approved_payment',
+    'a reversal in progress on the duplicate does not mark the funding payment as refunding');
+  perform pg_temp.check(exists (select 1 from public.mobbex_payment_events where payment_intent_id = i and event_type = 'payment.refund_of_other_operation'), 'and the ledger keeps evidence');
+  r := public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'refunded', '602', 'OP-100', '2500.00', 6, '7'), 'webhook');
+  perform pg_temp.check((select internal_status from public.mobbex_payment_intents where id = i) = 'refunded', 'while a refund of the FUNDING operation still closes the payment');
+  -- (restore the fixture for the next sections)
+  update public.mobbex_payment_intents set internal_status = 'completed', refunded_amount = 0, provider_status = 'approved' where id = i;
+
+  -- Auditoría sesión 9: un rechazo viejo (> 2 días) deja de releerse; uno reciente sigue vigilándose (la persona puede reintentar la tarjeta).
+  c := pg_temp.new_checkout(t, 1, 'mbxpollcap0001');
+  s := (c ->> 'checkout_session_id')::uuid; i := pg_temp.intent_of(s); ref := c ->> 'reference';
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'rejected', '400', 'OP-REJ-POLL', '2500.00', 0, '5'), 'webhook');
+  perform private.mobbex_enqueue_job(i, 'sweep', 0);
+  update public.mobbex_jobs set status = 'claimed', owner = 'qa', lease_expires_at = clock_timestamp() + interval '1 minute' where payment_intent_id = i and status in ('pending', 'retry_wait');
+  perform pg_temp.check(public.mobbex_finish_job((select id from public.mobbex_jobs where payment_intent_id = i and status = 'claimed'), 'qa', 'again', 300) = 'retry_wait',
+    'a fresh rejected payment keeps being watched');
+  alter table public.mobbex_payment_intents disable trigger mobbex_intents_touch;
+  update public.mobbex_payment_intents set created_at = clock_timestamp() - interval '3 days' where id = i;
+  alter table public.mobbex_payment_intents enable trigger mobbex_intents_touch;
+  update public.mobbex_jobs set status = 'claimed', owner = 'qa', lease_expires_at = clock_timestamp() + interval '1 minute' where payment_intent_id = i and status = 'retry_wait';
+  perform pg_temp.check(public.mobbex_finish_job((select id from public.mobbex_jobs where payment_intent_id = i and status = 'claimed'), 'qa', 'again', 300) = 'completed',
+    'a rejected payment older than 2 days is no longer re-read every 5 minutes (a new webhook would queue it again)');
 
   -- ═══ 5. Forged / inconsistent confirmations never approve ═══════════════════════════════════════════════
   c := pg_temp.new_checkout(t, 1, 'mbxcheckout00002');

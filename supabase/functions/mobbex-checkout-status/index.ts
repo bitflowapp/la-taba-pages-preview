@@ -28,7 +28,7 @@ Deno.serve(async (request) => {
     await enforceRateLimit(createServiceClient(), request, 'checkout_status', 60, 60, `mobbex:${user.id}`);
     const result = await mobbexCheckoutStatus({
       ledger: mobbexLedger(),
-      operations: { createCheckout: () => Promise.reject(new Error('unused')), getOperationByReference: (reference) => mobbexOperations(mobbexConfigFromEnv()).getOperationByReference(reference) },
+      operations: { createCheckout: () => Promise.reject(new Error('unused')), getOperationByReference: (reference) => mobbexOperations(mobbexConfigFromEnv()).getOperationByReference(reference), getOperationByUid: (uid) => mobbexOperations(mobbexConfigFromEnv()).getOperationByUid(uid) },
       resolveConfig: mobbexConfigFromEnv,
       requestReconcile: async (id) => {
         const { data, error } = await client.rpc('mobbex_request_reconcile', { p_checkout_session_id: id });

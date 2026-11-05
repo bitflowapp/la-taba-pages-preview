@@ -79,6 +79,17 @@ Lo que el comercio NUNCA ve: credenciales, URL de checkout, huellas de respuesta
 
 Estados que muestra: Verificando · Aprobado · Rechazado · Cerrado sin cobro · Devuelto · Devuelto en parte · En revisión · Cobrado sin pedido · Dinero sin resolver (devolución sin confirmar o dato que no coincide: bloquea la entrega). Un estado desconocido se muestra como «Verificando», jamás como aprobado. Un cobro de prueba lleva la etiqueta «Prueba».
 
+### 5.2 Catálogo de alertas (todas por comercio, apagadas hasta `set_mobbex_health_alert`)
+
+| Código | Severidad | Causa | Evidencia (sólo conteos y códigos) | Acción recomendada | Se cierra cuando |
+|---|---|---|---|---|---|
+| `MOBBEX_PAID_WITHOUT_ORDER` | CRITICAL | cobro aprobado sin pedido > 10 min | `count`, `oldest_minutes` | Cobros → «Consultar a Mobbex»; si no hay stock, «Armar el pedido» o «Devolver» | el pedido se arma o el cobro se devuelve (se resuelve sola) |
+| `MOBBEX_PAYMENT_NEEDS_REVIEW` | ACTION_REQUIRED | revisión de seguridad o `attention_reason` **sin reconocimiento vigente** | `count`, `reasons[]` | comparar importe y referencia con el panel de Mobbex; reconciliar, devolver o **reconocer** con motivo escrito | se resuelve el cobro, o una persona lo reconoce (vale 14 días y sólo para esa causa; si no se resuelve, vuelve a avisar) |
+| `MOBBEX_RECONCILIATION_STUCK` | ACTION_REQUIRED | trabajos de conciliación agotados (`dead_letter`) | `count` | revisar credenciales y que Mobbex responda; `mobbex_requeue_dead_letter()` | no quedan trabajos `dead_letter` |
+| `MOBBEX_REFUND_UNRESOLVED` | ACTION_REQUIRED | devolución enviada sin confirmar > 1 h | `count`, `oldest_minutes` | **no repetir**; buscar la operación en el panel de Mobbex y registrar el resultado | Mobbex confirma (601/602/605) o se registra el resultado |
+
+Protección contra alertas duplicadas o eternas: el identificador de cada alerta es estable por comercio y código (`md5(código:comercio)`), así que la reconciliación de alertas existente las abre, las reconoce y las cierra sin duplicarlas; las que dependen de una marca que sólo se limpiaba con un reembolso completo (`attention_reason`, `security_review_required`) ahora se pueden **reconocer** (nunca un cobro cobrado sin pedido) y reaparecen solas a los 14 días si siguen sin resolverse. `mobbex_pipeline_health()` (global, para el vigía) usa la misma regla y suma `concerns_open`.
+
 ## 6. Rollback
 
 - **Inmediato (sin tocar datos):** `MOBBEX_ENABLED` distinto de `true` → la opción desaparece, el webhook responde 200 «disabled», el worker no hace nada. Efectivo y Mercado Pago siguen igual.

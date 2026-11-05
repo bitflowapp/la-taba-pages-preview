@@ -220,6 +220,9 @@ test('reconcile: pending/rejected payments are looked at again; completed, refun
   assert.equal((await outcomeFor({ ok: true, internal_status: 'completed' })).outcome, 'done');
   assert.equal((await outcomeFor({ ok: true, internal_status: 'refunded' })).outcome, 'done');
   assert.equal((await outcomeFor({ ok: true, manual_review_required: true, internal_status: 'security_review_required' })).outcome, 'done');
+  // Auditoría sesión 9: una devolución parcial es un estado ESTABLE (el seguimiento de lo enviado lo hace el barrido de reembolsos).
+  // Antes quedaba en 'again' y se releía cada 90 s para siempre, compitiendo con los cobros reales por el presupuesto del worker.
+  assert.equal((await outcomeFor({ ok: true, internal_status: 'partially_refunded' })).outcome, 'done');
   assert.equal((await outcomeFor({ ok: true, internal_status: 'pending' })).outcome, 'again');
   assert.equal((await outcomeFor({ ok: true, internal_status: 'rejected' })).outcome, 'again');
   assert.deepEqual(await outcomeFor({ ok: true, internal_status: 'approved_order_pending' }), { outcome: 'again', delaySeconds: 20, internalStatus: 'approved_order_pending' });
@@ -448,4 +451,41 @@ test('refund: a ledger failure never sends blind and never answers 500 after Mob
   const unrecorded = refundDeps({ recordRefundResult: async () => { throw new Error('db down'); } });
   const r2 = await refundMobbexPayment(unrecorded, refundBody());
   assert.deepEqual([r2.status, r2.body.code], [202, 'REFUND_RECONCILING'], 'Mobbex devolvió: se concilia (relectura encolada al marcar), no se repite');
+});
+
+// ── Auditoría sesión 9: un cobro APROBADO anterior + un intento RECHAZADO más nuevo de la misma referencia ─────────────────
+test('reconcile: an older APPROVED attempt behind a newer declined one is booked from that attempt (no dead end for a paid purchase)', async () => {
+  const rejectedHeadline = { result: true, data: { transaction: { payment: { id: 'OP-NEW', reference: REFERENCE, total: 2500, status: { code: '400' }, currency: { code: 'ARS' } } }, transactions: [] } };
+  const approvedByUid = { result: true, data: { transaction: { payment: { id: 'OP-PAID', reference: REFERENCE, total: 2500, status: { code: '200' }, currency: { code: 'ARS' } } }, transactions: [] } };
+  const byUid = [];
+  const seen = [];
+  const operations = fakeOperations({
+    getOperationByReference: async () => ({ found: true, body: rejectedHeadline, responseHash: 'c'.repeat(64), attempts: [{ uid: 'UID-NEW', status: '400' }, { uid: 'UID-PAID', status: '200' }] }),
+    getOperationByUid: async (uid) => { byUid.push(uid); return { found: true, body: approvedByUid, responseHash: 'd'.repeat(64) }; },
+  });
+  const ledger = fakeLedger({ recordSnapshot: async (intent, snapshot, source) => { seen.push(snapshot); return { ok: true, internal_status: 'completed' }; } });
+  const outcome = await reconcileMobbexPayment({ ledger, operations }, { intentId: INTENT, reference: REFERENCE }, 'webhook');
+  assert.equal(outcome.outcome, 'done');
+  assert.deepEqual(byUid, ['UID-PAID'], 'only the paid attempt is fetched');
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].provider_payment_id, 'OP-PAID');
+  assert.equal(seen[0].status_class, 'approved');
+  assert.equal(seen[0].approved_operation_count, 1);
+});
+
+test('reconcile: two paid attempts, an unreadable paid attempt or a missing port stay a failure that a person sees (never a guess)', async () => {
+  const rejectedHeadline = { result: true, data: { transaction: { payment: { id: 'OP-NEW', reference: REFERENCE, total: 2500, status: { code: '400' }, currency: { code: 'ARS' } } }, transactions: [] } };
+  const make = (attempts, getOperationByUid) => fakeOperations({
+    getOperationByReference: async () => ({ found: true, body: rejectedHeadline, responseHash: 'c'.repeat(64), attempts }),
+    ...(getOperationByUid ? { getOperationByUid } : {}),
+  });
+  const ledger = fakeLedger({ recordSnapshot: async () => { throw new Error('must not record'); } });
+  const two = await reconcileMobbexPayment({ ledger, operations: make([{ uid: 'A1', status: '200' }, { uid: 'A2', status: '200' }, { uid: 'R', status: '400' }], async () => { throw new Error('x'); }) }, { intentId: INTENT, reference: REFERENCE }, 'webhook');
+  assert.deepEqual(two, { outcome: 'failed', error: 'conflicting_operations' });
+  const broken = await reconcileMobbexPayment({ ledger, operations: make([{ uid: 'A1', status: '200' }, { uid: 'R', status: '400' }], async () => ({ found: false, code: 'NDFE', responseHash: 'e'.repeat(64) })) }, { intentId: INTENT, reference: REFERENCE }, 'webhook');
+  assert.deepEqual(broken, { outcome: 'failed', error: 'conflicting_operations' });
+  const noPort = await reconcileMobbexPayment({ ledger, operations: make([{ uid: 'A1', status: '200' }, { uid: 'R', status: '400' }]) }, { intentId: INTENT, reference: REFERENCE }, 'webhook');
+  assert.deepEqual(noPort, { outcome: 'failed', error: 'conflicting_operations' });
+  const other = await reconcileMobbexPayment({ ledger, operations: make([{ uid: 'A1', status: '200' }, { uid: 'R', status: '400' }], async () => ({ found: true, body: { result: true, data: { transaction: { payment: { id: 'OP-X', reference: 'taba2-mbx-other', total: 2500, status: { code: '200' } } } } }, responseHash: 'f'.repeat(64) })) }, { intentId: INTENT, reference: REFERENCE }, 'webhook');
+  assert.equal(other.outcome, 'failed', 'an operation that reports another reference is never booked');
 });

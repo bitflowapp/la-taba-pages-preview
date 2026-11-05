@@ -165,3 +165,20 @@ El banco SQL local no se ejecutó (sin CLI de Supabase instalada; el cambio no t
 
 Matriz completa de 20 casos con su nivel de evidencia: [CERTIFICATION-MATRIX.md](CERTIFICATION-MATRIX.md).
 
+## 9. Sesión 9 (2026-11-05): auditoría independiente de residuales
+
+Dos auditores de sólo lectura (uno por proyecto) buscaron defectos NO cubiertos antes; cada hallazgo se verificó a mano en el código y, si era real, se reprodujo con una prueba roja antes de corregirlo.
+
+| # | Hallazgo | Verificación | Corrección | Prueba |
+|---|---|---|---|---|
+| 1 | Un reembolso (602/605/600) de la operación DUPLICADA se aplicaba al cobro que financió el pedido: lo marcaba «devuelto», congelaba el pedido y cerraba la devolución real | **roja** en `mobbex_ledger.local.sql` (la devolución del duplicado dejaba `refunded`) | guarda `10.2b` en `mobbex_record_provider_snapshot`: un reembolso de otra operación se registra y no toca el cobro | 5 aserciones nuevas del contrato (ledger 136) |
+| 2 | `partially_refunded` no era terminal para el worker: se releía cada 90 s para siempre; un rechazo viejo cada 5 min | **roja** en `tests/mobbex-flows.test.mjs` | `partially_refunded` es terminal; `mobbex_finish_job` cierra un rechazo de > 2 días | flows + contrato SQL |
+| 3 | «Aprobado anterior + intento rechazado más nuevo» (`REF:` responde sólo el último): lectura fallida para siempre, el cobro nunca se asentaba y la reserva vencía | **roja** en flows (headline 400, lista [400, 200]) | si hay UN solo intento pagado se lee ese intento (`GET /p/operations/{uid}`, medido en DEMO); dos pagados, uno ilegible o sin puerto siguen siendo falla visible | flows (2) + core (error mapping de `getOperationByUid`) |
+| 4 | La relectura del comercio rechazaba cobros `completed`/`partially_refunded`: una devolución hecha en el panel de Mobbex no se reflejaba y TABA seguía ofreciendo «Devolver» | verificado en el código | permitida (la lectura del proveedor es idempotente para lo aprobado) | contrato de la consola |
+| 5 | `attention_reason` / `security_review_required` sólo se limpiaban con un reembolso completo: alertas permanentes | verificado (líneas de `attention_reason` en el ledger) | **reconocimiento** con motivo escrito (14 días, por causa; se niega con devolución en curso y con cobro sin pedido) + lectores de salud/alertas que lo respetan | contrato `mobbex_attention_ack.local.sql` (29) + rollback byte a byte |
+| 6 | Una fila de reembolso `requested` que nunca salió de TABA se mostraba como «Dinero sin resolver» y escondía «Devolver» | verificado | no cuenta como «en vuelo» a los 2 min (la base ya la cierra sola) | contrato de la consola |
+| 7 | La lista del comercio traía 100 cobros fijos: un cobro dudoso viejo podía quedar fuera de vista | verificado; además una prueba nueva halló que `needs_attention` podía ser NULL y ordenarse PRIMERO (corregido) | lo que pide atención va primero, total de atención en cada fila, paginación `p_offset` + «Cargar más», banderas siempre booleanas, índice `mobbex_jobs(payment_intent_id, created_at desc)` | contrato de la consola (48) + panel |
+| 8 | El cuerpo del webhook se almacenaba completo antes del límite de ritmo y del tope | verificado | límite de ritmo primero, `Content-Length` y lectura acotada a 64 KB | contrato estático de la función |
+| 9 | UX: «Cobrado sin pedido» en rojo durante los primeros minutos normales; lista vieja sin hora; botones idénticos sin nombre accesible; mensajes lejos del formulario | verificado | «Armando el pedido» (10 min), «Actualizado a las HH:MM», aviso de datos viejos tras un error, `aria-label` con el pedido, región `status` estable, mensaje junto al formulario, «Cobrado el / Iniciado el» y «a cobrar» | `tests/mobbex-panel.test.mjs` (+7) |
+
+**Dos hallazgos NO aplicados, con motivo:** `configure_mobbex_business` puede borrar `entity_uid` si se omite (sólo `service_role`, pasa por el titular: queda en el procedimiento de alta); el costo de la lista con `count() over ()` + `offset` en negocios con miles de cobros no se midió con `EXPLAIN` (sin datos reales): el límite de 200 por página y el índice nuevo lo acotan; revisar con datos de staging.

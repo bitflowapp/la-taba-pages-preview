@@ -759,6 +759,14 @@ begin
     update public.mobbex_jobs set status = 'completed', completed_at = clock_timestamp(), owner = null, lease_expires_at = null, last_error = null where id = v_job.id;
     return 'completed';
   elsif p_outcome = 'again' then
+    -- Un rechazo de más de 2 días ya no se vigila cada pocos minutos (no hay tope en el worker): un aviso nuevo lo vuelve a encolar,
+    -- y el barrido sólo recoge los de menos de 2 días. Sólo 'rejected': un cobro abierto o aprobado sin pedido sigue su curso.
+    if exists (select 1 from public.mobbex_payment_intents pi
+                where pi.id = v_job.payment_intent_id and pi.internal_status = 'rejected' and pi.created_at < clock_timestamp() - interval '2 days')
+       and not v_job.dirty then
+      update public.mobbex_jobs set status = 'completed', completed_at = clock_timestamp(), owner = null, lease_expires_at = null, last_error = null where id = v_job.id;
+      return 'completed';
+    end if;
     update public.mobbex_jobs
        set status = 'retry_wait', owner = null, lease_expires_at = null,
            next_attempt_at = clock_timestamp() + make_interval(secs => case when v_job.dirty then 0 else greatest(5, least(coalesce(p_delay_seconds, 60), 3600)) end)
@@ -1023,6 +1031,15 @@ begin
       return jsonb_build_object('ok', true, 'stale', true, 'attention', true, 'internal_status', v_intent.internal_status);
     end if;
     return jsonb_build_object('ok', true, 'stale', true, 'internal_status', v_intent.internal_status);
+  end if;
+
+  -- 10.2b A refund / reversal read about an operation that is NOT the one that funded this purchase says nothing about OUR money.
+  -- (Typical: the merchant returns the DUPLICATE payment from Mobbex's own panel and the next read has that operation as headline.)
+  -- Without this, the funding payment would be marked refunded, its order frozen and the real refund path closed (audit session 9).
+  if v_paid and v_class in ('refunded', 'partially_refunded', 'reversing') and v_pid is distinct from v_intent.provider_payment_id then
+    perform private.mobbex_event(v_intent.id, 'payment.refund_of_other_operation', v_code, v_pid, v_time, v_hash,
+      jsonb_build_object('funding_payment_id', v_intent.provider_payment_id, 'other_payment_id', v_pid, 'class', v_class, 'source', p_source));
+    return jsonb_build_object('ok', true, 'ignored_for_intent', true, 'other_operation', true, 'internal_status', v_intent.internal_status);
   end if;
 
   -- 10.3 Transitions.

@@ -156,3 +156,15 @@ test('refund functions lock the payment before the refund row (same order as the
     if (refundLock >= 0) assert.ok(intentLock < refundLock, `${name}: payment lock must come before the refund lock`);
   }
 });
+
+// Auditoría sesión 9: el cuerpo del aviso es sólo una pista; no se almacena en memoria antes del límite de ritmo ni más allá del tope.
+test('the Mobbex webhook rate-limits BEFORE reading the body and never buffers more than its cap', () => {
+  const source = fs.readFileSync(new URL('../supabase/functions/mobbex-webhook/index.ts', import.meta.url), 'utf8');
+  const rate = source.indexOf('enforceRateLimit(');
+  const declared = source.indexOf("headers.get('content-length')");
+  const read = source.indexOf('await readBounded(request');
+  assert.ok(rate > 0 && declared > rate && read > declared, 'order: rate limit -> declared length -> bounded read');
+  assert.doesNotMatch(source, /request\.clone\(\)\.text\(\)|await request\.text\(\)/, 'no unbounded body read');
+  assert.match(source, /PAYLOAD_TOO_LARGE/);
+});
+

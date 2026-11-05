@@ -22,11 +22,12 @@ export const MOBBEX_REFUND_PHRASE = 'DEVOLVER';
 export const MOBBEX_REFUND_SERVER_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MOBBEX_REFUND';
 
 export const MOBBEX_PAYMENT_STATES = Object.freeze([
-  'checking', 'approved', 'rejected', 'closed', 'refunded', 'partially-refunded', 'in-review', 'approved-without-order', 'money-unresolved',
+  'checking', 'building-order', 'approved', 'rejected', 'closed', 'refunded', 'partially-refunded', 'in-review', 'approved-without-order', 'money-unresolved',
 ]);
 
 const STATE_COPY = Object.freeze({
   checking: { label: 'Verificando', tone: 'info', detail: 'Estamos confirmando el resultado con Mobbex. No entregues hasta que figure aprobado.' },
+  'building-order': { label: 'Armando el pedido', tone: 'info', detail: 'Mobbex confirmó el cobro y estamos armando el pedido. Si en unos minutos no aparece, te avisamos acá.' },
   approved: { label: 'Aprobado', tone: 'success', detail: 'Mobbex confirmó el cobro y el pedido quedó armado.' },
   rejected: { label: 'Rechazado', tone: 'danger', detail: 'Mobbex no aceptó el pago. No se cobró nada.' },
   closed: { label: 'Cerrado sin cobro', tone: 'neutral', detail: 'El pago venció o se canceló. No se cobró nada y el stock volvió.' },
@@ -84,15 +85,22 @@ const REFUND_CODE_COPY = Object.freeze({
 // Respuestas tras las cuales la misma clave ya no sirve: el pedido quedó cerrado, hace falta uno nuevo para reintentar.
 const DEFINITIVE_REFUND_CODES = new Set(['REFUND_REJECTED', 'REFUND_NOT_AVAILABLE', 'REFUND_ENVIRONMENT_MISMATCH', 'PAYMENTS_NOT_ENABLED', 'INVALID_AMOUNT', 'EXPLICIT_REFUND_CONFIRMATION_REQUIRED']);
 
+function approvedRecently(payment, now = Date.now()) {
+  const at = Date.parse(payment.approved_at || '');
+  return Number.isFinite(at) && now - at < 10 * 60 * 1000 && now - at > -60 * 1000;
+}
+
 /** Cómo se lee un cobro en el mostrador. El servidor manda el estado; acá sólo se lo cuenta. */
 export function classifyMobbexPayment(payment = {}) {
   const internal = String(payment.internal_status || '').toLowerCase();
   const hasOrder = Boolean(payment.order_public_code);
   const refundDoubtful = ['processing', 'ambiguous'].includes(String(payment.latest_refund_status || '')) || payment.refund_in_flight === true;
   let state = 'checking';
-  if (refundDoubtful || (payment.attention_reason && payment.attention_reason !== 'refund_in_progress')) state = 'money-unresolved';
+  const attentionOpen = payment.attention_reason && payment.attention_reason !== 'refund_in_progress' && payment.attention_acknowledged !== true;
+  if (refundDoubtful || attentionOpen) state = 'money-unresolved';
   else if (internal === 'refunded') state = 'refunded';
   else if (internal === 'partially_refunded' || (Number(payment.refunded_amount || 0) > 0 && internal === 'completed')) state = 'partially-refunded';
+  else if (internal === 'approved_order_pending' && approvedRecently(payment)) state = 'building-order';
   else if (internal === 'approved_order_pending' || (internal === 'completed' && !hasOrder)
     || (internal === 'security_review_required' && !hasOrder && Number(payment.paid_amount || 0) > 0)) state = 'approved-without-order';
   else if (internal === 'security_review_required' || internal === 'ambiguous') state = 'in-review';
@@ -107,10 +115,11 @@ export function classifyMobbexPayment(payment = {}) {
     tone: copy.tone,
     detail: copy.detail,
     reasonText: reason ? (REASON_COPY[reason] || 'Hay un dato que no coincide. Pedí una consulta o avisá a soporte.') : '',
+    acknowledged: payment.attention_acknowledged === true,
     orderLabel: hasOrder ? String(payment.order_public_code) : 'Sin pedido armado',
     environmentLabel: String(payment.environment || '') === 'production' ? 'Dinero real' : 'Prueba',
     isTest: String(payment.environment || 'test') !== 'production',
-    blocksDelivery: ['checking', 'in-review', 'approved-without-order', 'money-unresolved'].includes(state),
+    blocksDelivery: ['checking', 'building-order', 'in-review', 'approved-without-order', 'money-unresolved'].includes(state),
   });
 }
 
@@ -121,6 +130,8 @@ export function mobbexActionsFor(payment = {}, { elevated = false } = {}) {
       hint: 'Le pregunta a Mobbex cómo quedó este cobro. No cambia nada por sí sola.' },
     { id: 'recover-order', label: 'Armar el pedido de este cobro', available: Boolean(payment.can_recover_order),
       hint: 'Vuelve a tomar el stock y arma el pedido. Si ya no hay stock, te avisa qué falta.' },
+    { id: 'acknowledge', label: 'Ya lo resolví (reconocer)', available: Boolean(payment.can_acknowledge), requiresConfirmation: true,
+      hint: 'Apaga la alarma por 14 días con un motivo escrito. No cambia el cobro ni mueve dinero.' },
     { id: 'refund', label: 'Devolver el dinero', available: Boolean(payment.can_refund), requiresConfirmation: true,
       hint: 'Es irreversible. Pide motivo y confirmación escrita antes de enviarse.' },
   ];
@@ -164,12 +175,19 @@ export function summarizeMobbexPayments(payments = []) {
 let payments = [];
 let status = { phase: 'idle', message: '' };
 let loadStarted = false;
+let loadedAt = 0;
+let lastGoodAt = 0;
 let generation = 0;
 let busy = false;
 let refundTarget = '';
+let ackTarget = '';
 let refundOperation = null;
 let expanded = '';
 let feedback = '';
+let hasMore = false;
+let attentionTotal = 0;
+const PAGE = 50;
+const MAX_RELOAD = 200;
 
 export function resetMobbexPayments() {
   generation += 1;
@@ -178,26 +196,42 @@ export function resetMobbexPayments() {
   loadStarted = false;
   busy = false;
   refundTarget = '';
+  ackTarget = '';
   refundOperation = null;
   expanded = '';
   feedback = '';
+  hasMore = false;
+  attentionTotal = 0;
+  loadedAt = 0;
+  lastGoodAt = 0;
 }
 
 export function activateMobbexPayments(context) {
-  if (loadStarted) return null;
+  // Reabrir la pantalla después de un minuto vuelve a leer: una lista vieja puede mostrar «Verificando» de algo ya resuelto.
+  if (loadStarted && Date.now() - loadedAt < 60_000) return null;
   loadStarted = true;
+  loadedAt = Date.now();
   return refreshMobbexPayments(context);
 }
 
-export async function refreshMobbexPayments(context, message = '') {
+// Recarga conservando lo ya mostrado (hasta MAX_RELOAD filas): una acción no devuelve a la persona a la primera página.
+// Los cobros que piden atención vienen PRIMERO desde el servidor, así que nunca quedan detrás de «Cargar más».
+export async function refreshMobbexPayments(context, message = '', { more = false } = {}) {
   const current = generation;
   status = { phase: 'loading', message };
   context?.onChange?.();
-  const response = await (context?.listMobbexPayments?.() ?? { ok: false });
+  const page = more
+    ? { offset: payments.length, limit: PAGE }
+    : { offset: 0, limit: Math.min(Math.max(payments.length, PAGE), MAX_RELOAD) };
+  const response = await (context?.listMobbexPayments?.(page) ?? { ok: false });
   if (current !== generation) return { ok: false, staleContext: true };
   if (response?.ok) {
-    payments = Array.isArray(response.data) ? response.data : [];
+    const rows = Array.isArray(response.data) ? response.data : [];
+    payments = more ? [...payments, ...rows.filter((row) => !payments.some((known) => known.payment_intent_id === row.payment_intent_id))] : rows;
+    hasMore = rows.length >= page.limit;
+    attentionTotal = Number(rows[0]?.attention_total ?? (more ? attentionTotal : 0)) || 0;
     status = { phase: 'ready', message };
+    lastGoodAt = Date.now();
   } else {
     status = { phase: 'error', message: humanizeFailure(response?.message, 'No pudimos leer los cobros de Mobbex.') };
   }
@@ -221,6 +255,11 @@ export async function handleMobbexAction(target, context) {
   if (target.closest('[data-mobbex-refresh]')) {
     const response = await refreshMobbexPayments(context);
     return done(Boolean(response.ok), response.ok ? 'Cobros de Mobbex actualizados.' : status.message);
+  }
+  if (target.closest('[data-mobbex-more]')) {
+    if (busy || status.phase === 'loading') return done(false, 'Ya hay algo en curso.');
+    const response = await refreshMobbexPayments(context, '', { more: true });
+    return done(Boolean(response.ok), response.ok ? '' : status.message);
   }
   const toggle = target.closest('[data-mobbex-toggle]');
   if (toggle) {
@@ -258,6 +297,43 @@ export async function handleMobbexAction(target, context) {
     const message = response?.ok
       ? humanizeFailure(response.message, 'Listo: el pedido de este cobro quedó armado.')
       : humanizeFailure(response?.message, 'No pudimos armar el pedido de este cobro.');
+    await refreshMobbexPayments(context);
+    return done(Boolean(response?.ok), message);
+  }
+  const ackOpen = target.closest('[data-mobbex-ack-open]');
+  if (ackOpen) {
+    const denied = guardElevated(context, 'payments.reconcile');
+    if (denied) return denied;
+    const id = ackOpen.dataset.mobbexAckOpen;
+    if (!findPayment(id)?.can_acknowledge) return done(false, 'Este cobro no admite reconocer la incidencia ahora. Actualizá la lista.');
+    ackTarget = id;
+    expanded = id;
+    feedback = '';
+    context?.onChange?.();
+    return { handled: true, ok: true, message: '' };
+  }
+  if (target.closest('[data-mobbex-ack-cancel]')) {
+    ackTarget = '';
+    context?.onChange?.();
+    return done(true, 'No se reconoció nada: la alarma sigue.');
+  }
+  const ackConfirm = target.closest('[data-mobbex-ack-confirm]');
+  if (ackConfirm) {
+    const denied = guardElevated(context, 'payments.reconcile');
+    if (denied) return denied;
+    const id = String(ackConfirm.dataset.mobbexAckConfirm || '');
+    if (!findPayment(id)?.can_acknowledge) return done(false, 'Este cobro no admite reconocer la incidencia ahora. Actualizá la lista.');
+    const note = String(ackConfirm.closest('[data-mobbex-ack-form]')?.querySelector('[name="mobbexAckNote"]')?.value || '').trim();
+    if (note.length < 10) return done(false, 'Escribí qué verificaste y qué se resolvió (al menos 10 caracteres). Queda en el historial.');
+    if (busy) return done(false, 'Ya hay algo en curso.');
+    busy = true;
+    context?.onChange?.();
+    const response = await context.acknowledgeMobbexAttention(id, note);
+    busy = false;
+    const message = response?.ok
+      ? 'Incidencia reconocida por 14 días. Si no se resuelve, vuelve a avisar sola.'
+      : humanizeFailure(response?.message, 'No se pudo reconocer la incidencia.');
+    if (response?.ok) ackTarget = '';
     await refreshMobbexPayments(context);
     return done(Boolean(response?.ok), message);
   }
@@ -334,24 +410,27 @@ async function confirmRefund(button, context) {
 }
 
 // ── Pantalla ─────────────────────────────────────────────────────────────────
-export function renderMobbexSurface({ role = '', state = status, list = payments, working = busy, target = refundTarget, open = expanded, notice = feedback } = {}) {
+export function renderMobbexSurface({ role = '', state = status, list = payments, working = busy, target = refundTarget, open = expanded, notice = feedback, more = hasMore, attention = attentionTotal } = {}) {
   if (!can(role, 'payments.view')) {
     return panelShell('<p class="form-hint">Tu rol no incluye la consulta de pagos.</p>');
   }
   const elevated = can(role, 'payments.refund');
   const summary = summarizeMobbexPayments(list);
   const cards = list.length
-    ? list.map((payment) => renderCard(payment, { elevated, working, target, open })).join('')
+    ? list.map((payment) => renderCard(payment, { elevated, working, target, open, notice })).join('')
     : `<p class="form-hint">${state.phase === 'loading' ? 'Leyendo los cobros…' : state.phase === 'error' ? '' : 'Todavía no hay cobros por Mobbex.'}</p>`;
+  const needReview = Math.max(summary.attention, attention);
   const summaryLine = summary.total
-    ? `<p class="form-hint" data-mobbex-summary>${summary.attention ? `<strong>${summary.attention} para revisar.</strong> ` : ''}${summary.awaiting ? `${summary.awaiting} verificándose. ` : ''}${summary.refundsOpen ? `${summary.refundsOpen} devolución(es) sin confirmar. ` : ''}${summary.total} cobro(s) en la lista.</p>`
+    ? `<p class="form-hint" data-mobbex-summary>${needReview ? `<strong>${needReview} para revisar</strong> (van primero). ` : ''}${summary.awaiting ? `${summary.awaiting} verificándose. ` : ''}${summary.refundsOpen ? `${summary.refundsOpen} devolución(es) sin confirmar. ` : ''}Se muestran ${summary.total} cobro(s)${more ? '; hay más' : ''}.</p>`
     : '';
   return panelShell(`
-    ${state.phase === 'error' ? `<p class="production-intake-error" role="alert">${escapeHtml(state.message)}</p>` : ''}
-    ${notice ? `<p class="business-ops-feedback" role="status" data-mobbex-feedback>${escapeHtml(notice)}</p>` : ''}
+    ${state.phase === 'error' ? `<p class="production-intake-error" role="alert">${escapeHtml(state.message)}${list.length && lastGoodAt ? ` Lo que ves es de las ${escapeHtml(formatClock(lastGoodAt))}: puede estar desactualizado.` : ''}</p>` : ''}
+    ${state.phase === 'ready' && lastGoodAt ? `<p class="form-hint" data-mobbex-updated>Actualizado a las ${escapeHtml(formatClock(lastGoodAt))}.</p>` : ''}
+    <div role="status" aria-live="polite" data-mobbex-live>${notice ? `<p class="business-ops-feedback" data-mobbex-feedback>${escapeHtml(notice)}</p>` : ''}</div>
     ${summaryLine}
-    <div class="production-payment-list" aria-live="polite" data-mobbex-list>${cards}</div>
-    <div class="button-row"><button class="secondary-button compact" type="button" data-mobbex-refresh ${state.phase === 'loading' || working ? 'disabled' : ''}>Actualizar</button></div>
+    <div class="production-payment-list" data-mobbex-list aria-busy="${state.phase === 'loading' ? 'true' : 'false'}">${cards}</div>
+    <div class="button-row"><button class="secondary-button compact" type="button" data-mobbex-refresh ${state.phase === 'loading' || working ? 'disabled' : ''}>Actualizar</button>
+      ${more ? `<button class="ghost-button compact" type="button" data-mobbex-more ${state.phase === 'loading' || working ? 'disabled' : ''}>Cargar más cobros</button>` : ''}</div>
     <p class="form-hint">Mercado Pago tiene su propia pantalla («Pagos»): las operaciones de un medio no aparecen en el otro.</p>`);
 }
 
@@ -363,43 +442,61 @@ function panelShell(body) {
   </section>`;
 }
 
-function renderCard(payment, { elevated, working, target, open }) {
+function renderCard(payment, { elevated, working, target, open, notice = '' }) {
   const id = String(payment.payment_intent_id || '');
   const classified = classifyMobbexPayment(payment);
   const actions = mobbexActionsFor(payment, { elevated });
   const expandedNow = open === id || target === id;
   const buttons = actions.map((action) => {
+    if (action.id === 'acknowledge') {
+      return `<button class="ghost-button compact" type="button" data-mobbex-ack-open="${escapeHtml(id)}" ${working ? 'disabled' : ''} aria-label="${escapeHtml(`${action.label}: ${classified.orderLabel}`)}" aria-describedby="mbx-hint-${escapeHtml(id)}" title="${escapeHtml(action.hint)}">${escapeHtml(action.label)}</button>`;
+    }
     if (action.id === 'refund') {
-      return `<button class="secondary-button compact" type="button" data-mobbex-refund-open="${escapeHtml(id)}" ${working ? 'disabled' : ''} title="${escapeHtml(action.hint)}">${escapeHtml(action.label)}</button>`;
+      return `<button class="secondary-button compact" type="button" data-mobbex-refund-open="${escapeHtml(id)}" ${working ? 'disabled' : ''} aria-label="${escapeHtml(`${action.label}: ${classified.orderLabel}`)}" aria-describedby="mbx-hint-${escapeHtml(id)}" title="${escapeHtml(action.hint)}">${escapeHtml(action.label)}</button>`;
     }
     const attr = action.id === 'reconcile' ? 'data-mobbex-reconcile' : 'data-mobbex-recover';
-    return `<button class="ghost-button compact" type="button" ${attr}="${escapeHtml(id)}" ${working ? 'disabled' : ''} title="${escapeHtml(action.hint)}">${escapeHtml(action.label)}</button>`;
+    return `<button class="ghost-button compact" type="button" ${attr}="${escapeHtml(id)}" ${working ? 'disabled' : ''} aria-label="${escapeHtml(`${action.label}: ${classified.orderLabel}`)}" aria-describedby="mbx-hint-${escapeHtml(id)}" title="${escapeHtml(action.hint)}">${escapeHtml(action.label)}</button>`;
   }).join('');
   const processing = PROCESSING_COPY[payment.processing_state] || '';
   const refunded = Number(payment.refunded_amount || 0);
   const form = target === id && payment.can_refund ? renderRefundForm(id, payment, working) : '';
+  const ackForm = ackTarget === id && payment.can_acknowledge ? renderAckForm(id, working) : '';
   return `<article class="production-payment-card tone-${escapeHtml(classified.tone)}" data-mobbex-card="${escapeHtml(id)}" data-mobbex-state="${escapeHtml(classified.state)}">
     <header>
       <div><strong>${escapeHtml(classified.orderLabel)}</strong>
         <span class="status-pill ${escapeHtml(classified.tone)}">${escapeHtml(classified.label)}</span>
         <span class="status-pill ${classified.isTest ? 'warning' : 'neutral'}" data-mobbex-environment>${escapeHtml(classified.environmentLabel)}</span></div>
-      <span class="status-pill ${escapeHtml(classified.tone)}">${escapeHtml(formatMoney(payment.amount, payment.currency))}</span>
+      <span class="status-pill ${escapeHtml(classified.tone)}" ${payment.paid_amount === null || payment.paid_amount === undefined ? 'data-mobbex-unpaid title="Todavía no se cobró: es el importe a cobrar"' : ''}>${escapeHtml(formatMoney(payment.amount, payment.currency))}${payment.paid_amount === null || payment.paid_amount === undefined ? ' a cobrar' : ''}</span>
     </header>
     <p>${escapeHtml(classified.detail)}</p>
     ${classified.reasonText ? `<p class="production-intake-error" data-mobbex-reason>${escapeHtml(classified.reasonText)}</p>` : ''}
     ${classified.isTest ? '<p class="form-hint" data-mobbex-test-note>Cobro de prueba: no es dinero real.</p>' : ''}
     ${processing ? `<p class="form-hint" data-mobbex-processing>${escapeHtml(processing)}</p>` : ''}
     <dl class="access-request-facts">
-      <div><dt>Cuándo</dt><dd>${escapeHtml(formatTimestamp(payment.approved_at || payment.created_at))}</dd></div>
+      <div><dt>${payment.approved_at ? 'Cobrado el' : 'Iniciado el'}</dt><dd>${escapeHtml(formatTimestamp(payment.approved_at || payment.created_at))}</dd></div>
       <div><dt>Devuelto</dt><dd>${escapeHtml(refunded > 0 ? formatMoney(refunded, payment.currency) : 'Nada')}</dd></div>
       <div><dt>Falta devolver</dt><dd>${escapeHtml(Number(payment.refundable_amount || 0) > 0 && ['completed', 'partially_refunded'].includes(payment.internal_status) ? formatMoney(payment.refundable_amount, payment.currency) : '—')}</dd></div>
       <div><dt>Referencia</dt><dd>••••${escapeHtml(String(payment.reference_short || ''))}</dd></div>
     </dl>
-    ${buttons ? `<div class="button-row">${buttons}</div>` : ''}
+    ${buttons ? `<div class="button-row">${buttons}</div><p class="form-hint" id="mbx-hint-${escapeHtml(id)}" data-mobbex-hints>${escapeHtml(actions.map((action) => `${action.label}: ${action.hint}`).join(' '))}</p>` : ''}
     ${form}
+    ${ackForm}
+    ${(form || ackForm) && notice ? `<p class="business-ops-feedback" role="alert" data-mobbex-card-feedback>${escapeHtml(notice)}</p>` : ''}
+    ${classified.acknowledged ? '<p class="form-hint" data-mobbex-acknowledged>Incidencia reconocida por una persona. Si sigue sin resolverse, vuelve a avisar a los 14 días.</p>' : ''}
     <button class="text-button" type="button" data-mobbex-toggle="${escapeHtml(id)}" aria-expanded="${expandedNow ? 'true' : 'false'}">${expandedNow ? 'Ocultar historial' : 'Ver historial'}</button>
     ${expandedNow ? renderHistory(payment) : ''}
   </article>`;
+}
+
+function renderAckForm(id, working) {
+  return `<div class="business-ops-form" data-mobbex-ack-form="${escapeHtml(id)}">
+    <p><strong>Reconocer la incidencia.</strong> Usalo cuando ya verificaste este cobro en el panel de Mobbex (por ejemplo, devolviste un cobro repetido desde ahí). Apaga la alarma por 14 días; no cambia el cobro ni mueve dinero, y el pedido no se entrega por esto.</p>
+    <label>Qué verificaste y qué se resolvió<input type="text" name="mobbexAckNote" maxlength="300" autocomplete="off"></label>
+    <div class="button-row">
+      <button class="secondary-button compact" type="button" data-mobbex-ack-confirm="${escapeHtml(id)}" ${working ? 'disabled' : ''}>Reconocer</button>
+      <button class="ghost-button compact" type="button" data-mobbex-ack-cancel>Mejor no</button>
+    </div>
+  </div>`;
 }
 
 function renderRefundForm(id, payment, working) {
@@ -430,6 +527,14 @@ function renderHistory(payment) {
     <h4>Devoluciones</h4><ul>${refundRows}</ul>
     <p class="form-hint">Última consulta a Mobbex: ${escapeHtml(formatTimestamp(payment.last_reconciled_at))}${payment.payment_id_short ? ` · operación ••••${escapeHtml(payment.payment_id_short)}` : ''}</p>
   </section>`;
+}
+
+function formatClock(ms) {
+  try {
+    return new Date(ms).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'America/Argentina/Buenos_Aires' });
+  } catch (_) {
+    return new Date(ms).toISOString().slice(11, 16);
+  }
 }
 
 function formatMoney(value, currency = 'ARS') {

@@ -21,6 +21,7 @@ Titular: el titular de La Taba (Walter), distinto del de MiFav. Mobbex (Integrac
 - [ ] Formato del webhook de la cuenta (`settings.webhookFormat`): ambos formatos se aceptan (JSON y form-urlencoded).
 
 ## D. Pruebas con tarjetas oficiales (requiere una persona: Turnstile/CAPTCHA)
+- [ ] Seguir [HOMOLOGACION.md](HOMOLOGACION.md) (16 pasos) con credenciales sandbox **propias** y cerrar con `node scripts/mobbex/homologation-verify.mjs` en `APPROVED`. Mobbex confirmó (2026-11-05) que el entorno propio se genera cuando avance el alta comercial: hasta entonces este bloque está BLOQUEADO por una dependencia externa.
 - [ ] `node scripts/mobbex/sandbox-pay-probe.mjs` con las tarjetas de mobbex.dev (aprobada, rechazada, pendiente). Guardar el log.
 - [ ] Verificar: pago aprobado ⇒ un pedido; rechazo ⇒ sin pedido y stock liberado al vencer; reembolso parcial y total desde `mobbex-refund`.
 - [ ] Fijar la forma real de la operación en `tests/mobbex-core.test.mjs`.

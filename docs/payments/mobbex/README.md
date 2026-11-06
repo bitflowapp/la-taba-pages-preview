@@ -41,7 +41,7 @@ Secrets de Edge Functions: `MOBBEX_ENABLED` (debe ser exactamente `true`), `MOBB
 
 1. El titular abre su cuenta Mobbex y completa el KYC **él mismo**; nadie comparte su contraseña.
 2. El titular genera credenciales de **prueba** y las carga como secrets (o las entrega por canal seguro a quien despliega); LUNA/Claude no las ven ni las guardan.
-3. Se registra el comercio en modo `test` con `configure_mobbex_business(..., 'test', ...)` y se corre la certificación sandbox (ver §7).
+3. Se registra el comercio en modo `test` con `configure_mobbex_business(..., 'test', ...)` (actualización parcial: `NULL` = no tocar, `''` = borrar la entidad; ver CERTIFICATION §10) y se corre la certificación sandbox (ver §7).
 4. Recién con aprobación por escrito: credenciales de producción, `production_review_status = approved`, y **una autorización por compra** (`authorize_mobbex_live_payment`, importe máximo, persona y vencimiento definidos). Se consume al usarse.
 5. Los costos reales (comisión por medio de pago y plazo de acreditación) **no se pudieron confirmar** desde la documentación pública: deben salir del contrato de la cuenta de Walter antes de abrir ventas.
 

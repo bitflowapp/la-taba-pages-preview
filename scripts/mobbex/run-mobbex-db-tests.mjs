@@ -32,6 +32,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { EXPAND } from '../release-v5/model.mjs';
+import { SNAPSHOT_SQL, evaluateHomologation } from './homologation-verify.mjs';
 
 assert.equal(process.env.TABA_LOCAL_PAYMENT_DB, '1', 'TABA_LOCAL_PAYMENT_DB=1 required');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -300,6 +301,47 @@ ${read('supabase/tests/mobbex_attention_ack.local.sql')}`);
   assert.equal(readersOf('READERS_RESTORED'), readersOf('READERS_BEFORE'), 'the readers rollback must restore both functions byte for byte');
   assert.equal(readersOf('READERS_REWIRED'), readersOf('READERS_WIRED'), 're-applying after rollback differs');
   console.log('MOBBEX_ATTENTION_READERS_ROLLBACK_DRILL: both readers restored byte for byte, re-apply identical PASS');
+
+  // Verificador de evidencia de homologación: su SQL de lectura corre contra el esquema REAL y su evaluación da el veredicto esperado
+  // sobre un comercio sintético (pago aprobado, rechazado, pendiente, devolución confirmada). Sólo lectura, todo se revierte.
+  const outputJ = runTransaction('homologation verifier', `${migration(MIGRATION)}
+${migration(ALERT_MIGRATION)}
+${migration(CONSOLE_MIGRATION)}
+${migration(READERS_MIGRATION)}
+${helpers}
+select pg_temp.as_admin();
+do $$ declare t jsonb; c jsonb; i uuid; ref text; r jsonb; rf jsonb;
+begin
+  t := pg_temp.make_tenant('hv', 20);
+  perform public.configure_mobbex_business((t ->> 'business')::uuid, true, 'test', 'not_requested', 'ENT-HOMOLOG-1', 'qa-runner');
+  perform public.set_mobbex_health_alert((t ->> 'business')::uuid, true);
+  c := pg_temp.new_checkout(t, 2, 'mbxhomolog001'); i := pg_temp.intent_of((c ->> 'checkout_session_id')::uuid); ref := c ->> 'reference';
+  perform public.mobbex_prepare_checkout((c ->> 'checkout_session_id')::uuid, (t ->> 'buyer')::uuid);
+  perform public.mobbex_record_checkout_created(i, 'CHK:H1', 'https://mobbex.com/p/checkout/v2/CHK:H1', repeat('a', 64));
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(ref, 'approved', '200', 'OP-HV-1', '2500.00', 0, '1'), 'webhook');
+  perform public.mobbex_record_webhook_receipt('test', ref, repeat('b', 64), '200', 'OP-HV-1');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  rf := public.mobbex_prepare_refund(i, 500, gen_random_uuid(), 'homologacion');
+  perform pg_temp.as_service();
+  perform public.mobbex_mark_refund_sent((rf ->> 'refund_id')::uuid);
+  perform public.mobbex_record_refund_result((rf ->> 'refund_id')::uuid, 'approved', repeat('c', 64));
+  perform pg_temp.as_admin();
+  c := pg_temp.new_checkout(t, 1, 'mbxhomolog002'); i := pg_temp.intent_of((c ->> 'checkout_session_id')::uuid);
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(c ->> 'reference', 'rejected', '400', 'OP-HV-2', '1250.00', 0, '2'), 'webhook');
+  c := pg_temp.new_checkout(t, 1, 'mbxhomolog003'); i := pg_temp.intent_of((c ->> 'checkout_session_id')::uuid);
+  perform public.mobbex_record_provider_snapshot(i, pg_temp.snap(c ->> 'reference', 'pending', '2', 'OP-HV-3', '1250.00', 0, '3'), 'webhook');
+  create temp table hv_biz as select (t ->> 'business')::text as biz;
+end $$;
+select biz from hv_biz \\gset
+${SNAPSHOT_SQL('XXBIZXX').replaceAll("'XXBIZXX'", ":'biz'").replace(/^select jsonb_build_object/, "select 'HSNAP|' || jsonb_build_object")}`);
+  const snapshotLine = /HSNAP\|(\{.*\})/.exec(outputJ)?.[1];
+  assert.ok(snapshotLine, 'the homologation snapshot SQL returned nothing');
+  const report = evaluateHomologation(JSON.parse(snapshotLine), { requireCron: false });
+  const byId = Object.fromEntries(report.checks.map((check) => [check.id, check.status]));
+  assert.deepEqual([byId.H01, byId.H02, byId.H03, byId.H04, byId.H05, byId.H06, byId.H07, byId.H08, byId.H09, byId.H10, byId.H11, byId.H12, byId.H13, byId.H14],
+    Array(14).fill('PASS'), `the verifier must approve a synthetic sandbox business: ${JSON.stringify(report.checks.filter((check) => check.status !== 'PASS'))}`);
+  assert.equal(report.verdict, 'APPROVED');
+  console.log('MOBBEX_HOMOLOGATION_VERIFIER: read-only snapshot SQL + evaluation on the real schema, 14/14 checks PASS on a synthetic sandbox business');
   ok = true;
 } finally {
   if (native) {

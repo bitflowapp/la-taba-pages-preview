@@ -125,6 +125,39 @@ begin
   perform pg_temp.check((public.get_mobbex_checkout_availability((t ->> 'business')::uuid) ->> 'available')::boolean, 'Mobbex is offered once enabled');
   perform pg_temp.as_admin();
 
+  -- ═══ 1b. configure_mobbex_business is a PARTIAL update: NULL = keep, '' = clear, a value = set (audit session 10) ═══
+  -- Before: omitting any argument overwrote it (entity_uid -> NULL, enabled -> false, environment -> 'test', review -> 'not_requested'),
+  -- so re-running the function to change one setting silently disabled the check that ties a payment to the holder's Mobbex entity.
+  perform public.configure_mobbex_business((t2 ->> 'business')::uuid, true, 'test', 'not_requested', 'ENT-CFG-0001', 'qa-cfg-1');
+  perform public.configure_mobbex_business((t2 ->> 'business')::uuid, null, null, null, null, 'qa-cfg-2');
+  perform pg_temp.check((select entity_uid from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid) = 'ENT-CFG-0001',
+    'omitting entity_uid KEEPS the stored entity');
+  perform pg_temp.check((select enabled and environment = 'test' and production_review_status = 'not_requested' and changed_by = 'qa-cfg-2'
+      from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid),
+    'omitting enabled / environment / review keeps them (a re-run can no longer switch Mobbex off or production back to test); the actor is still recorded');
+  perform public.configure_mobbex_business((t2 ->> 'business')::uuid, false, null, null, null, 'qa-cfg-3');
+  perform pg_temp.check((select not enabled and entity_uid = 'ENT-CFG-0001' from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid),
+    'an explicit false switches it off and still keeps the entity');
+  perform public.configure_mobbex_business((t2 ->> 'business')::uuid, true, null, null, 'ENT-CFG-0002', 'qa-cfg-4');
+  perform pg_temp.check((select entity_uid from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid) = 'ENT-CFG-0002', 'a value sets');
+  perform pg_temp.check((select entity_uid from public.mobbex_business_settings where business_id = (t ->> 'business')::uuid) = 'ENT-WALTER-TEST',
+    'another business is never touched');
+  perform pg_temp.raises(format($q$select public.configure_mobbex_business(%L, null, null, null, 'bad entity!', 'qa-cfg-5')$q$, t2 ->> 'business'),
+    'mobbex_settings_entity_check', 'a malformed entity is refused (credential integrity)');
+  perform pg_temp.raises(format($q$select public.configure_mobbex_business(%L, null, 'sandbox', null, null, 'qa-cfg-5')$q$, t2 ->> 'business'),
+    'mobbex_settings_environment_check', 'an unknown environment is refused');
+  perform pg_temp.raises(format($q$select public.configure_mobbex_business(%L, null, 'production', null, null, 'qa-cfg-6')$q$, t2 ->> 'business'),
+    'mobbex_settings_enabled_check', 'moving an enabled business to production still needs an approved review');
+  perform pg_temp.check((select environment from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid) = 'test', 'and the refused change left the environment alone');
+  perform public.configure_mobbex_business((t2 ->> 'business')::uuid, null, null, null, '', 'qa-cfg-7');
+  perform pg_temp.check((select entity_uid is null from public.mobbex_business_settings where business_id = (t2 ->> 'business')::uuid), 'an EMPTY string is the explicit way to clear the entity');
+  perform pg_temp.check(not exists (select 1 from information_schema.role_routine_grants where routine_name = 'configure_mobbex_business' and grantee in ('anon', 'authenticated', 'PUBLIC')),
+    'only the service role can configure a business');
+  perform pg_temp.as_user((t ->> 'owner')::uuid);
+  perform pg_temp.raises(format($q$select public.configure_mobbex_business(%L, true, 'test', null, 'ENT-OWNER-SELF', 'owner')$q$, t ->> 'business'),
+    'permission denied', 'not even the business owner can configure the holder''s Mobbex settings from the browser');
+  perform pg_temp.as_admin();
+
   -- ═══ 2. The amount is the server's, the browser sends none ══════════════════════════════════════════════
   perform pg_temp.raises(format($q$select public.create_mobbex_checkout_session(%L, %L::jsonb)$q$, t ->> 'buyer',
     jsonb_build_object('business_id', t ->> 'business', 'client_request_id', 'mbxforgedtotal01', 'payment_method', 'mobbex', 'total', 1,

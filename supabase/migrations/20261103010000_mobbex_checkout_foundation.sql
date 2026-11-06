@@ -440,14 +440,21 @@ begin
   if not exists (select 1 from public.businesses b where b.id = p_business_id) then
     raise exception 'comercio inexistente' using errcode = 'P0002';
   end if;
+  -- ACTUALIZACIÓN PARCIAL (auditoría sesión 10). NULL = «no tocar» (en el alta usa el valor por defecto); un valor lo establece;
+  -- para BORRAR la entidad se pasa '' (cadena vacía). Antes, omitir un argumento lo pisaba: entity_uid -> NULL (se apagaba el control
+  -- que ata cada cobro a la entidad Mobbex del titular), enabled -> false, environment -> 'test', revisión -> 'not_requested'.
   insert into public.mobbex_business_settings (business_id, enabled, environment, production_review_status, entity_uid, changed_by)
   values (p_business_id, coalesce(p_enabled, false), coalesce(p_environment, 'test'),
           coalesce(p_production_review_status, 'not_requested'), nullif(btrim(p_entity_uid), ''), left(btrim(p_actor), 160))
-  on conflict (business_id) do update set enabled = excluded.enabled, environment = excluded.environment,
-    production_review_status = excluded.production_review_status, entity_uid = excluded.entity_uid, changed_by = excluded.changed_by
+  on conflict (business_id) do update set
+    enabled = coalesce(p_enabled, public.mobbex_business_settings.enabled),
+    environment = coalesce(p_environment, public.mobbex_business_settings.environment),
+    production_review_status = coalesce(p_production_review_status, public.mobbex_business_settings.production_review_status),
+    entity_uid = case when p_entity_uid is null then public.mobbex_business_settings.entity_uid else nullif(btrim(p_entity_uid), '') end,
+    changed_by = excluded.changed_by
   returning * into v_row;
   return jsonb_build_object('business_id', v_row.business_id, 'enabled', v_row.enabled, 'environment', v_row.environment,
-    'production_review_status', v_row.production_review_status);
+    'production_review_status', v_row.production_review_status, 'entity_set', v_row.entity_uid is not null);
 end $$;
 
 create function public.authorize_mobbex_live_payment(

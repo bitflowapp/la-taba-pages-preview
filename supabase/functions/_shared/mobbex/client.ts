@@ -1,0 +1,289 @@
+/**
+ * Minimal Mobbex REST client. No Deno globals: it receives `fetch` so it runs
+ * unchanged in an Edge Function, in Node tests and in the sandbox probe.
+ *
+ * Endpoints (official documentation, https://mobbex.dev, verified against the
+ * sandbox with scripts/mobbex/sandbox-contract-probe.mjs on 2026-11-03):
+ *
+ *   POST https://api.mobbex.com/p/checkout                 create a hosted checkout
+ *   GET  https://api.mobbex.com/p/operations/REF:{reference}   read the operation by OUR reference
+ *   GET  https://api.mobbex.com/p/operations/{id}/refund   full refund / same-day cancellation
+ *   POST https://api.mobbex.com/p/operations/{id}/refund   partial refund `{ total }`
+ *
+ * Facts measured on the real sandbox that shaped this file:
+ *   - The path segment is the operation UID; a reference needs the `REF:` prefix
+ *     (doc /consulta-de-operaciones-y-childs). Measured 2026-11-04 on existing
+ *     DEMO operations: `/p/operations/{plain reference}` answers
+ *     `{ result: false, code: "GENERIC:EFCS" }` EVEN FOR AN APPROVED payment
+ *     (an earlier probe mistook that for "no operation"); `REF:{reference}`
+ *     finds it, and a reference nobody paid answers `{ result: false, code: "NDFE" }`.
+ *     `found: false` still means only "no confirmation available": callers must
+ *     never read it as paid and never as a final rejection.
+ *   - A reference containing characters outside [A-Za-z0-9-] reaches a WAF and
+ *     answers 403, hence the strict reference pattern below.
+ *   - Credentials are the merchant's `x-api-key` + `x-access-token`; wrong ones answer 401.
+ *
+ * Secrets are never logged and never placed in an Error message.
+ */
+
+export const MOBBEX_API_BASE = 'https://api.mobbex.com';
+export const MOBBEX_OPERATION_ID_PATTERN = /^[A-Za-z0-9_-]{6,80}$/;
+export const MOBBEX_REFERENCE_PATTERN = /^taba2-mbx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+export class MobbexApiError extends Error {
+  readonly status: number;
+  readonly retryable: boolean;
+  readonly kind: 'auth' | 'rejected' | 'server' | 'network' | 'malformed';
+  constructor(kind: MobbexApiError['kind'], status: number, message: string) {
+    super(message);
+    this.kind = kind;
+    this.status = status;
+    // Only a request Mobbex provably refused is final. Anything that may have reached it is uncertain.
+    this.retryable = kind !== 'rejected';
+  }
+}
+
+export interface MobbexClientOptions {
+  apiKey: string;
+  accessToken: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  /** Tests only. Production code never overrides it; non-https bases are refused outside loopback. */
+  baseUrl?: string;
+  /**
+   * Which operation list holds this environment's attempts: Mobbex lists test operations ONLY with `test=true`
+   * (measured 2026-11-04: without it a test operation is not listed). True for the sandbox.
+   */
+  testOperations?: boolean;
+}
+
+/** One attempt (operation) listed under a reference. */
+export interface OperationAttempt { uid: string; status: string }
+
+export interface CreateCheckoutInput {
+  /** Final amount decided by the server, in cents. The client sends it formatted as XXX.xx. */
+  totalCents: number;
+  reference: string;
+  description: string;
+  returnUrl: string;
+  webhookUrl: string;
+  /** Minutes the hosted checkout stays payable. Must not outlive the stock reservation. */
+  timeoutMinutes: number;
+  customer: { email: string; name: string };
+  items: Array<{ description: string; quantity: number; totalCents: number }>;
+  /** True for the sandbox. With production credentials this makes Mobbex run the operation in test mode. */
+  test: boolean;
+}
+
+export interface CreatedCheckout {
+  checkoutId: string;
+  url: string;
+  responseHash: string;
+}
+
+export type OperationLookup =
+  | { found: false; code: string; responseHash: string }
+  | {
+    found: true; body: Record<string, unknown>; responseHash: string;
+    /**
+     * Every attempt Mobbex lists under the reference, or null when the list could not be read. Needed because the
+     * lookup answers only the NEWEST attempt and its `data.transactions` came back empty in every real answer.
+     */
+    attempts?: OperationAttempt[] | null;
+  };
+
+export function centsToDecimalString(cents: number): string {
+  if (!Number.isSafeInteger(cents) || cents < 0) throw new RangeError('amount must be a non-negative integer number of cents');
+  const whole = Math.floor(cents / 100);
+  const fraction = String(cents % 100).padStart(2, '0');
+  return `${whole}.${fraction}`;
+}
+
+/** Exact conversion of a decimal amount to cents; null when it is not representable with two decimals. */
+export function decimalToCents(value: unknown): number | null {
+  const text = typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : '';
+  const match = /^(\d{1,10})(?:\.(\d{1,2}))?$/.exec(text);
+  if (!match) return null;
+  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0') || '0');
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export class MobbexClient {
+  private readonly apiKey: string;
+  private readonly accessToken: string;
+  private readonly fetchImpl: typeof fetch;
+  private readonly timeoutMs: number;
+  private readonly baseUrl: string;
+  private readonly testOperations: boolean;
+
+  constructor(options: MobbexClientOptions) {
+    if (!options.apiKey || !options.accessToken) throw new Error('Mobbex credentials are required');
+    this.apiKey = options.apiKey;
+    this.accessToken = options.accessToken;
+    this.fetchImpl = options.fetchImpl ?? fetch;
+    this.timeoutMs = options.timeoutMs ?? 20_000;
+    const base = (options.baseUrl ?? MOBBEX_API_BASE).replace(/\/$/, '');
+    const parsed = new URL(base);
+    const loopback = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(parsed.hostname);
+    if (base !== MOBBEX_API_BASE && !(loopback && parsed.protocol === 'http:')) {
+      throw new Error('Mobbex base URL may only be overridden with a loopback address (tests)');
+    }
+    this.baseUrl = base;
+    this.testOperations = options.testOperations === true;
+  }
+
+  private async request(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ status: number; json: Record<string, unknown> | null; hash: string }> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+        method,
+        headers: {
+          'x-api-key': this.apiKey,
+          'x-access-token': this.accessToken,
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        redirect: 'error',
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (_) {
+      // Timeout, DNS, TLS, reset: the request may or may not have been processed.
+      throw new MobbexApiError('network', 0, 'Mobbex request failed before a response arrived');
+    }
+    const text = await response.text();
+    let json: Record<string, unknown> | null = null;
+    try {
+      const parsed = JSON.parse(text);
+      json = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+    } catch (_) { /* non-JSON bodies (WAF pages) stay null */ }
+    return { status: response.status, json, hash: await sha256Hex(text) };
+  }
+
+  async createCheckout(input: CreateCheckoutInput): Promise<CreatedCheckout> {
+    if (!MOBBEX_REFERENCE_PATTERN.test(input.reference)) throw new RangeError('invalid Mobbex reference');
+    if (!Number.isInteger(input.timeoutMinutes) || input.timeoutMinutes < 5 || input.timeoutMinutes > 60) {
+      throw new RangeError('timeoutMinutes must be between 5 and 60');
+    }
+    const payload = {
+      total: Number(centsToDecimalString(input.totalCents)),
+      currency: 'ARS',
+      description: input.description.slice(0, 120),
+      reference: input.reference,
+      test: input.test,
+      timeout: input.timeoutMinutes,
+      return_url: input.returnUrl,
+      webhook: input.webhookUrl,
+      customer: { email: input.customer.email, name: input.customer.name.slice(0, 80) },
+      items: input.items.slice(0, 50).map((item) => ({
+        description: item.description.slice(0, 80),
+        quantity: item.quantity,
+        total: Number(centsToDecimalString(item.totalCents)),
+      })),
+    };
+    const { status, json, hash } = await this.request('POST', '/p/checkout', payload);
+    if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
+    if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
+    if (status >= 400) throw new MobbexApiError('rejected', status, 'Mobbex refused the checkout');
+    const data = json?.data as Record<string, unknown> | undefined;
+    const id = typeof data?.id === 'string' ? data.id : '';
+    const url = typeof data?.url === 'string' ? data.url : '';
+    if (json?.result !== true || !id || !url) throw new MobbexApiError('malformed', status, 'Mobbex checkout response is incomplete');
+    let parsedUrl: URL;
+    try { parsedUrl = new URL(url); } catch (_) { throw new MobbexApiError('malformed', status, 'Mobbex checkout URL is invalid'); }
+    if (parsedUrl.protocol !== 'https:' || !/(^|\.)mobbex\.com$/.test(parsedUrl.hostname)) {
+      // The customer is redirected to this URL: it must be Mobbex's, never an attacker-influenced host.
+      throw new MobbexApiError('malformed', status, 'Mobbex checkout URL is not a Mobbex host');
+    }
+    return { checkoutId: id, url: parsedUrl.toString(), responseHash: hash };
+  }
+
+  async getOperationByReference(reference: string): Promise<OperationLookup> {
+    if (!MOBBEX_REFERENCE_PATTERN.test(reference)) throw new RangeError('invalid Mobbex reference');
+    const { status, json, hash } = await this.request('GET', `/p/operations/REF:${encodeURIComponent(reference)}`);
+    if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
+    if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
+    // A bare 404 is a routing answer, not Mobbex's documented "not found" (NDFE): it falls into the retryable branch below.
+    if (status >= 400) throw new MobbexApiError('malformed', status, 'Unexpected Mobbex response');
+    if (!json) throw new MobbexApiError('malformed', status, 'Mobbex operation response is not JSON');
+    if (json.result !== true) {
+      const code = typeof json.code === 'string' ? json.code.slice(0, 64) : 'RESULT_FALSE';
+      // Only Mobbex's explicit "not found" counts as "no operation" (it feeds the miss counter that eventually closes the
+      // checkout and releases its stock). Anything else (GENERIC:EFCS "Execution failed", unknown codes) taught nothing:
+      // retry with backoff and, if it persists, dead-letter to a person. Never close a possibly paid purchase on an error.
+      if (code !== 'NDFE') throw new MobbexApiError('server', status, 'Mobbex could not answer the operation lookup');
+      return { found: false, code, responseHash: hash };
+    }
+    return { found: true, body: json, responseHash: hash, attempts: await this.listAttempts(reference) };
+  }
+
+  /**
+   * GET /p/operations/{uid} (doc /consulta-de-operaciones-y-childs: «el segmento es el UID»). Measured read-only on the DEMO account:
+   * an existing approved operation is found by its uid. Used ONLY to read a specific PAID attempt that `REF:` hides behind a newer
+   * declined one (it answers just the newest attempt). Same error mapping as the lookup by reference; a not-found is NOT "no operation".
+   */
+  async getOperationByUid(uid: string): Promise<OperationLookup> {
+    if (!MOBBEX_OPERATION_ID_PATTERN.test(uid)) throw new RangeError('invalid Mobbex operation id');
+    const { status, json, hash } = await this.request('GET', `/p/operations/${encodeURIComponent(uid)}`);
+    if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
+    if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
+    if (status >= 400) throw new MobbexApiError('malformed', status, 'Unexpected Mobbex response');
+    if (!json) throw new MobbexApiError('malformed', status, 'Mobbex operation response is not JSON');
+    if (json.result !== true) {
+      const code = typeof json.code === 'string' ? json.code.slice(0, 64) : 'RESULT_FALSE';
+      return { found: false, code, responseHash: hash };
+    }
+    return { found: true, body: json, responseHash: hash };
+  }
+
+  /**
+   * GET /p/entity/operations?reference=... (doc /consulta-de-operaciones-y-childs). Any failure is null (never throws):
+   * the snapshot then trusts a pending/authorized/approved headline, but REFUSES a rejected/expired/cancelled one (those
+   * release stock and an older paid attempt would be invisible), so the job retries until the list can be read.
+   */
+  private async listAttempts(reference: string): Promise<OperationAttempt[] | null> {
+    try {
+      const query = `page=0&limit=50&reference=${encodeURIComponent(reference)}${this.testOperations ? '&test=true' : ''}`;
+      const { status, json } = await this.request('GET', `/p/entity/operations?${query}`);
+      const docs = (json?.data as Record<string, unknown> | undefined)?.docs;
+      if (status !== 200 || json?.result !== true || !Array.isArray(docs)) return null;
+      const attempts: OperationAttempt[] = [];
+      for (const doc of docs) {
+        const entry = doc && typeof doc === 'object' ? doc as Record<string, unknown> : {};
+        // The list also filters by text: only an exact reference match is one of OUR attempts.
+        if (entry.reference !== reference) continue;
+        // The headline reports `status: { code, text }`; the list's shape is not measured, so both forms are read. A status
+        // that cannot be read could be the paid attempt: the whole list is then unreadable (null), never a partial answer.
+        const node = entry.status && typeof entry.status === 'object' ? (entry.status as Record<string, unknown>).code : entry.status;
+        const code = typeof node === 'string' || typeof node === 'number' ? String(node).trim() : '';
+        if (!code) return null;
+        attempts.push({ uid: typeof entry.uid === 'string' ? entry.uid : '', status: code });
+      }
+      return attempts;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * `amountCents` null = full refund / same-day cancellation (GET); a number is a partial refund (POST).
+   * Partial refunds cannot be made on the day of the payment (official docs): Mobbex answers an error.
+   */
+  async refundOperation(operationId: string, amountCents: number | null): Promise<{ approved: boolean; responseHash: string }> {
+    if (!MOBBEX_OPERATION_ID_PATTERN.test(operationId)) throw new RangeError('invalid Mobbex operation id');
+    const path = `/p/operations/${encodeURIComponent(operationId)}/refund`;
+    const { status, json, hash } = amountCents === null
+      ? await this.request('GET', path)
+      : await this.request('POST', path, { total: Number(centsToDecimalString(amountCents)) });
+    if (status === 401 || status === 403) throw new MobbexApiError('auth', status, 'Mobbex rejected the credentials');
+    if (status >= 500 || status === 429 || status === 408) throw new MobbexApiError('server', status, 'Mobbex is unavailable');
+    if (status >= 400) throw new MobbexApiError('rejected', status, 'Mobbex refused the refund');
+    if (!json) throw new MobbexApiError('malformed', status, 'Mobbex refund response is not JSON');
+    // HTTP 200 with result:false is a refusal from Mobbex's own business rules, not a transport failure.
+    return { approved: json.result === true, responseHash: hash };
+  }
+}

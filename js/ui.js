@@ -4136,6 +4136,27 @@ export function setMercadoPagoCheckoutAvailability({ available = false } = {}) {
   if (volvioAOtroMedio) renderCheckoutPaymentFields();
 }
 
+/** Mobbex sólo aparece cuando el servidor dijo «disponible» (flag + compuerta). Por defecto no existe en el selector. */
+export function setMobbexCheckoutAvailability({ available = false } = {}) {
+  const field = $('[name="paymentMethod"]');
+  if (!field) return;
+  const enabled = available === true;
+  let option = field.querySelector('option[value="mobbex"]');
+  if (enabled && !option) {
+    option = document.createElement('option');
+    option.value = 'mobbex';
+    option.textContent = 'Mobbex — Pago online';
+    field.append(option);
+  }
+  let volvioAOtroMedio = false;
+  if (!enabled && option) {
+    if (field.value === 'mobbex') { field.value = 'coordinate'; volvioAOtroMedio = true; }
+    option.remove();
+  }
+  field.dataset.mobbexAvailable = String(enabled);
+  if (volvioAOtroMedio) renderCheckoutPaymentFields();
+}
+
 function currentCouponCode() {
   const field = $('[name="couponCode"]');
   return field?.value || '';
@@ -4184,6 +4205,7 @@ function renderCheckoutPaymentFields() {
   const paymentMethod = currentPaymentMethod();
   const isCash = paymentMethod === 'cash';
   const isMercadoPago = paymentMethod === 'mercadopago';
+  const isMobbex = paymentMethod === 'mobbex';
   const cashField = $('[data-cash-change-field]');
   if (cashField) {
     cashField.classList.toggle('hidden', !isCash);
@@ -4203,14 +4225,18 @@ function renderCheckoutPaymentFields() {
   if (submit && !submit.disabled) {
     submit.textContent = isMercadoPago
       ? 'Pagar con Mercado Pago'
-      : (submit.dataset.baseLabel || 'Confirmar pedido');
+      : isMobbex
+        ? 'Pagar con Mobbex'
+        : (submit.dataset.baseLabel || 'Confirmar pedido');
   }
   // Simétrico a propósito: volver de Mercado Pago a otro medio tiene que
   // devolver la nota del modo, no dejar puesta la del redirect.
   if (modeNote) {
     modeNote.textContent = isMercadoPago
       ? 'Vas a pagar en el entorno seguro de Mercado Pago. Confirmamos el pedido sólo después de verificar el pago.'
-      : (modeNote.dataset.baseNote || 'El medio de pago se coordina con el local.');
+      : isMobbex
+        ? 'Vas a pagar en el entorno seguro de Mobbex. Confirmamos el pedido sólo después de verificar el pago.'
+        : (modeNote.dataset.baseNote || 'El medio de pago se coordina con el local.');
   }
   // La ayuda del selector decía «No se paga en esta pantalla» también con
   // Mercado Pago elegido, justo encima de un botón que dice «Pagar con Mercado
@@ -4218,7 +4244,11 @@ function renderCheckoutPaymentFields() {
   // a efectivo o a «A coordinar» —a mano, o porque Mercado Pago dejó de estar
   // disponible— tiene que devolver EXACTAMENTE la copia del shell.
   if (paymentHelp) {
-    const help = isMercadoPago ? MERCADO_PAGO_PAYMENT_HELP : (paymentHelp.dataset.baseHelp || '');
+    const help = isMercadoPago
+      ? MERCADO_PAGO_PAYMENT_HELP
+      : isMobbex
+        ? 'Vas a pagar en Mobbex. El pedido se confirma cuando Mobbex aprueba el pago.'
+        : (paymentHelp.dataset.baseHelp || '');
     if (paymentHelp.textContent !== help) paymentHelp.textContent = help;
   }
 }

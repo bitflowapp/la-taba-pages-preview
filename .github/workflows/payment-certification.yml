@@ -5,7 +5,7 @@ on:
     branches: ['audit/mp-activation-closure-20261030']
     paths: ['scripts/**', 'tests/**', 'supabase/**', 'package*.json', '.github/workflows/payment-certification.yml']
   pull_request:
-    paths: ['scripts/mercadopago/**', 'scripts/recovery/**', 'tests/mercadopago-*.test.mjs', 'tests/recovery-*.test.mjs', 'tests/db/**', 'supabase/**', '.github/workflows/payment-certification.yml']
+    paths: ['scripts/mercadopago/**', 'scripts/recovery/**', 'tests/mercadopago-*.test.mjs', 'tests/recovery-*.test.mjs', 'tests/mobbex-*.test.mjs', 'tests/db/**', 'supabase/**', 'deploy/mobbex/**', 'scripts/mobbex/**', '.github/workflows/payment-certification.yml']
   workflow_dispatch:
 
 permissions:
@@ -29,8 +29,10 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
-      - name: Payment and QA tool regressions (no hosted credentials)
-        run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs
+      - name: Payment, Mobbex and QA tool regressions (no hosted credentials, no money)
+        run: node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs tests/recovery-*.test.mjs tests/mobbex-*.test.mjs
+      - name: Mobbex core and flows under the Deno runtime (pinned 2.6.1, frozen lock, no network permission)
+        run: npm run test:mobbex:deno
 
   financial_sql:
     runs-on: ubuntu-24.04
@@ -66,6 +68,19 @@ jobs:
           tests/db/refund-ambiguity-recovery.test.mjs tests/db/refund-concurrency.test.mjs
           tests/db/preference-claim-recovery.test.mjs tests/db/p0-money-safety.test.mjs
           tests/db/p1-reconciliation.test.mjs tests/db/review-fixes.test.mjs
+      - name: Mobbex ledger contract, health alert and rollback proofs (own throwaway cluster, stubbed Supabase extensions, no money)
+        env:
+          TABA_LOCAL_PAYMENT_DB: '1'
+          MOBBEX_NATIVE_PG_DIR: ${{ runner.temp }}/mobbex-native-pg
+        run: PATH="$TABA_PG_BIN:$PATH" node scripts/mobbex/run-mobbex-db-tests.mjs --native --keep
+      - name: Mobbex real concurrency (independent PostgreSQL sessions released together; own throwaway cluster, no money)
+        env:
+          TABA_LOCAL_PAYMENT_DB: '1'
+          MOBBEX_NATIVE_PG_DIR: ${{ runner.temp }}/mobbex-native-pg
+        run: PATH="$TABA_PG_BIN:$PATH" node scripts/mobbex/run-mobbex-concurrency.mjs --native --rounds=8 --workers=6
+      - name: Stop the Mobbex throwaway cluster
+        if: always()
+        run: 'test ! -f "$RUNNER_TEMP/mobbex-native-pg/postmaster.pid" || "$TABA_PG_BIN/pg_ctl" -D "$RUNNER_TEMP/mobbex-native-pg" -m immediate -w stop'
       - name: Stop own PostgreSQL
         if: always()
         run: 'test ! -f "$RUNNER_TEMP/taba-payment-pg/postmaster.pid" || "$TABA_PG_BIN/pg_ctl" -D "$RUNNER_TEMP/taba-payment-pg" -m immediate -w stop'

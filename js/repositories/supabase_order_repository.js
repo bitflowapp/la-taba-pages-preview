@@ -50,6 +50,15 @@ import {
   readMercadoPagoCheckoutRecord,
   writeMercadoPagoCheckoutRecord,
 } from '../payments/mercadopago-checkout.js';
+import {
+  MOBBEX_PAYMENT_METHOD,
+  buildMobbexCheckoutPayload,
+  clearMobbexCheckoutRecord,
+  mobbexRetryDecision,
+  readMobbexCheckoutRecord,
+  trustedMobbexCheckoutUrl,
+  writeMobbexCheckoutRecord,
+} from '../payments/mobbex-checkout.js';
 import { repositoryResult } from './order_repository.js';
 import {
   allowActiveOrderFallback,
@@ -1251,6 +1260,155 @@ export function createSupabaseOrderRepository({
     });
   }
 
+  // ── Mobbex (checkout hosted). Aditivo: no toca ninguna función de Mercado Pago. ───────────────────────────
+  let mobbexCheckoutInFlight = null;
+
+  async function getMobbexCheckoutAvailability() {
+    // Preguntar no crea identidad (mismo criterio que Mercado Pago): sin sesión real la respuesta es «no disponible».
+    const session = await auth.ensureCustomerSession({ createIfMissing: false });
+    if (!session.ok) return repositoryResult(false, { available: false, message: session.message });
+    const result = await invokePaymentFunction('mobbex-availability', { business_id: businessId });
+    return repositoryResult(true, { available: result.ok === true && result.data?.available === true });
+  }
+
+  async function createMobbexCheckout(orderDraft = {}) {
+    if (mobbexCheckoutInFlight) return mobbexCheckoutInFlight;
+    mobbexCheckoutInFlight = createMobbexCheckoutInternal(orderDraft);
+    try {
+      return await mobbexCheckoutInFlight;
+    } finally {
+      mobbexCheckoutInFlight = null;
+    }
+  }
+
+  async function createMobbexCheckoutInternal(orderDraft = {}) {
+    const values = normalizeOrderDraft(orderDraft);
+    if (values.paymentMethod !== MOBBEX_PAYMENT_METHOD) {
+      return repositoryResult(false, { message: 'Elegí Mobbex para continuar con este checkout.' });
+    }
+    if (businessStatus.state === 'idle') await loadBusinessConfiguration();
+    if (catalogStatus.state === 'idle') await loadCatalog();
+    if (!businessStatus.orderingReady || catalogProductCount < 1) {
+      return repositoryResult(false, { message: 'El comercio todavía no habilitó una configuración verificada para pedidos.' });
+    }
+    if (
+      (values.deliveryMode === 'delivery' && !businessStatus.deliveryEnabled)
+      || (values.deliveryMode === 'pickup' && !businessStatus.pickupEnabled)
+    ) {
+      return repositoryResult(false, { message: 'La modalidad elegida no está habilitada por el comercio.' });
+    }
+    const cartItems = getCartItems();
+    // Los combos los precia Checkout Pro y el backend no los deriva: con Mobbex no se pagan (cart.js ya lo exige).
+    if (getCartCombos().length) {
+      return repositoryResult(false, { message: 'Los combos se cobran con Mercado Pago. Sacá el combo o elegí otro medio de pago.' });
+    }
+    if (!cartItems.length) {
+      return repositoryResult(false, { message: 'Agregá al menos un producto antes de pagar.' });
+    }
+    if (cartItems.some((item) => item.product.pricePending)) {
+      return repositoryResult(false, { message: 'Hay productos con precio pendiente. No se pueden pagar todavía.' });
+    }
+    if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+      return repositoryResult(false, { message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.' });
+    }
+    const nameValidation = validateCustomerName(values.customerName);
+    if (!nameValidation.ok) return repositoryResult(false, { message: nameValidation.message });
+    const customerPhone = normalizeArgentinePhone(values.customerPhone);
+    if (!isValidArgentinePhone(customerPhone)) {
+      return repositoryResult(false, { message: 'Ingresá un teléfono argentino válido, con código de área.' });
+    }
+    if (values.deliveryMode === 'delivery' && !values.customerAddress) {
+      return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
+    }
+    const checkoutLocation = requireConfirmedDeliveryLocation({
+      fulfillmentType: values.deliveryMode,
+      location: {
+        latitude: values.deliveryLatitude,
+        longitude: values.deliveryLongitude,
+        locationSource: values.deliveryLocationSource,
+        accuracyMeters: values.deliveryGeolocationAccuracy,
+        confirmedAt: values.deliveryLocationConfirmedAt,
+      },
+    });
+    if (!checkoutLocation.ok) {
+      return repositoryResult(false, { code: checkoutLocation.code, message: checkoutLocation.message });
+    }
+    const items = cartItems.map((item) => ({
+      product_id: String(item.product.id || ''),
+      quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    }));
+    if (items.some((item) => !isUuid(item.product_id) || item.quantity < 1)) {
+      return repositoryResult(false, { message: 'El catálogo productivo no está sincronizado. Actualizá la página antes de pagar.' });
+    }
+    const availability = await getMobbexCheckoutAvailability();
+    if (!availability.ok || !availability.available) {
+      return repositoryResult(false, { message: 'Mobbex todavía no está habilitado para este comercio.' });
+    }
+    // Un pago anterior de este navegador que todavía puede cobrar se retoma (mismo checkout, misma referencia) o frena el
+    // segundo intento: nunca se abre otra sesión que termine en un segundo cobro.
+    const recordItems = items.map((item) => ({ productId: item.product_id, quantity: item.quantity }));
+    const previous = readMobbexCheckoutRecord(mercadoPagoStorage);
+    let decision = { action: 'new' };
+    if (previous && previous.businessId === businessId) {
+      const prior = await getMobbexCheckoutStatus(previous.checkoutSessionId);
+      decision = mobbexRetryDecision(previous, { businessId, items: recordItems, checkout: prior.ok ? prior.checkout : null, notFound: prior.notFound === true });
+      if (decision.action === 'block') {
+        if (decision.code === 'PREVIOUS_PAYMENT_COMPLETED') clearMobbexCheckoutRecord(mercadoPagoStorage);
+        return repositoryResult(false, { code: decision.code, checkoutSessionId: previous.checkoutSessionId, message: decision.message });
+      }
+      if (decision.action === 'new') clearMobbexCheckoutRecord(mercadoPagoStorage);
+    }
+    let payload;
+    if (decision.action === 'resume') {
+      payload = { business_id: businessId, checkout_session_id: decision.checkoutSessionId };
+    } else {
+      let clientRequestId;
+      try {
+        clientRequestId = createCheckoutClientRequestId(cryptoImpl);
+      } catch (_) {
+        return repositoryResult(false, { message: 'Este dispositivo no puede generar una solicitud de pago segura.' });
+      }
+      // Sin importes: el servidor precia la sesión y devuelve la URL de Mobbex.
+      payload = buildMobbexCheckoutPayload({
+        businessId,
+        clientRequestId,
+        values: { ...values, customerName: nameValidation.name, customerPhone },
+        items,
+      });
+    }
+    const created = await invokePaymentFunction('mobbex-create-checkout', payload);
+    const checkoutSessionId = String(created.data?.checkout_session_id || '').trim();
+    // «Estamos verificando»: la sesión existe y quizá ya tiene checkout; se recuerda para que el próximo intento la retome.
+    if (created.data?.code === 'CHECKOUT_RECONCILING' && isUuid(checkoutSessionId)) {
+      writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, { items: recordItems });
+    }
+    if (!created.ok || !created.data?.redirect_url) {
+      return repositoryResult(false, {
+        code: created.data?.code || 'CHECKOUT_NOT_AVAILABLE',
+        status: created.data?.status || '',
+        checkoutSessionId: isUuid(checkoutSessionId) ? checkoutSessionId : '',
+        message: created.data?.message || 'No pudimos preparar este pago. Revisá el carrito y volvé a intentar.',
+      });
+    }
+    const redirectUrl = trustedMobbexCheckoutUrl(created.data.redirect_url);
+    if (!redirectUrl || !isUuid(checkoutSessionId)) {
+      return repositoryResult(false, { message: 'No recibimos una URL de pago segura.' });
+    }
+    writeMobbexCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId, { items: recordItems });
+    return repositoryResult(true, { checkoutSessionId, redirectUrl, expiresAt: String(created.data.expires_at || '') });
+  }
+
+  async function getMobbexCheckoutStatus(checkoutSessionId) {
+    if (!isUuid(checkoutSessionId)) return repositoryResult(false, { message: 'La sesión de pago no es válida.' });
+    const session = await auth.ensureCustomerSession();
+    if (!session.ok) return repositoryResult(false, { message: session.message });
+    const result = await invokePaymentFunction('mobbex-checkout-status', { checkout_session_id: checkoutSessionId });
+    if (!result.ok || !result.data?.checkout) {
+      return repositoryResult(false, { notFound: result.data?.code === 'CHECKOUT_NOT_FOUND', message: result.data?.message || 'No pudimos verificar el pago todavía.' });
+    }
+    return repositoryResult(true, { checkout: result.data.checkout });
+  }
+
   async function getMercadoPagoCheckoutStatus(checkoutSessionId) {
     if (!isUuid(checkoutSessionId)) {
       return repositoryResult(false, { message: 'La sesión de pago no es válida.' });
@@ -1403,6 +1561,77 @@ export function createSupabaseOrderRepository({
       code: result.data?.code || '',
       status: result.data?.status || '',
       message: result.data?.message || (result.ok ? 'Solicitud de cancelación enviada.' : 'No se pudo solicitar la cancelación.'),
+    });
+  }
+
+  // ── Mobbex desde el mostrador: lista, devolución, relectura y rearmado. Aditivo; no toca Mercado Pago. ──────
+  // La lista y la relectura son RPC que revalidan rol y comercio en la base; la devolución pasa por la Edge `mobbex-refund`,
+  // que repite la confirmación explícita y revalida el entorno. Estas funciones sólo arman el pedido: no deciden nada.
+  async function listMobbexBusinessPayments({ offset = 0, limit = 50 } = {}) {
+    const teamAccess = await auth.getTeamAccess();
+    if (!teamAccess.ok || !['owner', 'admin', 'staff'].includes(teamAccess.membership?.role)) {
+      return repositoryResult(false, { message: 'Tu rol no puede consultar pagos.' });
+    }
+    const { data, error } = await client.rpc('mobbex_list_business_payments', { p_business_id: businessId, p_limit: Math.min(Math.max(Number(limit) || 50, 1), 200), p_offset: Math.max(Number(offset) || 0, 0) });
+    if (error) return repositoryResult(false, { message: 'No pudimos cargar los cobros de Mobbex.' });
+    return repositoryResult(true, { payments: Array.isArray(data) ? data : [] });
+  }
+
+  async function requestMobbexReconcile(paymentIntentId) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_request_business_reconcile', { p_payment_intent_id: paymentIntentId });
+    if (error) return repositoryResult(false, { message: 'No pudimos pedir la consulta a Mobbex.' });
+    if (data?.queued !== true) {
+      return repositoryResult(true, { ...data, message: 'Este cobro ya está cerrado: no hay nada que consultar.' });
+    }
+    return repositoryResult(true, { ...data, message: 'Consulta pedida. En unos minutos el estado se actualiza solo.' });
+  }
+
+  async function acknowledgeMobbexAttention(paymentIntentId, note = '') {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_acknowledge_attention', { p_payment_intent_id: paymentIntentId, p_note: String(note || '').slice(0, 300) });
+    if (error) {
+      const text = String(error.message || '');
+      if (/devolucion en curso/i.test(text)) return repositoryResult(false, { message: 'Hay una devolución en curso: esperá a que Mobbex la confirme.' });
+      if (/cobro sin pedido/i.test(text)) return repositoryResult(false, { message: 'Este cobro no tiene pedido: armá el pedido o devolvé el dinero; no se puede ocultar.' });
+      if (/nada para reconocer/i.test(text)) return repositoryResult(false, { message: 'Este cobro ya no tiene nada para reconocer. Actualizá la lista.' });
+      if (/motivo requerido/i.test(text)) return repositoryResult(false, { message: 'Escribí qué verificaste (al menos 10 caracteres).' });
+      return repositoryResult(false, { message: 'No pudimos reconocer la incidencia.' });
+    }
+    return repositoryResult(data?.acknowledged === true, { ...data, message: 'Incidencia reconocida.' });
+  }
+
+  async function recoverMobbexPaidOrder(paymentIntentId) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('mobbex_recover_paid_checkout', { p_payment_intent_id: paymentIntentId });
+    if (error) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });
+    if (data?.reason === 'stock_insuficiente') {
+      const faltantes = Array.isArray(data.missing) ? data.missing : [];
+      return repositoryResult(false, { ...data, message: `No hay stock para armarlo: ${describeMissingStock(faltantes)}. Devolvé el dinero desde el Panel.` });
+    }
+    if (data?.ok !== true) {
+      return repositoryResult(false, { ...data, message: 'No pudimos armar el pedido de este cobro.' });
+    }
+    return repositoryResult(true, { ...data, message: data.idempotent ? 'El pedido de este cobro ya estaba armado.' : 'Pedido armado.' });
+  }
+
+  // La clave de idempotencia la conserva quien llama mientras la devolución no tenga respuesta definitiva: reintentar tras una
+  // respuesta perdida reutiliza la misma fila y NUNCA crea una segunda devolución.
+  async function requestMobbexRefund({ paymentIntentId, amount = null, reason = '', confirmation = '', idempotencyKey: providedKey = '' } = {}) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    let idempotencyKey = isUuid(providedKey) ? providedKey : '';
+    try {
+      idempotencyKey ||= createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, { message: 'No pudimos generar una solicitud de devolución segura.' });
+    }
+    const result = await invokePaymentFunction('mobbex-refund', {
+      payment_intent_id: paymentIntentId, amount, reason, confirmation, idempotency_key: idempotencyKey,
+    });
+    return repositoryResult(result.ok, {
+      code: result.data?.code || '',
+      status: result.data?.status || '',
+      message: result.data?.message || (result.ok ? 'Devolución enviada a Mobbex.' : 'No se pudo pedir la devolución.'),
     });
   }
 
@@ -1572,6 +1801,21 @@ export function createSupabaseOrderRepository({
     async getMercadoPagoCheckoutAvailability() {
       return getMercadoPagoCheckoutAvailability();
     },
+    async getMobbexCheckoutAvailability() {
+      return getMobbexCheckoutAvailability();
+    },
+    async createMobbexCheckout(orderDraft = {}) {
+      return createMobbexCheckout(orderDraft);
+    },
+    async getMobbexCheckoutStatus(checkoutSessionId) {
+      return getMobbexCheckoutStatus(checkoutSessionId);
+    },
+    getMobbexCheckoutRecovery() {
+      return readMobbexCheckoutRecord(mercadoPagoStorage);
+    },
+    clearMobbexCheckoutRecovery() {
+      clearMobbexCheckoutRecord(mercadoPagoStorage);
+    },
     // La disponibilidad de Mercado Pago se pregunta CON la sesión del cliente: la
     // RPC es sólo de `authenticated` por contrato, y sin sesión la respuesta es «no
     // disponible». Un cliente nuevo entra al carrito sin sesión y la sesión nace
@@ -1609,6 +1853,21 @@ export function createSupabaseOrderRepository({
     },
     async requestMercadoPagoCancellation(payload = {}) {
       return requestMercadoPagoCancellation(payload);
+    },
+    async listMobbexBusinessPayments(page = {}) {
+      return listMobbexBusinessPayments(page);
+    },
+    async requestMobbexReconcile(paymentIntentId) {
+      return requestMobbexReconcile(paymentIntentId);
+    },
+    async recoverMobbexPaidOrder(paymentIntentId) {
+      return recoverMobbexPaidOrder(paymentIntentId);
+    },
+    async acknowledgeMobbexAttention(paymentIntentId, note) {
+      return acknowledgeMobbexAttention(paymentIntentId, note);
+    },
+    async requestMobbexRefund(payload = {}) {
+      return requestMobbexRefund(payload);
     },
     async getActiveOrder() {
       const result = await fetchOrders();
